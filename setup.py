@@ -13,15 +13,7 @@ install_requires = [
     'requests',
     'simplejson',
     'elasticsearch',
-    'blinker',
-    'mongoengine',
-    'psycopg2',
-    'sqlalchemy',
-    'sqlalchemy_utils',
-    'pyramid_sqlalchemy',
-    'zope.dottedname',
-    'python-dateutil',
-    'pyramid_tm'
+    'blinker'
 ]
 
 setup(
