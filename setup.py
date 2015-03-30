@@ -36,4 +36,8 @@ setup(
     zip_safe=False,
     test_suite='nefertari',
     install_requires=install_requires,
+    entry_points="""\
+    [console_scripts]
+        nefertari.index = nefertari.scripts.es:main
+    """,
 )
