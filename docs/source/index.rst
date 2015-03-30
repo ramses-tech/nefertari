@@ -3,7 +3,7 @@ Nefertari, queen of APIs
 
 She is a REST API framework for Pyramid that uses Elasticsearch and optionally other backends.
 
-See `nefertari-sqla <http://brandicted.com/>`_ for SQLalchemy support and `nefertari-mongodb <http://brandicted.com/>`_ for MongoDB.
+See `nefertari-sqla <http://nefertari-sqla.readthedocs.org/en/latest/>`_ for SQLalchemy support and `nefertari-mongodb <http://nefertari-mongodb.readthedocs.org/en/latest/>`_ for MongoDB.
 
 Nefertari currently powers `Brandicted <http://brandicted.com/>`_ and `Cerri <http://www.cerri.com/>`_. She is fully production ready and actively maintained.
 
@@ -19,7 +19,7 @@ Contents
    :maxdepth: 2
 
    getting_started
-   engines/index
+   engines
    acls
 
 

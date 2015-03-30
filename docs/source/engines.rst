@@ -11,11 +11,9 @@ These engines are meant to provide almost exact API and be easily switchable wit
 
 Engines API:
 
-.. toctree::
-   :maxdepth: 2
 
-   sqla
-   mongodb
+* `SQLA Engine <http://nefertari-sqla.readthedocs.org/en/latest/>`_
+* `MongoDB Engine <http://nefertari-mongodb.readthedocs.org/en/latest/>`_
 
 
 Common API
