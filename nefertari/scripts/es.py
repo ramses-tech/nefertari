@@ -1,13 +1,12 @@
 from argparse import ArgumentParser
 import sys
-import textwrap
 import urlparse
 import logging
 
 from pyramid.paster import bootstrap
+from pyramid.config import Configurator
 from zope.dottedname.resolve import resolve
 
-from nefertari.elasticsearch import ES
 from nefertari.utils import dictset, split_strip, to_dicts
 
 
@@ -36,15 +35,18 @@ class ESCommand(object):
             '-c', '--config', help='config.ini (required)',
             required=True)
         parser.add_argument(
-            '--quiet', help='quiet mode', action='store_true',
+            '--quiet', help='Quiet mode', action='store_true',
             default=False)
         parser.add_argument(
-            '--models', help='list of dotted paths of models to index',
+            '--models', help='List of dotted paths of models to index',
             required=True)
         parser.add_argument(
-            '--params', help='url encoded params for each model')
-        parser.add_argument('--index', help='index name', default=None)
-        parser.add_argument('--bulk', help='index bulk size', type=int)
+            '--params', help='Url-encoded params for each model')
+        parser.add_argument('--index', help='Index name', default=None)
+        parser.add_argument('--bulk', help='Index bulk size', type=int)
+        parser.add_argument(
+            '--missing', help='Only index missing documents',
+            type=bool, default=False)
 
         self.options = parser.parse_args()
         if not self.options.config:
@@ -52,6 +54,10 @@ class ESCommand(object):
 
         env = self.bootstrap[0](self.options.config)
         registry = env['registry']
+
+        # Include 'nefertari.engine' to setup specific engine
+        config = Configurator(settings=registry.settings)
+        config.include('nefertari.engine')
 
         self.log = log
 
@@ -61,6 +67,7 @@ class ESCommand(object):
         self.settings = dictset(registry.settings)
 
     def run(self, quiet=False):
+        from nefertari.elasticsearch import ES
         ES.setup(self.settings)
         models_paths = split_strip(self.options.models)
 
@@ -77,18 +84,11 @@ class ESCommand(object):
 
             es = ES(source=model_name, index_name=self.options.index)
             query_set = model.get_collection(**params)
-            query_set = to_dicts(query_set)
-            count = len(query_set)
+            documents = to_dicts(query_set)
 
-            start = end = 0
-            while count:
-                if count < bulk_size:
-                    bulk_size = count
-                end += bulk_size
-
-                es.index(query_set[start:end])
-
-                start += bulk_size
-                count -= bulk_size
+            if self.options.missing:
+                es.index_missing(documents, bulk_size=bulk_size)
+            else:
+                es.index(documents, bulk_size=bulk_size)
 
         return 0
