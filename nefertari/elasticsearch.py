@@ -124,28 +124,28 @@ class ES(object):
         except KeyError as e:
             raise Exception('Bad or missing settings for elasticsearch. %s' % e)
 
-    def __init__(self, source='', index_name=None, bulk_size=100):
+    def __init__(self, source='', index_name=None, chunk_size=100):
         self.doc_type = self.src2type(source)
         self.index_name = index_name or ES.settings.index_name
-        self.bulk_size = bulk_size
+        self.chunk_size = chunk_size
 
-    def process_bulks(self, documents, operation, bulk_size):
-        """ Apply `operation` to chunks of `documents` of size `bulk_size`.
+    def process_bulks(self, documents, operation, chunk_size):
+        """ Apply `operation` to chunks of `documents` of size `chunk_size`.
 
         """
         start = end = 0
         count = len(documents)
 
         while count:
-            if count < bulk_size:
-                bulk_size = count
-            end += bulk_size
+            if count < chunk_size:
+                chunk_size = count
+            end += chunk_size
 
             bulk = documents[start:end]
             operation(bulk)
 
-            start += bulk_size
-            count -= bulk_size
+            start += chunk_size
+            count -= chunk_size
 
     def prep_bulk_documents(self, action, documents):
         if not isinstance(documents, list):
@@ -175,8 +175,8 @@ class ES(object):
 
         return _docs
 
-    def _bulk(self, action, documents, bulk_size=None):
-        bulk_size = bulk_size or self.bulk_size
+    def _bulk(self, action, documents, chunk_size=None):
+        chunk_size = chunk_size or self.chunk_size
         if not documents:
             log.debug('empty documents: %s' % self.doc_type)
             return
@@ -194,20 +194,20 @@ class ES(object):
                 body += [meta, doc]
 
         if body:
-            # Use bulk_size*2, because `body` is a sequence of
+            # Use chunk_size*2, because `body` is a sequence of
             # meta, document, meta, ...
             self.process_bulks(
                 documents=body,
                 operation=lambda b: ES.api.bulk(body=b),
-                bulk_size=bulk_size*2)
+                chunk_size=chunk_size*2)
         else:
             log.warning('empty body')
 
-    def index(self, documents, bulk_size=None):
+    def index(self, documents, chunk_size=None):
         """ Reindex all `document`. """
-        self._bulk('index', documents, bulk_size)
+        self._bulk('index', documents, chunk_size)
 
-    def index_missing(self, documents, bulk_size=None):
+    def index_missing(self, documents, chunk_size=None):
         """ Index documents from a `document` that are missing from index.
 
         To determine what documents are missing `mget` call with a list of
@@ -216,13 +216,16 @@ class ES(object):
         """
         log.info('Indexing documents of type `{}` missing from '
                  'index `{}`'.format(self.doc_type, self.index_name))
+        if not documents:
+            log.info('No documents to index')
+            return
         response = ES.api.mget(
             index=self.index_name,
             doc_type=self.doc_type,
             fields=['_id'],
             body={'ids': [d['id'] for d in documents]},
         )
-        indexed_ids = set(d['_id'] for d in response['docs'] if d['found'])
+        indexed_ids = set(d['_id'] for d in response['docs'] if d.get('found'))
         documents = [d for d in documents if str(d['id']) not in indexed_ids]
 
         if not documents:
@@ -230,7 +233,7 @@ class ES(object):
                      'index `{}`'.format(self.doc_type, self.index_name))
             return
 
-        self._bulk('index', documents, bulk_size)
+        self._bulk('index', documents, chunk_size)
 
     def delete(self, ids):
         if not isinstance(ids, list):

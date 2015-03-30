@@ -43,9 +43,11 @@ class ESCommand(object):
         parser.add_argument(
             '--params', help='Url-encoded params for each model')
         parser.add_argument('--index', help='Index name', default=None)
-        parser.add_argument('--bulk', help='Index bulk size', type=int)
+        parser.add_argument('--chunk', help='Index chunk size', type=int)
         parser.add_argument(
-            '--missing', help='Only index missing documents',
+            '--force',
+            help=('Force reindex of all documents. Only documents that '
+                  'are missing from index are indexed by default.'),
             type=bool, default=False)
 
         self.options = parser.parse_args()
@@ -80,15 +82,15 @@ class ESCommand(object):
                 [k, v[0]] for k, v in urlparse.parse_qs(params).items()
             ])
             params.setdefault('_limit', params.get('_limit', 10000))
-            bulk_size = self.options.bulk or params['_limit']
+            chunk_size = self.options.chunk or params['_limit']
 
             es = ES(source=model_name, index_name=self.options.index)
             query_set = model.get_collection(**params)
             documents = to_dicts(query_set)
 
-            if self.options.missing:
-                es.index_missing(documents, bulk_size=bulk_size)
+            if self.options.force:
+                es.index(documents, chunk_size=chunk_size)
             else:
-                es.index(documents, bulk_size=bulk_size)
+                es.index_missing(documents, chunk_size=chunk_size)
 
         return 0
