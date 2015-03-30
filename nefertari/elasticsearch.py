@@ -129,7 +129,7 @@ class ES(object):
         self.index_name = index_name or ES.settings.index_name
         self.chunk_size = chunk_size
 
-    def process_bulks(self, documents, operation, chunk_size):
+    def process_chunks(self, documents, operation, chunk_size):
         """ Apply `operation` to chunks of `documents` of size `chunk_size`.
 
         """
@@ -196,7 +196,7 @@ class ES(object):
         if body:
             # Use chunk_size*2, because `body` is a sequence of
             # meta, document, meta, ...
-            self.process_bulks(
+            self.process_chunks(
                 documents=body,
                 operation=lambda b: ES.api.bulk(body=b),
                 chunk_size=chunk_size*2)
