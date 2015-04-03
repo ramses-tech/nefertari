@@ -1,6 +1,6 @@
-from pyramid.security import (ALL_PERMISSIONS, Allow, Everyone, Deny)
-
-from nefertari.json_httpexceptions import JHTTPNotFound
+from pyramid.security import (
+    ALL_PERMISSIONS, Allow, Everyone, Deny,
+    Authenticated)
 
 
 class BaseACL(object):
@@ -73,32 +73,19 @@ class GuestACL(BaseACL):
         ]
 
 
-class AuthenticatedUserACLMixin(object):
-    """ User level ACL mixin. Mix it with your ACL class that sets
-    ``self.user`` to a currently authenticated user.
+class AuthenticatedReadACL(BaseACL):
+    """ Authenticated users' ACL.
 
-    Grants access:
-        * collection 'create' to everyone.
-        * item 'update', 'delete' to owner.
-        * item 'index', 'show' to everyone.
+    Gives read access to all Authenticated users.
+    Gives delete, create, update access to admin only.
     """
+
     def __init__(self, request):
-        super(AuthenticatedUserACLMixin, self).__init__(request)
-        self.acl = (Allow, Everyone, 'create')
+        super(AuthenticatedReadACL, self).__init__(request)
+        self.acl = (Allow, Authenticated, ['index', 'show'])
 
     def context_acl(self, context):
         return [
-            (Allow, str(context.id), 'update'),
-            (Allow, Everyone, ['index', 'show']),
-            (Deny, str(context.id), 'delete'),
+            (Allow, 'g:admin', ALL_PERMISSIONS),
+            (Allow, Authenticated, ['index', 'show']),
         ]
-
-    def __getitem__(self, key):
-        if not self.user:
-            raise JHTTPNotFound
-
-        obj = self.user
-        obj.__acl__ = self.context_acl(obj)
-        obj.__parent__ = self
-        obj.__name__ = key
-        return obj
