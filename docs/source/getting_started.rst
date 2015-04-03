@@ -65,8 +65,8 @@ And here is the content of our ``acl.py``. Check out ACLs that are included in N
 
 .. code-block:: ini
 
-    # Set 'nefertari.engine' to the dotted path of the engine you want.
-    nefertari.engine = nefertari.engine.sqla
+    # Set 'nefertari.engine' to the engine you want (e.g. nefertari_sqla or nefertari_mongodb)
+    nefertari.engine = <engine>
 
     # Elasticsearh settings
     elasticsearch.hosts = localhost:9200
@@ -76,7 +76,7 @@ And here is the content of our ``acl.py``. Check out ACLs that are included in N
 
     # Dependine on the engine you chose, provide database-specific settings.
     # E.g. for sqla:
-    sqlalchemy.url = postgresql://user:password@host:port/dbname
+    sqlalchemy.url = postgresql://<host>:<port>/dbname
 
     # For mongo:
     mongodb.host = localhost
