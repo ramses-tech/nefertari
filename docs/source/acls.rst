@@ -1,5 +1,5 @@
-Nefertari ACLs
-===========
+ACLs
+====
 
 .. automodule:: nefertari.acl
     :members:

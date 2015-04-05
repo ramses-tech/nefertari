@@ -3,9 +3,9 @@ Getting started
 
 To get started, follow these steps:
 
-0. Install nefertari::
+0. Install nefertari and either nefertari-sqla or nefertari-mongodb for the database backend you want to use::
 
-    pip install nefertari
+    pip install nefertari nefertari-sqla nefertari-mongodb
 
 
 1. `First, create a normal Pyramid app <http://docs.pylonsproject.org/docs/pyramid/en/latest/narr/firstapp.html#firstapp-chapter>`_. In the "main" module, import nefertari and then declare your resources like so::

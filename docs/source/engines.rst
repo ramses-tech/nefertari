@@ -17,7 +17,10 @@ Engines API:
 
 
 Common API
-==========
+----------
+
+.. if this changes, it must be updated in docs for nefertari{-sqla|mongodb}
+.. TODO: figure out how to include common elements in templates
 
 **BaseMixin**
     Mixin with a most of the API of *BaseDocument*. *BaseDocument* subclasses from this mixin.
@@ -52,8 +55,8 @@ Common API
 **relationship_cls(field, model_cls)**
     Return class which is pointed to by relationship field *field* from model *model_cls*.
 
-Fields abstractions
-===================
+Field abstractions
+-------------------
 
 * BigIntegerField
 * BooleanField
