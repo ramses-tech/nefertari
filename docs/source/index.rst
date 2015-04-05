@@ -1,5 +1,7 @@
 Nefertari, queen of APIs
-==================================
+========================
+
+Github: `<http://github.com/brandicted/nefertari>`_
 
 She is a REST API framework for Pyramid that uses Elasticsearch and optionally other backends.
 
@@ -21,6 +23,9 @@ Contents
    getting_started
    engines
    acls
+   elasticsearch
+   example_project
+   changelog
 
 
 Indices and tables

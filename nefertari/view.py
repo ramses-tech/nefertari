@@ -241,6 +241,11 @@ def value_error_view(context, request):
     return JHTTPBadRequest("Bad or missing value '%s'" % context.message)
 
 
+def error_view(context, request):
+    return JHTTPBadRequest(context.message)
+
+
 def includeme(config):
     config.add_view(key_error_view, context=KeyError)
     config.add_view(value_error_view, context=ValueError)
+    config.add_view(error_view, context=Exception)

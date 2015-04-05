@@ -3,5 +3,7 @@ pytest-cov==1.8.1
 mock
 webtest
 Sphinx
+sphinxcontrib-fulltoc
+releases
 
 -e .
