@@ -31,7 +31,7 @@ import shlex
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinxcontrib.fulltoc',
+    # 'sphinxcontrib.fulltoc',
     'releases'
 ]
 
