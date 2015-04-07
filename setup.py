@@ -4,7 +4,6 @@ from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.md')).read()
-CHANGES = open(os.path.join(here, 'CHANGES')).read()
 VERSION = open(os.path.join(here, 'VERSION')).read()
 
 install_requires = [
@@ -20,7 +19,7 @@ setup(
     name='nefertari',
     version=VERSION,
     description='nefertari',
-    long_description=README + '\n\n' + CHANGES,
+    long_description=README,
     classifiers=[
         "Programming Language :: Python",
         "Framework :: Pyramid",
