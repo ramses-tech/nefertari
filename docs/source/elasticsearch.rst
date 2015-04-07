@@ -12,31 +12,28 @@ For models which subclass ESBaseDocument in your project, you may pass various  
 Indexation script
 -----------------
 
-In nefertari/scripts you will find es.py, which can be used to manually index models from your database engine to Elasticsearch.
+"nefertari.index" console script can be used to manually index models from your database engine to Elasticsearch.
 
 You can run it like so::
-	
-	$ cd nefertari/scripts
-	$ ./es.py --help
+
+    $ nefertari.index --help
 
 The options available are:
 
 **config**: specify ini file to use (required). E.g.::
 
-	$ ./es.py --config ../local.ini
-
-**quiet**: "quiet mode" (surpress output). E.g.::
-
-	$ ./es.py --quiet
+    $ nefertari.index --config local.ini
 
 **models**: list of dotted paths of models to index. Models must be subclasses of ESBaseDocument.  E.g.::
 
-	$ ./es.py --models example_api.model.story
+    $ nefertari.index --config local.ini --models example_api.model.Story
 
 **params**: URL-encoded parameters for each module.
 
+**quiet**: "quiet mode" (surpress output)
+
 **index**: Specify name of index. E.g. the slug at the end of http://localhost:9200/example_api
 
-**chunk**: Chunk size.
+**chunk**: Index chunk size.
 
-**force**: Force indexation, even of existing documents (defaults to False).
+**force**: Force re-indexation of all documents in database engine (defaults to False).
