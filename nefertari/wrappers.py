@@ -50,26 +50,6 @@ class wrap_me(object):
         return meth
 
 
-class validator(wrap_me):
-    """Decorator that validates the type and required fields in request params
-    against the supplied kwargs.
-
-    ::
-
-        class MyView():
-            @validator(first_name={'type':int, 'required':True})
-            def index(self):
-                return response
-    """
-
-    def __init__(self, **kwargs):
-        wrap_me.__init__(
-            self, before=[
-                validate_types(**kwargs),
-                validate_required(**kwargs)
-            ])
-
-
 class callable_base(object):
     """Base class for all before and after calls.
     ``__eq__`` method is overloaded in order to prevent duplicate callables
@@ -85,77 +65,6 @@ class callable_base(object):
     def __eq__(self, other):
         "we only allow one instance of the same type of callable."
         return type(self) == type(other)
-
-
-# Before calls
-
-class validate_base(callable_base):
-    """Base class for validation callables.
-    """
-
-    def __call__(self, **kwargs):
-        self.request = kwargs['request']
-        self.params = self.request.params.copy()
-        # Tunneling internal param, no need to check.
-        self.params.pop('_method', None)
-
-
-class validate_types(validate_base):
-    """
-
-    Validates the field types in ``request.params`` match the types declared
-    in ``kwargs``. Raises ValidationError if there is mismatch.
-    """
-
-    def __call__(self, **kwargs):
-        validate_base.__call__(self, **kwargs)
-        # checking the types
-        for name, value in self.params.items():
-            if value == 'None':  # fix this properly.
-                continue
-            _type = self.kwargs.get(name, {}).get('type')
-            try:
-                if _type == datetime:
-                    # must be in iso format
-                    value = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
-                elif _type == date:
-                    # must be in iso format
-                    value = datetime.strptime(value, '%Y-%m-%d')
-                elif _type == None:
-                    log.debug('Incorrect or unsupported type for %s(%s)',
-                              name, value)
-                    continue
-                elif type(_type) is type:
-                    _type(value)
-                else:
-                    raise ValueError
-            except ValueError, e:
-                raise ValidationError(
-                    'Bad type %s for %s=%s. Suppose to be %s' % (
-                        type(value), name, value, _type))
-
-
-class validate_required(validate_base):
-    """Validates that fields in ``request.params`` are present
-    according to ``kwargs`` argument passed to ``__call__.
-    Raises ValidationError in case of the mismatch
-    """
-
-    def __call__(self, **kwargs):
-        validate_base.__call__(self, **kwargs)
-        # Get parent resources' ids from matchdict, so there is no need
-        # to pass in the request.params
-        self.params.update(self.request.matchdict)
-
-        self.kwargs.pop('id', None)
-
-        required_fields = set([n for n in self.kwargs.keys()
-                              if self.kwargs[n].get('required', False)])
-
-        if not required_fields.issubset(set(self.params.keys())):
-            raise ValidationError('Required fields: %s. Received: %s'
-                                  % (list(required_fields),
-                                  self.params.keys()))
 
 
 # After calls.
