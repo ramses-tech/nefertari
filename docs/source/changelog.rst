@@ -1,7 +1,7 @@
 Changelog
 =========
 
-* :release: `0.2.1 <2015-04-17>`
+* :release:`0.2.1 <2015-04-17>`
 * :support:`0` Specify any field as primary, and have it respected by all relations endpoints.
 * :feature:`0` Added DictField type.
 * :support:`0` URL parsing for DictField and ListField values with _m=VERB options.
