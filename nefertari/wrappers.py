@@ -1,5 +1,4 @@
 import urllib
-from datetime import datetime, date
 from hashlib import md5
 
 import logging
@@ -91,7 +90,8 @@ class obj2dict(object):
             #make sure its mutable, i.e list
             result = list(result)
             for ix, each in enumerate(result):
-                result[ix] = obj2dict(self.request)(_fields=_fields, result=each)
+                result[ix] = obj2dict(self.request)(
+                    _fields=_fields, result=each)
 
         return result
 
