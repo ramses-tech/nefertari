@@ -65,6 +65,23 @@ class BaseView(object):
     _json_encoder = None
     _model_class = None
 
+    @staticmethod
+    def convert_dotted(params):
+        """ Convert dotted keys in :params: dictset to a nested dictset.
+
+        E.g. {'settings.foo': 'bar'} -> {'settings': {'foo': 'bar'}}
+        """
+        dotted = defaultdict(dict)
+        dotted_items = {k: v for k, v in params.items() if '.' in k}
+
+        for key, value in dotted_items.items():
+            field, subfield = key.split('.')
+            dotted[field].update({subfield: value})
+
+        params = params.subset(['-' + k for k in dotted_items.keys()])
+        params.update(dict(dotted))
+        return params
+
     def __init__(self, context, request, _params={}):
         self.context = context
         self.request = request
@@ -80,6 +97,8 @@ class BaseView(object):
                     log.error(
                         "Expecting JSON. Received: '{}'. Request: {} {}".format(
                             request.body, request.method, request.url))
+
+            self._params = BaseView.convert_dotted(self._params)
 
         # dict of the callables {'action':[callable1, callable2..]}
         # as name implies, before calls are executed before the action is called
