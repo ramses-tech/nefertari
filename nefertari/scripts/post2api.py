@@ -35,10 +35,11 @@ def load_singular_objects(inputfile, destination):
     json_data = json.load(json_file)
     objects_count = len(json_data)
 
-    query_string = '?_limit={}&_fields={}'.format(objects_count, id_field)
+    query_string = '?_limit={}'.format(objects_count, id_field)
     parent_objects = requests.get(parent_route + query_string).json()['data']
 
     for parent in parent_objects:
+        print parent_route
         parent_url = parent['self'].replace(query_string, '')
         singular_url = parent_url + '/' + singlular_field
         child = json_data.pop()
