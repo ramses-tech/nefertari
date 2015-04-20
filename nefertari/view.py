@@ -116,7 +116,6 @@ class BaseView(object):
         elif 'text/plain' in request.accept:
             request.override_renderer = 'string'
 
-
         self.setup_default_wrappers()
         self.convert_ids2objects()
 
