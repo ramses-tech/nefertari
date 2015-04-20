@@ -6,7 +6,21 @@ Nefertari uses `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ 
 Making requests
 ---------------
 
-For models which subclass ESBaseDocument in your project, you may pass various  parameters in the URL to use the search API. See the list of parameters on the `nefertari-example project's readme <https://github.com/brandicted/nefertari-example>`_.
+For models which subclass ESBaseDocument in your project, you may pass various parameters in the URL to use the search API.
+
+===========================			===========
+url parameter						description
+===========================			===========
+_m=<method>							to force an http method using GET, e.g. _m=POST
+q=<keywords>						to filter an ElasticSearch collection using 'keyword ((AND
+_fields=<field_list>				to display only specific fields, use - before field names to exclude those fields, e.g. _fields=-descripton
+_search_fields=<field_list>			use with ?q=<keywords> to restrict search to specific fields
+_limit=<n>							to limit the returned collection to n results (default is 20, max limit is 100 for unauthenticated users)
+_sort=<field>						to sort collection by <field>
+_start=<n>							to start collection from the <n>th resource
+_page=<n>							to start collection at page <n> (n * _limit)
+===========================			===========
+
 
 
 Indexation script
