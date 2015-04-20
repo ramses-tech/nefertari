@@ -74,18 +74,18 @@ class BaseView(object):
         dotted = defaultdict(dict)
         dotted_items = {k: v for k, v in params.items() if '.' in k}
 
-        for key, value in dotted_items.items():
-            field, subfield = key.split('.')
-            dotted[field].update({subfield: value})
+        if dotted_items:
+            for key, value in dotted_items.items():
+                field, subfield = key.split('.')
+                dotted[field].update({subfield: value})
+            params = params.subset(['-' + k for k in dotted_items.keys()])
+            params.update(dict(dotted))
 
-        params = params.subset(['-' + k for k in dotted_items.keys()])
-        params.update(dict(dotted))
         return params
 
     def __init__(self, context, request, _params={}):
         self.context = context
         self.request = request
-
         self._params = dictset(_params or request.params.mixed())
 
         ctype = request.content_type
