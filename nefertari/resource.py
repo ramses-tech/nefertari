@@ -291,6 +291,7 @@ class Resource(object):
             new_resource))
 
         parent.children.append(new_resource)
+        view._resource = new_resource
 
         return new_resource
 
