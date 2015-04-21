@@ -9,6 +9,12 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
 
     Relies of `Authorization` header being used on request, e.g.:
         `Authorization: ApiKey username:token`
+
+    To use this policy, instantiate it with required arguments, as described
+    in `__init__` method and register it with Pyramid's `Configurator.set_authentication_policy`.
+
+    You may also find usefull `nefertari.authentication.views.TokenAuthenticationView`
+    view which offers basic functionality to create, claim, reset token.
     """
     def __init__(self, user_model, check=None, credentials_callback=None):
         """ Init the policy.

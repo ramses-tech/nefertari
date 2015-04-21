@@ -7,20 +7,22 @@ from .models import AuthUser
 
 class TicketAuthenticationView(BaseView):
     """ View for auth operations to use with Pyramid ticket-based auth.
-    Implements methods:
-        `register` (POST): Register new user
         `login` (POST): Login the user with 'login' and 'password'
         `logout`: Logout user
     """
     _model_class = AuthUser
 
     def register(self):
+        """ Register new user by POSTing all required data.
+
+        """
         user, created = self._model_class.create_account(self._params)
 
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
 
-        return JHTTPOk('Registered')
+        headers = remember(self.request, user.uid)
+        return JHTTPOk('Registered', headers=headers)
 
     def login(self, **params):
         self._params.update(params)
@@ -53,17 +55,17 @@ class TicketAuthenticationView(BaseView):
 
 class TokenAuthenticationView(BaseView):
     """ View for auth operations to use with
-    nefertari.ApiKeyAuthenticationPolicy token-based auth.
-    Implements methods:
-        `register` (POST): Register new user
-        `claim_token` (POST): Claim current token by submitting 'login' and
-          'password'
-        `token_reset` (POST): Reset current token by submitting 'login'
-          and 'password'
+    `nefertari.authentication.policies.ApiKeyAuthenticationPolicy`
+    token-based auth. Implements methods:
     """
     _model_class = AuthUser
 
     def register(self):
+        """ Register new user by POSTing all required data.
+
+        User's `Authorization` header value is returned in `WWW-Authenticate`
+        header.
+        """
         user, created = self._model_class.create_account(self._params)
 
         if not created:
@@ -73,6 +75,11 @@ class TokenAuthenticationView(BaseView):
         return JHTTPOk('Registered', headers=headers)
 
     def claim_token(self, **params):
+        """Claim current token by POSTing 'login' and 'password'.
+
+        User's `Authorization` header value is returned in `WWW-Authenticate`
+        header.
+        """
         self._params.update(params)
         success, self.user = self._model_class.authenticate(self._params)
 
@@ -85,6 +92,11 @@ class TokenAuthenticationView(BaseView):
             raise JHTTPNotFound('User not found')
 
     def token_reset(self, **params):
+        """ Reset current token by POSTing 'login' and 'password'.
+
+        User's `Authorization` header value is returned in `WWW-Authenticate`
+        header.
+        """
         response = self.claim_token(**params)
         if not self.user:
             return response

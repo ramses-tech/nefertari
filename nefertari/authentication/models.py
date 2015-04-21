@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 import cryptacular.bcrypt
 from pyramid.security import authenticated_userid, forget
@@ -6,7 +7,7 @@ from pyramid.security import authenticated_userid, forget
 from nefertari.json_httpexceptions import *
 from nefertari import engine as eng
 
-
+log = logging.getLogger(__name__)
 crypt = cryptacular.bcrypt.BCRYPTPasswordManager()
 
 
@@ -51,7 +52,8 @@ class AuthUser(eng.BaseDocument):
         """ Get username and api token for user with id of :userid: """
         try:
             user = cls.get_resource(id=userid)
-        except JHTTPNotFound:
+        except Exception as ex:
+            log.error(unicode(ex))
             forget(request)
         if user:
             return user.username, user.api_key.token
@@ -64,7 +66,8 @@ class AuthUser(eng.BaseDocument):
         """
         try:
             user = cls.get_resource(username=username)
-        except JHTTPNotFound:
+        except Exception as ex:
+            log.error(unicode(ex))
             forget(request)
         if user and user.api_key.token == token:
             return ['g:%s' % g for g in user.groups]
@@ -76,7 +79,8 @@ class AuthUser(eng.BaseDocument):
         key = 'email' if '@' in login else 'username'
         try:
             user = cls.get_resource(**{key: login})
-        except JHTTPNotFound:
+        except Exception as ex:
+            log.error(unicode(ex))
             success = False
             user = None
 
@@ -90,7 +94,8 @@ class AuthUser(eng.BaseDocument):
         """ Return group identifiers of user with id :userid: """
         try:
             user = cls.get_resource(id=userid)
-        except JHTTPNotFound:
+        except Exception as ex:
+            log.error(unicode(ex))
             forget(request)
         else:
             if user:
