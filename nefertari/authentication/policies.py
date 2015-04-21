@@ -1,62 +1,7 @@
-import uuid
-
 from pyramid.authentication import CallbackAuthenticationPolicy
 
 from nefertari import engine as eng
-
-
-def apikey_token():
-    """ Generate ApiKey.token using uuid library. """
-    return uuid.uuid4().hex.replace('-', '')
-
-
-def apikey_model(user_model):
-    """ Generate ApiKey model class and connect it with :user_model:.
-
-    ApiKey is generated having relationship to user model class :user_model:
-    and has One-to-One relationship with backreference.
-    ApiKey is setup to be auto-generated when new :user_model: is created.
-
-    Returns ApiKey document class. If ApiKey is already defined, it is not
-    generated again.
-
-    Arguments:
-        :user_model: Class that represents user model for which api keys will
-            be generated and with which ApiKey will have relationship.
-    """
-    try:
-        return eng.get_document_cls('ApiKey')
-    except ValueError:
-        pass
-
-    fk_kwargs = {
-        'ref_column': None,
-    }
-    if hasattr(user_model, '__tablename__'):
-        fk_kwargs['ref_column'] = '.'.join([user_model.__tablename__, 'id'])
-        fk_kwargs['ref_column_type'] = eng.IdField
-
-    class ApiKey(eng.BaseDocument):
-        __tablename__ = 'nefertari_apikey'
-
-        id = eng.IdField(primary_key=True)
-        token = eng.StringField(default=apikey_token)
-        user = eng.Relationship(
-            document=user_model.__name__,
-            uselist=False,
-            backref_name='api_key',
-            backref_uselist=False)
-        user_id = eng.ForeignKeyField(
-            ref_document=user_model.__name__,
-            **fk_kwargs)
-
-        def reset_token(self):
-            self.update({'token': apikey_token()})
-            return self.token
-
-    ApiKey.autogenerate_for(user_model, 'user')
-
-    return ApiKey
+from .models import apikey_model
 
 
 class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
