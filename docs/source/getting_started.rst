@@ -151,7 +151,7 @@ Each view must define the following properties:
 
 Optional properties:
 
-    * *_json_encoder*: encoder to encode objects to JSON. Engine-specific encoders are available at ``nefertari.engine.JSONEncoder``.
+    * *_json_encoder*: encoder to encode objects to JSON. Database-specific encoders are available at ``nefertari.engine.JSONEncoder``.
 
 Your views should sit in a package and each module of that package should contain views for a particular root level route. In our example, the ``users`` route view must be at ``views.users.UsersView``.
 
