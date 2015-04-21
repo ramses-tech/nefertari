@@ -10,11 +10,13 @@ Each Nefertari engine is developed in its own repository:
 * `SQLA Engine <http://nefertari-sqla.readthedocs.org/en/latest/>`_
 * `MongoDB Engine <http://nefertari-mongodb.readthedocs.org/en/latest/>`_
 
+Nefertari can use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ to read/GET any given resource. You can read more about **ESBaseDocument** in the `Wrapper API <database_backends.html#wrapper-api>`_ section below.
+
 
 Wrapper API
 -----------
 
-Both of the database engines used by Nefertari implement the exact same "common API" for developers to use within a Nefertari project. Use the following base classes in your project to leverage the powers of Nefertari. To see them in action, check out the `example project <https://github.com/brandicted/nefertari-example>`_.
+Both of the database engines used by Nefertari implement a similar "Wrapper API" for developers to use within a Nefertari project. Use the following base classes in your project to leverage the powers of Nefertari. To see them in action, check out the `example project <https://github.com/brandicted/nefertari-example>`_.
 
 **BaseMixin**
     Mixin with a most of the API of *BaseDocument*. *BaseDocument* subclasses from this mixin.

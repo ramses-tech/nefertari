@@ -17,7 +17,8 @@ Contents
    getting_started
    database_backends
    acls
-   elasticsearch
+   making_requests
+   development_tools
    example_project
    changelog
 
