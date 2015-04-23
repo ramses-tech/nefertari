@@ -44,6 +44,9 @@ class AuthUser(eng.BaseDocument):
 
     uid = property(lambda self: str(self.id))
 
+    def is_admin(self):
+        return 'admin' in self.groups
+
     def verify_password(self, password):
         return crypt.check(self.password, password)
 
