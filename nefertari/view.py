@@ -124,8 +124,9 @@ class BaseView(object):
         return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
-        root_res = getattr(self, 'root_resource', None)
-        auth_enabled = root_res and self.root_resource.auth
+        root_resource = getattr(self, 'root_resource', None)
+        auth_enabled = root_resource and root_resource.auth
+
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
         ]
