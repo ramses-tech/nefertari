@@ -124,14 +124,28 @@ class BaseView(object):
         return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
+        root_res = getattr(self, 'root_resource', None)
+        auth_enabled = root_res and self.root_resource.auth
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
+        ]
+        if auth_enabled:
+            self._after_calls['index'] += [
+                wrappers.apply_privacy(self.request),
+            ]
+        self._after_calls['index'] += [
             wrappers.add_meta(self.request),
             wrappers.add_etag(self.request),
         ]
 
         self._after_calls['show'] = [
             wrappers.wrap_in_dict(self.request),
+        ]
+        if auth_enabled:
+            self._after_calls['show'] += [
+                wrappers.apply_privacy(self.request),
+            ]
+        self._after_calls['show'] += [
             wrappers.add_meta(self.request),
         ]
 

@@ -74,7 +74,6 @@ class obj2dict(object):
 
     def __call__(self, **kwargs):
         '''converts objects in `result` into dicts'''
-
         result = kwargs['result']
         if isinstance(result, dict):
             return result
@@ -93,6 +92,55 @@ class obj2dict(object):
                 result[ix] = obj2dict(self.request)(
                     _fields=_fields, result=each)
 
+        return result
+
+
+class apply_privacy(object):
+    def __init__(self, request):
+        self.request = request
+
+    def _filter_fields(self, data):
+        from nefertari.engine import get_document_cls
+        try:
+            model_cls = get_document_cls(data['_type'])
+        except ValueError as ex:
+            log.error(str(ex))
+            return data
+
+        hidden_fields = set(getattr(model_cls, '_hidden_fields', None) or [])
+        auth_fields = set(getattr(model_cls, '_auth_fields', None) or [])
+        fields = set(data.keys())
+
+        user = getattr(self.request, 'user', None)
+        if self.request:
+            # User authenticated
+            if user:
+                if not user.is_admin():
+                    fields -= hidden_fields
+
+            # User not authenticated
+            else:
+                fields -= auth_fields
+                fields -= hidden_fields
+        else:
+            fields -= hidden_fields
+
+        fields.add('_type')
+        return data.subset(fields)
+
+    def __call__(self, **kwargs):
+        result = kwargs['result']
+        data = result.get('data', result)
+
+        if issequence(data) and not isinstance(data, dict):
+            data = [apply_privacy(self.request)(result=d) for d in data]
+        else:
+            data = self._filter_fields(data)
+
+        if 'data' in result:
+            result['data'] = data
+        else:
+            result = data
         return result
 
 
