@@ -132,12 +132,10 @@ class add_meta(object):
             for each in result['data']:
                 try:
                     each.setdefault('self', "%s/%s" % (
-                        self.request.current_route_url(),
+                        self.request.path_url,
                         urllib.quote(str(each['id']))))
                 except TypeError:
                     pass
-        except (TypeError, KeyError):
-            pass
         finally:
             return result
 
