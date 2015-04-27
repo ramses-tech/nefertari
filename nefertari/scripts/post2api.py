@@ -35,7 +35,7 @@ def load_singular_objects(inputfile, destination):
     json_data = json.load(json_file)
     objects_count = len(json_data)
 
-    query_string = '?_limit={}'.format(objects_count, id_field)
+    query_string = '?_limit={}'.format(objects_count)
     parent_objects = requests.get(parent_route + query_string).json()['data']
 
     for parent in parent_objects:
