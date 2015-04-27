@@ -273,6 +273,7 @@ class Resource(object):
 
         kwargs.setdefault('auth', root_resource.auth)
         kwargs.setdefault('factory', root_resource.default_factory)
+        _factory = maybe_dotted(kwargs['factory'])
 
         kwargs['auth'] = kwargs.get('auth', root_resource.auth)
 
@@ -292,6 +293,7 @@ class Resource(object):
 
         parent.children.append(new_resource)
         view._resource = new_resource
+        view._factory = _factory
 
         return new_resource
 
