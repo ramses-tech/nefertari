@@ -19,8 +19,10 @@ def includeme(config):
     config.add_renderer('json', JsonRendererFactory)
     config.add_renderer('nefertari_json', NefertariJsonRendererFactory)
 
-    config.registry._root_resources = {}
-    config.registry._resources_map = {}
+    if not hasattr(config.registry, '_root_resources'):
+        config.registry._root_resources = {}
+    if not hasattr(config.registry, '_resources_map'):
+        config.registry._resources_map = {}
 
     config.add_request_method(get_resource_map, 'resource_map', reify=True)
 
