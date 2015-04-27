@@ -26,6 +26,7 @@ def add_stack():
 def create_json_response(obj, request=None, log_it=False, show_stack=False,
                          **extra):
     body = dict()
+    encoder = extra.pop('encoder', None)
     for attr in BASE_ATTRS:
         body[attr] = extra.pop(attr, None) or getattr(obj, attr, None)
 
@@ -41,7 +42,7 @@ def create_json_response(obj, request=None, log_it=False, show_stack=False,
 
     body.update(extra)
 
-    obj.body = json_dumps(body)
+    obj.body = json_dumps(body, encoder=encoder)
     show_stack = log_it or show_stack
     status = obj.status_int
 
@@ -90,9 +91,12 @@ def httperrors(context, request):
 class JHTTPCreated(http_exc.HTTPCreated):
     def __init__(self, *args, **kwargs):
         resource = kwargs.pop('resource', None)
+        encoder = kwargs.pop('encoder', None)
         super(JHTTPCreated, self).__init__(*args, **kwargs)
 
         if resource and 'location' in kwargs:
             resource['self'] = kwargs['location']
 
-        create_json_response(self, **dict(data=resource))
+        create_json_response(
+            self, data=resource,
+            encoder=encoder)

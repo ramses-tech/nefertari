@@ -11,8 +11,10 @@ from nefertari.renderers import _JSONEncoder
 log = logging.getLogger(__name__)
 
 
-def json_dumps(body):
-    return json.dumps(body, cls=_JSONEncoder)
+def json_dumps(body, encoder=None):
+    if encoder is None:
+        encoder = _JSONEncoder
+    return json.dumps(body, cls=encoder)
 
 
 def split_strip(_str, on=','):
