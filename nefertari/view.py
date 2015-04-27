@@ -99,8 +99,15 @@ class BaseView(object):
 
         self.setup_default_wrappers()
         self.convert_ids2objects()
+        self.set_public_limits()
 
-        if not getattr(self.request, 'user', None):
+    def set_public_limits(self):
+        """ Set public limits if auth is enabled and user is not
+        authenticated.
+        """
+        root_resource = getattr(self, 'root_resource', None)
+        auth_enabled = root_resource is not None and root_resource.auth
+        if auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
     def convert_ids2objects(self):
