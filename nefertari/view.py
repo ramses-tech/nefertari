@@ -155,26 +155,24 @@ class BaseView(object):
 
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
+            wrappers.add_meta(self.request),
         ]
         if auth_enabled:
             self._after_calls['index'] += [
                 wrappers.apply_privacy(self.request),
             ]
         self._after_calls['index'] += [
-            wrappers.add_meta(self.request),
             wrappers.add_etag(self.request),
         ]
 
         self._after_calls['show'] = [
             wrappers.wrap_in_dict(self.request),
+            wrappers.add_meta(self.request),
         ]
         if auth_enabled:
             self._after_calls['show'] += [
                 wrappers.apply_privacy(self.request),
             ]
-        self._after_calls['show'] += [
-            wrappers.add_meta(self.request),
-        ]
 
         self._after_calls['delete'] = [
             wrappers.add_confirmation_url(self.request)

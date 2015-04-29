@@ -107,7 +107,7 @@ class apply_privacy(object):
             log.error(str(ex))
             return data
 
-        hidden_fields = set(getattr(model_cls, '_hidden_fields', None) or [])
+        public_fields = set(getattr(model_cls, '_public_fields', None) or [])
         auth_fields = set(getattr(model_cls, '_auth_fields', None) or [])
         fields = set(data.keys())
 
@@ -115,17 +115,16 @@ class apply_privacy(object):
         if self.request:
             # User authenticated
             if user:
+                # User not admin
                 if not user.is_admin():
-                    fields -= hidden_fields
+                    fields &= auth_fields
 
             # User not authenticated
             else:
-                fields -= auth_fields
-                fields -= hidden_fields
-        else:
-            fields -= hidden_fields
+                fields &= public_fields
 
         fields.add('_type')
+        fields.add('self')
         return data.subset(fields)
 
     def __call__(self, **kwargs):
