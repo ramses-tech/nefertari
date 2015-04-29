@@ -75,7 +75,9 @@ thismodule = sys.modules[__name__]
 
 
 http_exceptions = http_exc.status_map.values() + [
-    http_exc.HTTPBadRequest, http_exc.HTTPInternalServerError]
+    http_exc.HTTPBadRequest,
+    http_exc.HTTPInternalServerError,
+]
 
 
 for exc_cls in http_exceptions:

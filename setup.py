@@ -12,7 +12,8 @@ install_requires = [
     'requests',
     'simplejson',
     'elasticsearch',
-    'blinker'
+    'blinker',
+    'zope.dottedname',
 ]
 
 setup(

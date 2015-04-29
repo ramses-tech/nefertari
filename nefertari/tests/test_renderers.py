@@ -84,3 +84,48 @@ class TestRenderers(unittest.TestCase):
             {'request': request, 'view': view}))
         self.assertDictContainsSubset(self._get_dummy_expected(), result)
         self.assertEqual('application/json', request.response.content_type)
+
+    @mock.patch('nefertari.renderers.wrappers')
+    def test_JsonRendererFactory_run_after_calls(self, mock_wrap):
+        from nefertari.renderers import JsonRendererFactory
+        factory = JsonRendererFactory({
+            'name': 'json',
+            'package': None,
+            'registry': None
+        })
+        request = mock.Mock(action='create')
+        factory.run_after_calls(1, {'request': request})
+        assert not mock_wrap.wrap_in_dict.called
+
+        request = mock.Mock(action='show')
+        factory.run_after_calls(1, {'request': request})
+        mock_wrap.wrap_in_dict.assert_called_once_with(request)
+        mock_wrap.wrap_in_dict().assert_called_once_with(result=1)
+
+    def test_NefertariJsonRendererFactory_run_after_calls(self):
+        from nefertari.renderers import NefertariJsonRendererFactory
+        factory = NefertariJsonRendererFactory(None)
+        filters = {
+            'super_action': [lambda request, result: result + ' processed'],
+        }
+        request = mock.Mock(action='super_action', filters=filters)
+        processed = factory.run_after_calls('foo', {'request': request})
+        assert processed == 'foo processed'
+
+    def test_NefertariJsonRendererFactory_run_after_calls_no_filters(self):
+        from nefertari.renderers import NefertariJsonRendererFactory
+        factory = NefertariJsonRendererFactory(None)
+        request = mock.Mock(action='action', filters={})
+        processed = factory.run_after_calls('foo', {'request': request})
+        assert processed == 'foo'
+
+    def test_NefertariJsonRendererFactory_run_after_calls_unknown_action(self):
+        from nefertari.renderers import NefertariJsonRendererFactory
+        factory = NefertariJsonRendererFactory(None)
+        filter = {
+            'super_action': [lambda request, result: result + ' processed'],
+        }
+        request = mock.Mock(action='simple_action', filters=filter)
+        request = mock.Mock(action='action', filters={})
+        processed = factory.run_after_calls('foo', {'request': request})
+        assert processed == 'foo'

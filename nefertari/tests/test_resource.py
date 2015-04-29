@@ -71,6 +71,11 @@ class DummyCrudView(object):
 
 
 class TestResourceGeneration(Test):
+    def test_get_resource_map(self):
+        from nefertari.resource import get_resource_map
+        request = mock.Mock()
+        assert get_resource_map(request) == request.registry._resources_map
+
     def test_basic_resources(self):
         from nefertari.resource import add_resource_routes
         add_resource_routes(self.config, DummyCrudView, 'message', 'messages')
@@ -136,6 +141,22 @@ class TestResourceGeneration(Test):
         self.assertEqual(
             '/messages/1',
             route_path('special_message', testing.DummyRequest(), id=1)
+        )
+
+    def test_resources_with_name_prefix_from_config(self):
+        from nefertari.resource import add_resource_routes
+        self.config.route_prefix = 'api'
+        add_resource_routes(
+            self.config,
+            DummyCrudView,
+            'message',
+            'messages',
+            name_prefix='foo_'
+        )
+
+        self.assertEqual(
+            '/api/messages/1',
+            route_path('api_foo_message', testing.DummyRequest(), id=1)
         )
 
 
@@ -224,6 +245,29 @@ class TestResource(Test):
         m = Resource(self.config, member_name='group_member')
         self.assertEqual(
             "nefertari.tests.views.group_member:GroupMemberView",
+            default_view(m)
+        )
+
+    def test_default_view_resource_prefix(self, *a):
+        from nefertari.resource import Resource, default_view
+
+        m = Resource(
+            self.config,
+            member_name='group_member',
+            collection_name='group_members'
+        )
+        m.prefix = 'foo'
+
+        self.assertEqual(
+            "nefertari.tests.views.foo_group_members:FooGroupMembersView",
+            default_view(m)
+        )
+
+        #singular
+        m = Resource(self.config, member_name='group_member')
+        m.prefix = 'foo'
+        self.assertEqual(
+            "nefertari.tests.views.foo_group_member:FooGroupMemberView",
             default_view(m)
         )
 
@@ -370,6 +414,47 @@ class TestResource(Test):
         app = TestApp(config.make_wsgi_app())
 
         app.get('/as/1/bs/2/cs/3/ds/4')
+
+    def test_add_resource_prefix(self, *a):
+        config = _create_config()
+        root = config.get_root_resource()
+        resource = root.add(
+            'message', 'messages',
+            view=get_test_view_class('A'),
+            prefix='api')
+        assert resource.uid == 'api:message'
+
+        config.begin()
+
+        self.assertEqual(
+            '/api/messages',
+            route_path('api:messages', testing.DummyRequest())
+        )
+
+    def test_add_resource_view_args(self, *a):
+        config = _create_config()
+        root = config.get_root_resource()
+        view = get_test_view_class('A')
+        assert not hasattr(view, 'foo')
+        root.add('message', 'messages', view=view,
+                 view_args={'foo': 'bar'})
+        assert view.foo == 'bar'
+
+    def test_nested_resource_id_name(self, *a):
+        config = _create_config()
+        root = config.get_root_resource()
+
+        aa = root.add(
+            'a', 'as', view=get_test_view_class('A'),
+            id_name='super_id')
+        aa.add('b', 'bs', view=get_test_view_class('B'))
+
+        config.begin()
+
+        self.assertEqual(
+            '/as/1/bs',
+            route_path('a:bs', testing.DummyRequest(), super_id=1)
+        )
 
 
 # @mock.patch('nefertari.resource.add_tunneling')
