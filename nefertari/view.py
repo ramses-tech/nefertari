@@ -10,6 +10,7 @@ from nefertari.json_httpexceptions import *
 from nefertari.utils import dictset
 from nefertari import wrappers
 from nefertari.resource import ACTIONS
+from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +72,9 @@ class BaseView(object):
 
         E.g. {'settings.foo': 'bar'} -> {'settings': {'foo': 'bar'}}
         """
+        if not isinstance(params, dictset):
+            params = dictset(params)
+
         dotted = defaultdict(dict)
         dotted_items = {k: v for k, v in params.items() if '.' in k}
 
@@ -109,13 +113,14 @@ class BaseView(object):
         # no accept headers, use default
         if '' in request.accept:
             request.override_renderer = self._default_renderer
-
         elif 'application/json' in request.accept:
             request.override_renderer = 'nefertari_json'
-
         elif 'text/plain' in request.accept:
             request.override_renderer = 'string'
 
+        self._run_init_actions()
+
+    def _run_init_actions(self):
         self.setup_default_wrappers()
         self.convert_ids2objects()
         self.set_public_limits()
@@ -135,11 +140,10 @@ class BaseView(object):
         Only IDs tbat belong to relationship field of `self._model_class`
         are converted.
         """
-        from nefertari.engine import is_relationship_field, relationship_cls
         for field in self._params.keys():
-            if not is_relationship_field(field, self._model_class):
+            if not engine.is_relationship_field(field, self._model_class):
                 continue
-            model_cls = relationship_cls(field, self._model_class)
+            model_cls = engine.relationship_cls(field, self._model_class)
             self.id2obj(field, model_cls)
 
     def get_debug(self, package=None):
@@ -218,10 +222,10 @@ class BaseView(object):
                             content_type='application/json',
                             method=method)
 
-        if req.method == 'GET' and params:
+        if method == 'GET' and params:
             req.body = urllib.urlencode(params)
 
-        if req.method == 'POST':
+        if method == 'POST':
             req.body = json.dumps(params)
 
         return self.request.invoke_subrequest(req)
@@ -253,7 +257,7 @@ class BaseView(object):
             id_field = model.id_field()
 
         def _get_object(id_):
-            if isinstance(id_, model):
+            if hasattr(id_, 'id_field'):
                 return id_
 
             obj = model.get(**{id_field: id_})
