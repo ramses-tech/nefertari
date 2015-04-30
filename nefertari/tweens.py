@@ -17,7 +17,7 @@ def request_timing(handler, registry):
         try:
             return handler(request)
         finally:
-            delta = time.time()-start
+            delta = time.time() - start
             msg = '%s (%s) request took %s seconds' % (
                 request.method, request.url, delta)
             if delta > threshold:
