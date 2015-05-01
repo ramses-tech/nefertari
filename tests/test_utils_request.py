@@ -1,5 +1,5 @@
 import pytest
-from mock import Mock, patch, call
+from mock import Mock, patch
 from pyramid.response import Response
 import requests
 
@@ -63,19 +63,3 @@ class TestRequestsClass(object):
         mock_meth.side_effect = requests.ConnectionError
         with pytest.raises(jexc.JHTTPServerError):
             req.get(path='/api')
-
-    # @patch('nefertari.utils.request.Requests.get')
-    # def test_mget(self, mock_meth):
-    #     req = request.Requests(base_url='http://example.com')
-    #     responses = [
-    #         r for r in req.mget(
-    #             path='/api',
-    #             params={'foo': 'bar', '_limit': 7},
-    #             page_size=2)]
-    #     assert mock_meth.call_count == 4
-    #     mock_meth.assert_has_calls([
-    #         call('/api', {'_start': 0, '_limit': 2, 'foo': 'bar'}),
-    #         call('/api', {'_start': 2, '_limit': 4, 'foo': 'bar'}),
-    #         call('/api', {'_start': 4, '_limit': 6, 'foo': 'bar'}),
-    #         call('/api', {'_start': 6, '_limit': 1, 'foo': 'bar'}),
-    #     ])

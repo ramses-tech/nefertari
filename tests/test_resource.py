@@ -237,14 +237,14 @@ class TestResource(Test):
         )
 
         self.assertEqual(
-            "nefertari.tests.views.group_members:GroupMembersView",
+            "test_resource.views.group_members:GroupMembersView",
             default_view(m)
         )
 
         #singular
         m = Resource(self.config, member_name='group_member')
         self.assertEqual(
-            "nefertari.tests.views.group_member:GroupMemberView",
+            "test_resource.views.group_member:GroupMemberView",
             default_view(m)
         )
 
@@ -259,7 +259,7 @@ class TestResource(Test):
         m.prefix = 'foo'
 
         self.assertEqual(
-            "nefertari.tests.views.foo_group_members:FooGroupMembersView",
+            "test_resource.views.foo_group_members:FooGroupMembersView",
             default_view(m)
         )
 
@@ -267,7 +267,7 @@ class TestResource(Test):
         m = Resource(self.config, member_name='group_member')
         m.prefix = 'foo'
         self.assertEqual(
-            "nefertari.tests.views.foo_group_member:FooGroupMemberView",
+            "test_resource.views.foo_group_member:FooGroupMemberView",
             default_view(m)
         )
 
