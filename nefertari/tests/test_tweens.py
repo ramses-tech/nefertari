@@ -16,11 +16,8 @@ class DummyConfigurator(object):
     def __init__(self):
         self.subscribed = []
 
-    def add_subscriber(self, wrapped, ifaces, **predicates):
-        if not predicates:
-            self.subscribed.append((wrapped, ifaces))
-        else:
-            self.subscribed.append((wrapped, ifaces, predicates))
+    def add_subscriber(self, wrapped, ifaces):
+        self.subscribed.append((wrapped, ifaces))
 
 
 class TestTweens(object):

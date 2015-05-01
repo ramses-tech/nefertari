@@ -4,8 +4,6 @@ import traceback
 from datetime import datetime
 from pyramid import httpexceptions as http_exc
 
-from nefertari.utils import dictset, json_dumps
-
 logger = logging.getLogger(__name__)
 
 
@@ -25,6 +23,7 @@ def add_stack():
 
 def create_json_response(obj, request=None, log_it=False, show_stack=False,
                          **extra):
+    from nefertari.utils import json_dumps
     body = dict()
     encoder = extra.pop('encoder', None)
     for attr in BASE_ATTRS:
@@ -63,6 +62,7 @@ def exception_response(status_code, **kw):
 
 class JBase(object):
     def __init__(self, *arg, **kw):
+        from nefertari.utils import dictset
         kw = dictset(kw)
         self.__class__.__base__.__init__(
             self, *arg,
