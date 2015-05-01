@@ -260,7 +260,7 @@ class Resource(object):
             kwargs['path_prefix'] = '/'.join(path_segs)
 
         if prefix:
-            kwargs['path_prefix'] += '/'+prefix
+            kwargs['path_prefix'] += '/' + prefix
 
         name_segs = [a.member_name for a in new_resource.ancestors]
         name_segs.insert(1, prefix)

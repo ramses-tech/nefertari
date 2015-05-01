@@ -135,7 +135,7 @@ class SettingsView(BaseView):
 
         self.settings[key] = value
 
-        return JHTTPCreate()
+        return JHTTPCreated()
 
     def delete(self, id):
         if 'reset' in self._params:

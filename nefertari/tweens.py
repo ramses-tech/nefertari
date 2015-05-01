@@ -17,7 +17,7 @@ def request_timing(handler, registry):
         try:
             return handler(request)
         finally:
-            delta = time.time()-start
+            delta = time.time() - start
             msg = '%s (%s) request took %s seconds' % (
                 request.method, request.url, delta)
             if delta > threshold:
@@ -103,9 +103,10 @@ def get_tunneling(handler, registry):
 def cors(handler, registry):
     log.info('cors_tunneling enabled')
 
+    allow_origins_setting = registry.settings.get('cors.allow_origins', '')
+
     allow_origins = [
-        each.strip() for each in
-        registry.settings.get('cors.allow_origins', '').split(',')]
+        each.strip() for each in allow_origins_setting.split(',')]
     allow_credentials = registry.settings.get('cors.allow_credentials', None)
 
     def cors(request):
@@ -121,7 +122,7 @@ def cors(handler, registry):
 
         return response
 
-    if not allow_origins:
+    if not allow_origins_setting:
         log.warning('cors.allow_origins is not set')
     else:
         log.info('Allow Origins = %s ' % allow_origins)
@@ -129,7 +130,7 @@ def cors(handler, registry):
     if allow_credentials is None:
         log.warning('cors.allow_credentials is not set')
 
-    elif asbool(allow_credentials) and allow_origins == '*':
+    elif asbool(allow_credentials) and allow_origins_setting == '*':
         log.error('Not allowed Access-Control-Allow-Credentials '
                   'to set to TRUE if origin is *')
         return

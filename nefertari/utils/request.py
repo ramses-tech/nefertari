@@ -4,7 +4,7 @@ import urllib
 from pyramid.response import Response
 
 from nefertari.utils.utils import json_dumps
-from nefertari.json_httpexceptions import *
+from nefertari import json_httpexceptions as jexc
 
 log = logging.getLogger(__name__)
 
@@ -38,24 +38,24 @@ class Requests(object):
         try:
             resp = requests.get(url, **kw)
             if not resp.ok:
-                raise exception_response(**resp.json())
+                raise jexc.exception_response(**resp.json())
             return resp.json()
         except requests.ConnectionError as e:
-            raise JHTTPServerError('Server is down? %s' % e)
+            raise jexc.JHTTPServerError('Server is down? %s' % e)
 
     def mget(self, path, params={}, page_size=None):
         total = params['_limit']
         start = params.get('_start', 0)
         params['_limit'] = page_size
-        page_count = total/page_size
+        page_count = total / page_size
 
         for ix in range(page_count):
-            params['_start'] = start + ix*page_size
+            params['_start'] = start + ix * page_size
             yield self.get(path, params)
 
         reminder = total % page_size
         if reminder:
-            params['_start'] = start + page_count*page_size
+            params['_start'] = start + page_count * page_size
             params['_limit'] = reminder
             yield self.get(path, params)
 
@@ -68,11 +68,11 @@ class Requests(object):
                 headers={'content-type': 'application/json'},
                 **kw)
             if not resp.ok:
-                raise exception_response(**resp.json())
+                raise jexc.exception_response(**resp.json())
 
             return pyramid_resp(resp)
         except requests.ConnectionError as e:
-            raise JHTTPServerError('Server is down? %s' % e)
+            raise jexc.JHTTPServerError('Server is down? %s' % e)
 
     def mpost(self, path='', data={}, bulk_size=None, bulk_key=None):
         bulk_data = data[bulk_key]
@@ -99,20 +99,20 @@ class Requests(object):
                 headers={'content-type': 'application/json'},
                 **kw)
             if not resp.ok:
-                raise exception_response(**resp.json())
+                raise jexc.exception_response(**resp.json())
 
             return resp.json()
         except requests.ConnectionError as e:
-            raise JHTTPServerError('Server is down? %s' % e)
+            raise jexc.JHTTPServerError('Server is down? %s' % e)
 
     def head(self, path='', params={}):
         try:
             resp = requests.head(self.prepare_url(path, params))
             if not resp.ok:
-                raise exception_response(**resp.json())
+                raise jexc.exception_response(**resp.json())
 
         except requests.ConnectionError as e:
-            raise JHTTPServerError('Server is down? %s' % e)
+            raise jexc.JHTTPServerError('Server is down? %s' % e)
 
     def delete(self, path='', **kw):
         url = self.prepare_url(path)
@@ -122,8 +122,8 @@ class Requests(object):
                 url, headers={'content-type': 'application/json'},
                 **kw)
             if not resp.ok:
-                raise exception_response(**resp.json())
+                raise jexc.exception_response(**resp.json())
 
             return resp.json()
         except requests.ConnectionError as e:
-            raise JHTTPServerError('Server is down? %s' % e)
+            raise jexc.JHTTPServerError('Server is down? %s' % e)

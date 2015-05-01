@@ -90,7 +90,7 @@ def maybe_dotted(modul, throw=True):
     """
     try:
         return Configurator().maybe_dotted(modul)
-    except ImportError, e:
+    except ImportError as e:
         err = '%s not found. %s' % (modul, e)
         if throw:
             raise ImportError(err)
@@ -112,7 +112,7 @@ def isnumeric(value):
     try:
         float(value)
         return True
-    except ValueError:
+    except (ValueError, TypeError):
         return False
 
 

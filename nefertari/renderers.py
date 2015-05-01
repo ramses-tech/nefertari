@@ -70,7 +70,7 @@ class NefertariJsonRendererFactory(JsonRendererFactory):
     def run_after_calls(self, value, system):
         request = system.get('request')
         if request and hasattr(request, 'action'):
-            after_calls = getattr(request, 'filters', [])
+            after_calls = getattr(request, 'filters', {})
             for call in after_calls.get(request.action, []):
                 value = call(**dict(request=request, result=value))
 

@@ -76,13 +76,14 @@ class dictset(dict):
         _dict = {}
         for item in split_strip(dict_str):
             key, _, val = item.partition(':')
+            val = _type(val)
             if key in _dict:
-                if type(_dict[key]) is list:
+                if isinstance(_dict[key], list):
                     _dict[key].append(val)
                 else:
                     _dict[key] = [_dict[key], val]
             else:
-                _dict[key] = _type(val)
+                _dict[key] = val
 
         if _set:
             self[name] = _dict
@@ -90,7 +91,7 @@ class dictset(dict):
         return _dict
 
     def mget(self, prefix, defaults={}):
-        if prefix[-1] != '.':
+        if not prefix.endswith('.'):
             prefix += '.'
 
         _dict = dictset(defaults)
@@ -161,6 +162,7 @@ class dictset(dict):
 
         elif default is not None:
             self[name] = default
+        return self.get(name, None)
 
     def process_int_param(self, name, default=None):
         if name in self:
@@ -171,6 +173,7 @@ class dictset(dict):
 
         elif default is not None:
             self[name] = default
+        return self.get(name, None)
 
     def process_dict_param(self, name, _type=None, pop=False):
         return self.asdict(name, _type, _set=not pop)

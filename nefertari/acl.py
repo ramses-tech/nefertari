@@ -1,6 +1,4 @@
-from pyramid.security import (
-    ALL_PERMISSIONS, Allow, Everyone, Deny,
-    Authenticated)
+from pyramid.security import ALL_PERMISSIONS, Allow, Everyone, Authenticated
 
 
 class BaseACL(object):

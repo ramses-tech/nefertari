@@ -66,7 +66,7 @@ def to_dicts(collection, key=None, **kw):
                 if key:
                     each_dict = key(each_dict)
                 _dicts.append(each_dict)
-            except AttributeError, e:
+            except AttributeError:
                 _dicts.append(each)
     except TypeError:
         return collection
