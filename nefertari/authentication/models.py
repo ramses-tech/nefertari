@@ -6,6 +6,7 @@ from pyramid.security import authenticated_userid, forget
 
 from nefertari.json_httpexceptions import *
 from nefertari import engine as eng
+from nefertari.utils import dictset
 
 log = logging.getLogger(__name__)
 crypt = cryptacular.bcrypt.BCRYPTPasswordManager()
