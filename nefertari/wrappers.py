@@ -152,13 +152,12 @@ class apply_privacy(object):
     def __call__(self, **kwargs):
         result = kwargs['result']
         data = result.get('data', result)
-        if not data:
-            return data
 
-        if issequence(data) and not isinstance(data, dict):
-            data = [apply_privacy(self.request)(result=d) for d in data]
-        else:
-            data = self._filter_fields(data)
+        if data:
+            if issequence(data) and not isinstance(data, dict):
+                data = [apply_privacy(self.request)(result=d) for d in data]
+            else:
+                data = self._filter_fields(data)
 
         if 'data' in result:
             result['data'] = data
