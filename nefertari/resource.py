@@ -127,6 +127,10 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
             path, 'PUT', traverse=_traverse)
 
         add_route_and_view(
+            config, 'update_many', name_prefix + (collection_name or member_name),
+            path, 'PATCH', traverse=_traverse)
+
+        add_route_and_view(
             config, 'delete_many', name_prefix + (collection_name or member_name),
             path, 'DELETE', traverse=_traverse)
 
