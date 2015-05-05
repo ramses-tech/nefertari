@@ -1,4 +1,3 @@
-import pytest
 from mock import Mock
 
 from nefertari import utility_views as uviews
