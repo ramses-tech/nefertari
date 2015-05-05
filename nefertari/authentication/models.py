@@ -24,11 +24,9 @@ def crypt_password(password):
 
 
 class AuthModelDefaultMixin(object):
-    def is_admin(self):
-        return 'admin' in self.groups
-
-    def verify_password(self, password):
-        return crypt.check(self.password, password)
+    @classmethod
+    def is_admin(cls, user):
+        return 'admin' in user.groups
 
     @classmethod
     def token_credentials(cls, username, request):
@@ -58,6 +56,10 @@ class AuthModelDefaultMixin(object):
     @classmethod
     def authenticate_by_password(cls, params):
         """ Authenticate user with login and password from :params: """
+
+        def verify_password(user, password):
+            return crypt.check(user.password, password)
+
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
@@ -69,7 +71,7 @@ class AuthModelDefaultMixin(object):
 
         if user:
             password = params.get('password', None)
-            success = (password and user.verify_password(password))
+            success = (password and verify_password(user, password))
         return success, user
 
     @classmethod
