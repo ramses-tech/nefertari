@@ -247,7 +247,8 @@ class ES(object):
         if not isinstance(ids, list):
             ids = [ids]
 
-        self._bulk('delete', [{'id':_id, '_type': self.doc_type} for _id in ids])
+        documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
+        self._bulk('delete', documents)
 
     def get_by_ids(self, ids, **params):
         if not ids:
@@ -372,7 +373,7 @@ class ES(object):
         documents = _ESDocs()
 
         for da in data['hits']['hits']:
-            _d = da['fields'] if 'fields' in _params else da['_source']
+            _d = da['fields'] if _fields else da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 
