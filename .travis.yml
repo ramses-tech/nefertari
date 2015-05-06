@@ -5,6 +5,6 @@ install:
     - pip install -r requirements.dev
     - pip install coveralls
 script:
-    - py.test
+    - py.test --cov nefertari
 after_success:
     - coveralls
