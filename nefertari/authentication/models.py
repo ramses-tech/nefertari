@@ -5,7 +5,7 @@ import cryptacular.bcrypt
 from pyramid.security import authenticated_userid, forget
 
 from nefertari.json_httpexceptions import *
-from nefertari import engine as eng
+from nefertari import engine
 from nefertari.utils import dictset
 
 log = logging.getLogger(__name__)
@@ -30,6 +30,18 @@ class AuthModelDefaultMixin(object):
     All implemented methods must me class methods.
     """
     @classmethod
+    def get_resource(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def id_field(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def get_or_create(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
     def is_admin(cls, user):
         """ Determine if :user: is an admin. Is used by `apply_privacy` wrapper.
         """
@@ -46,8 +58,9 @@ class AuthModelDefaultMixin(object):
         except Exception as ex:
             log.error(unicode(ex))
             forget(request)
-        if user:
-            return user.api_key.token
+        else:
+            if user:
+                return user.api_key.token
 
     @classmethod
     def groups_by_token(cls, username, token, request):
@@ -61,8 +74,10 @@ class AuthModelDefaultMixin(object):
         except Exception as ex:
             log.error(unicode(ex))
             forget(request)
-        if user and user.api_key.token == token:
-            return ['g:%s' % g for g in user.groups]
+            return
+        else:
+            if user and user.api_key.token == token:
+                return ['g:%s' % g for g in user.groups]
 
     @classmethod
     def authenticate_by_password(cls, params):
@@ -73,14 +88,14 @@ class AuthModelDefaultMixin(object):
         def verify_password(user, password):
             return crypt.check(user.password, password)
 
+        success = False
+        user = None
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
             user = cls.get_resource(**{key: login})
         except Exception as ex:
             log.error(unicode(ex))
-            success = False
-            user = None
 
         if user:
             password = params.get('password', None)
@@ -141,7 +156,7 @@ class AuthModelDefaultMixin(object):
             return cls.get_resource(username=username)
 
 
-class AuthUser(AuthModelDefaultMixin, eng.BaseDocument):
+class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
     """ Class that is meant to be User class in Auth system.
 
     Implements basic operations to support Pyramid Ticket-based and custom
@@ -149,16 +164,16 @@ class AuthUser(AuthModelDefaultMixin, eng.BaseDocument):
     """
     __tablename__ = 'nefertari_authuser'
 
-    id = eng.IdField(primary_key=True)
-    username = eng.StringField(
+    id = engine.IdField(primary_key=True)
+    username = engine.StringField(
         min_length=1, max_length=50, unique=True,
         required=True, processors=[lower_strip])
-    email = eng.StringField(
+    email = engine.StringField(
         unique=True, required=True, processors=[lower_strip])
-    password = eng.StringField(
+    password = engine.StringField(
         min_length=3, required=True, processors=[crypt_password])
-    groups = eng.ListField(
-        item_type=eng.StringField,
+    groups = engine.ListField(
+        item_type=engine.StringField,
         choices=['admin', 'user'], default=['user'])
 
 
@@ -182,7 +197,7 @@ def apikey_model(user_model):
             be generated and with which ApiKey will have relationship.
     """
     try:
-        return eng.get_document_cls('ApiKey')
+        return engine.get_document_cls('ApiKey')
     except ValueError:
         pass
 
@@ -194,17 +209,17 @@ def apikey_model(user_model):
             user_model.__tablename__, user_model.id_field()])
         fk_kwargs['ref_column_type'] = user_model.id_field_type()
 
-    class ApiKey(eng.BaseDocument):
+    class ApiKey(engine.BaseDocument):
         __tablename__ = 'nefertari_apikey'
 
-        id = eng.IdField(primary_key=True)
-        token = eng.StringField(default=apikey_token)
-        user = eng.Relationship(
+        id = engine.IdField(primary_key=True)
+        token = engine.StringField(default=apikey_token)
+        user = engine.Relationship(
             document=user_model.__name__,
             uselist=False,
             backref_name='api_key',
             backref_uselist=False)
-        user_id = eng.ForeignKeyField(
+        user_id = engine.ForeignKeyField(
             ref_document=user_model.__name__,
             **fk_kwargs)
 
