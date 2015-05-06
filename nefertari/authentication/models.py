@@ -31,15 +31,15 @@ class AuthModelDefaultMixin(object):
     """
     @classmethod
     def get_resource(self, *args, **kwargs):
-        raise NotImplementedError
+        return super(AuthModelDefaultMixin, self).get_resource(*args, **kwargs)
 
     @classmethod
     def id_field(self, *args, **kwargs):
-        raise NotImplementedError
+        return super(AuthModelDefaultMixin, self).id_field(*args, **kwargs)
 
     @classmethod
     def get_or_create(self, *args, **kwargs):
-        raise NotImplementedError
+        return super(AuthModelDefaultMixin, self).get_or_create(*args, **kwargs)
 
     @classmethod
     def is_admin(cls, user):
