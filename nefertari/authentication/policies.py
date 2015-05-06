@@ -29,8 +29,8 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
                 principal identifiers (possibly empty) if the user does exist.
                 If callback is None, the username will be assumed to exist with
                 no principals. Optional.
-            :credentials_callback: A callback passed the username, expected to
-                return tuple containing 2 elements: username and user's api key.
+            :credentials_callback: A callback passed the username and current
+                request, expected to return and user's api key.
                 Is used to generate 'WWW-Authenticate' header with a value of
                 valid 'Authorization' request header that should be used to
                 perform requests.

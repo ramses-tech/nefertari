@@ -37,7 +37,7 @@ class AuthModelDefaultMixin(object):
 
     @classmethod
     def token_credentials(cls, username, request):
-        """ Get username and api token for user with username of :username:
+        """ Get api token for user with username of :username:
 
         Is used by Token-based auth as `credentials_callback` kwarg.
         """
