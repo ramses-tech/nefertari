@@ -21,7 +21,8 @@ class TicketAuthenticationView(BaseView):
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
 
-        headers = remember(self.request, user.uid)
+        id_field = user.id_field()
+        headers = remember(self.request, getattr(user, id_field))
         return JHTTPOk('Registered', headers=headers)
 
     def login(self, **params):
@@ -32,10 +33,11 @@ class TicketAuthenticationView(BaseView):
             next = ''  # never use the login form itself as next
 
         unauthorized_url = self._params.get('unauthorized', None)
-        success, user = self._model_class.authenticate(self._params)
+        success, user = self._model_class.authenticate_by_password(self._params)
 
         if success:
-            headers = remember(self.request, user.uid)
+            id_field = user.id_field()
+            headers = remember(self.request, getattr(user, id_field))
             if next:
                 return JHTTPOk('Logged in', headers=headers)
             else:
@@ -71,7 +73,7 @@ class TokenAuthenticationView(BaseView):
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
 
-        headers = remember(self.request, user.uid)
+        headers = remember(self.request, user.username)
         return JHTTPOk('Registered', headers=headers)
 
     def claim_token(self, **params):
@@ -81,10 +83,11 @@ class TokenAuthenticationView(BaseView):
         header.
         """
         self._params.update(params)
-        success, self.user = self._model_class.authenticate(self._params)
+        success, self.user = self._model_class.authenticate_by_password(
+            self._params)
 
         if success:
-            headers = remember(self.request, self.user.uid)
+            headers = remember(self.request, self.user.username)
             return JHTTPOk('Token claimed', headers=headers)
         if self.user:
             raise JHTTPUnauthorized('Wrong login or password')
@@ -102,5 +105,5 @@ class TokenAuthenticationView(BaseView):
             return response
 
         self.user.api_key.reset_token()
-        headers = remember(self.request, self.user.uid)
+        headers = remember(self.request, self.user.username)
         return JHTTPOk('Registered', headers=headers)
