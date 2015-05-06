@@ -1,5 +1,4 @@
-import pytest
-from mock import Mock, patch, call
+from mock import Mock, patch
 
 from nefertari import authentication as auth
 from .fixtures import engine_mock
@@ -42,3 +41,68 @@ class TestApiKeyAuthenticationPolicy(object):
         policy.realm = 'Foo'
         headers = policy.forget(request=None)
         assert headers == [('WWW-Authenticate', 'ApiKey realm="Foo"')]
+
+    def test_unauthenticated_userid(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        policy._get_credentials = Mock()
+        policy._get_credentials.return_value = ('user1', 'token')
+        val = policy.unauthenticated_userid(request=1)
+        policy._get_credentials.assert_called_once_with(1)
+        assert val == 'user1'
+
+    def test_callback_no_creds(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        policy._get_credentials = Mock(return_value=None)
+        policy.check = Mock()
+        policy.callback('user1', 1)
+        policy._get_credentials.assert_called_once_with(1)
+        assert not policy.check.called
+
+    def test_callback(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        policy._get_credentials = Mock(return_value=('user1', 'token'))
+        policy.check = Mock()
+        policy.callback('user1', 1)
+        policy._get_credentials.assert_called_once_with(1)
+        policy.check.assert_called_once_with('user1', 'token', 1)
+
+    def test_get_credentials_no_header(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        request = Mock(headers={})
+        assert policy._get_credentials(request) is None
+
+    def test_get_credentials_wrong_header(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        request = Mock(headers={'Authorization': 'foo'})
+        assert policy._get_credentials(request) is None
+
+    def test_get_credentials_not_apikey_header(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        request = Mock(headers={'Authorization': 'foo bar'})
+        assert policy._get_credentials(request) is None
+
+    def test_get_credentials_not_full_token(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        request = Mock(headers={'Authorization': 'ApiKey user1'})
+        assert policy._get_credentials(request) is None
+
+    def test_get_credentials(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        request = Mock(headers={'Authorization': 'ApiKey user1:token'})
+        assert policy._get_credentials(request) == ('user1', 'token')

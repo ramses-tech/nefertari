@@ -30,6 +30,18 @@ class AuthModelDefaultMixin(object):
     All implemented methods must me class methods.
     """
     @classmethod
+    def get_resource(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def id_field(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
+    def get_or_create(self, *args, **kwargs):
+        raise NotImplementedError
+
+    @classmethod
     def is_admin(cls, user):
         """ Determine if :user: is an admin. Is used by `apply_privacy` wrapper.
         """
@@ -46,8 +58,9 @@ class AuthModelDefaultMixin(object):
         except Exception as ex:
             log.error(unicode(ex))
             forget(request)
-        if user:
-            return user.api_key.token
+        else:
+            if user:
+                return user.api_key.token
 
     @classmethod
     def groups_by_token(cls, username, token, request):
@@ -61,8 +74,10 @@ class AuthModelDefaultMixin(object):
         except Exception as ex:
             log.error(unicode(ex))
             forget(request)
-        if user and user.api_key.token == token:
-            return ['g:%s' % g for g in user.groups]
+            return
+        else:
+            if user and user.api_key.token == token:
+                return ['g:%s' % g for g in user.groups]
 
     @classmethod
     def authenticate_by_password(cls, params):
@@ -73,14 +88,14 @@ class AuthModelDefaultMixin(object):
         def verify_password(user, password):
             return crypt.check(user.password, password)
 
+        success = False
+        user = None
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
             user = cls.get_resource(**{key: login})
         except Exception as ex:
             log.error(unicode(ex))
-            success = False
-            user = None
 
         if user:
             password = params.get('password', None)
