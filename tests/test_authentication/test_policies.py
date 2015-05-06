@@ -27,12 +27,18 @@ class TestApiKeyAuthenticationPolicy(object):
         assert policy.check == 'foo'
         assert policy.credentials_callback == 'bar'
 
-    # def test_remember(self, mock_apikey, engine_mock):
-    #     policy = auth.policies.ApiKeyAuthenticationPolicy(
-    #         user_model='User1', check='foo',
-    #         credentials_callback='bar')
-    #     policy.credentials_callback = lambda x, y: 'username', 'token'
-    #     engine_mock.get_document_cls.assert_called_once_with('User1')
-    #     mock_apikey.assert_called_once_with(engine_mock.get_document_cls())
-    #     assert policy.check == 'foo'
-    #     assert policy.credentials_callback == 'bar'
+    def test_remember(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        policy.credentials_callback = lambda uname, req: 'token'
+        headers = policy.remember(request=None, username='user1')
+        assert headers == [('WWW-Authenticate', 'ApiKey user1:token')]
+
+    def test_forget(self, mock_apikey, engine_mock):
+        policy = auth.policies.ApiKeyAuthenticationPolicy(
+            user_model='User1', check='foo',
+            credentials_callback='bar')
+        policy.realm = 'Foo'
+        headers = policy.forget(request=None)
+        assert headers == [('WWW-Authenticate', 'ApiKey realm="Foo"')]
