@@ -138,7 +138,7 @@ class apply_privacy(object):
             # User authenticated
             if user:
                 # User not admin
-                if not user.is_admin():
+                if not self.is_admin:
                     fields &= auth_fields
 
             # User not authenticated
@@ -152,13 +152,18 @@ class apply_privacy(object):
     def __call__(self, **kwargs):
         result = kwargs['result']
         data = result.get('data', result)
-        if not data:
-            return data
 
-        if issequence(data) and not isinstance(data, dict):
-            data = [apply_privacy(self.request)(result=d) for d in data]
-        else:
-            data = self._filter_fields(data)
+        if data:
+            self.is_admin = kwargs.get('is_admin')
+            if self.is_admin is None:
+                user = getattr(self.request, 'user', None)
+                self.is_admin = user is not None and type(user).is_admin(user)
+            if issequence(data) and not isinstance(data, dict):
+                kwargs = {'is_admin': self.is_admin}
+                data = [apply_privacy(self.request)(result=d, **kwargs)
+                        for d in data]
+            else:
+                data = self._filter_fields(data)
 
         if 'data' in result:
             result['data'] = data

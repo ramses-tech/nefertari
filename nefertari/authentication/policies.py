@@ -1,6 +1,6 @@
 from pyramid.authentication import CallbackAuthenticationPolicy
 
-from nefertari import engine as eng
+from nefertari import engine
 from .models import apikey_model
 
 
@@ -11,9 +11,11 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         `Authorization: ApiKey username:token`
 
     To use this policy, instantiate it with required arguments, as described
-    in `__init__` method and register it with Pyramid's `Configurator.set_authentication_policy`.
+    in `__init__` method and register it with Pyramid's
+    `Configurator.set_authentication_policy`.
 
-    You may also find usefull `nefertari.authentication.views.TokenAuthenticationView`
+    You may also find usefull `nefertari.authentication.views.
+    TokenAuthenticationView`
     view which offers basic functionality to create, claim, reset token.
     """
     def __init__(self, user_model, check=None, credentials_callback=None):
@@ -25,29 +27,29 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
             :check: A callback passed the username, api_key and the request,
                 expected to return None if user doesn't exist or a sequence of
                 principal identifiers (possibly empty) if the user does exist.
-                If callback is None, the userid will be assumed to exist with
+                If callback is None, the username will be assumed to exist with
                 no principals. Optional.
-            :credentials_callback: A callback passed the userid, expected to
-                return tuple containing 2 elements: username and user's api key.
+            :credentials_callback: A callback passed the username and current
+                request, expected to return and user's api key.
                 Is used to generate 'WWW-Authenticate' header with a value of
                 valid 'Authorization' request header that should be used to
                 perform requests.
         """
         self.user_model = user_model
         if isinstance(self.user_model, basestring):
-            self.user_model = eng.get_document_cls(self.user_model)
+            self.user_model = engine.get_document_cls(self.user_model)
         apikey_model(self.user_model)
 
         self.check = check
         self.credentials_callback = credentials_callback
         super(ApiKeyAuthenticationPolicy, self).__init__()
 
-    def remember(self, request, userid, **kw):
+    def remember(self, request, username, **kw):
         """ Return 'WWW-Authenticate' header with a value that should be used
         in 'Authorization' header.
         """
         if self.credentials_callback:
-            username, token = self.credentials_callback(userid, request)
+            token = self.credentials_callback(username, request)
             api_key = 'ApiKey {}:{}'.format(username, token)
             return [('WWW-Authenticate', api_key)]
 
