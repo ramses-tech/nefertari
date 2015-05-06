@@ -6,7 +6,7 @@ import elasticsearch
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
 from nefertari.json_httpexceptions import *
-from nefertari.engine import ESJSONSerializer
+from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -33,10 +33,11 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
 
             return super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
-            if e.status_code == 'N/A':
-                e.status_code = 400
+            status_code = e.status_code
+            if status_code == 'N/A':
+                status_code = 400
             raise exception_response(
-                e.status_code,
+                status_code,
                 detail='elasticsearch error.',
                 extra=dict(data=e))
 
@@ -46,13 +47,17 @@ def includeme(config):
     ES.setup(Settings)
 
 
+def _bulk_body(body):
+    return ES.api.bulk(body=body)
+
+
 def apply_sort(_sort):
     _sort_param = []
 
     if _sort:
         for each in [e.strip() for e in _sort.split(',')]:
             if each.startswith('-'):
-                _sort_param.append(each[1:]+':desc')
+                _sort_param.append(each[1:] + ':desc')
             elif each.startswith('+'):
                 _sort_param.append(each[1:] + ':asc')
             else:
@@ -117,7 +122,7 @@ class ES(object):
                 )
 
             ES.api = elasticsearch.Elasticsearch(
-                hosts=hosts, serializer=ESJSONSerializer(),
+                hosts=hosts, serializer=engine.ESJSONSerializer(),
                 connection_class=ESHttpConnection, **params)
             log.info('Including ElasticSearch. %s' % ES.settings)
 
@@ -154,8 +159,9 @@ class ES(object):
         _docs = []
         for doc in documents:
             if not isinstance(doc, dict):
-                raise ValueError('document type must be `dict` not a '
-                                 '%s' % (type(doc)))
+                raise ValueError(
+                    'Document type must be `dict` not a `{}`'.format(
+                        type(doc).__name__))
 
             if '_type' in doc:
                 _doc_type = self.src2type(doc['_type'])
@@ -176,7 +182,9 @@ class ES(object):
         return _docs
 
     def _bulk(self, action, documents, chunk_size=None):
-        chunk_size = chunk_size or self.chunk_size
+        if chunk_size is None:
+            chunk_size = self.chunk_size
+
         if not documents:
             log.debug('empty documents: %s' % self.doc_type)
             return
@@ -198,10 +206,10 @@ class ES(object):
             # meta, document, meta, ...
             self.process_chunks(
                 documents=body,
-                operation=lambda b: ES.api.bulk(body=b),
+                operation=_bulk_body,
                 chunk_size=chunk_size*2)
         else:
-            log.warning('empty body')
+            log.warning('Empty body')
 
     def index(self, documents, chunk_size=None):
         """ Reindex all `document`. """
@@ -239,7 +247,8 @@ class ES(object):
         if not isinstance(ids, list):
             ids = [ids]
 
-        self._bulk('delete', [{'id':_id, '_type': self.doc_type} for _id in ids])
+        documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
+        self._bulk('delete', documents)
 
     def get_by_ids(self, ids, **params):
         if not ids:
@@ -364,7 +373,7 @@ class ES(object):
         documents = _ESDocs()
 
         for da in data['hits']['hits']:
-            _d = da['fields'] if 'fields' in _params else da['_source']
+            _d = da['fields'] if _fields else da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 
