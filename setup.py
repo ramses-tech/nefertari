@@ -14,6 +14,7 @@ install_requires = [
     'elasticsearch',
     'blinker',
     'zope.dottedname',
+    'cryptacular',
 ]
 
 setup(

@@ -1,6 +1,6 @@
 from pyramid.authentication import CallbackAuthenticationPolicy
 
-from nefertari import engine as eng
+from nefertari import engine
 from .models import apikey_model
 
 
@@ -37,7 +37,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         """
         self.user_model = user_model
         if isinstance(self.user_model, basestring):
-            self.user_model = eng.get_document_cls(self.user_model)
+            self.user_model = engine.get_document_cls(self.user_model)
         apikey_model(self.user_model)
 
         self.check = check
@@ -49,7 +49,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         in 'Authorization' header.
         """
         if self.credentials_callback:
-            username, token = self.credentials_callback(username, request)
+            token = self.credentials_callback(username, request)
             api_key = 'ApiKey {}:{}'.format(username, token)
             return [('WWW-Authenticate', api_key)]
 
