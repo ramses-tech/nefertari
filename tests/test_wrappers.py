@@ -157,7 +157,31 @@ class TestWrappers(unittest.TestCase):
             _public_fields=['name', 'desc'],
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock(is_admin=lambda: False))
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(result=dictset({
+            '_type': 'foo',
+            'self': 'http://example.com/1',
+            'name': 'User1',
+            'desc': 'User 1 data',
+            'id': 1,
+            'other_field': 123
+        }), is_admin=False)
+        assert list(sorted(filtered.keys())) == [
+            '_type', 'id', 'self']
+
+    @patch('nefertari.wrappers.engine')
+    def test_apply_privacy_item_auth_calculated(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+
+        class User(object):
+            @classmethod
+            def is_admin(self, obj):
+                return False
+
+        request = Mock(user=User())
         filtered = wrappers.apply_privacy(request)(result=dictset({
             '_type': 'foo',
             'self': 'http://example.com/1',
@@ -175,7 +199,38 @@ class TestWrappers(unittest.TestCase):
             _public_fields=['name', 'desc'],
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock(is_admin=lambda: True))
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(result=dictset({
+            '_type': 'foo',
+            'self': 'http://example.com/1',
+            'name': 'User1',
+            'desc': 'User 1 data',
+            'id': 1,
+            'other_field': 123
+        }), is_admin=True)
+        assert list(sorted(filtered.keys())) == [
+            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+        filtered['_type'] == 'foo'
+        filtered['desc'] == 'User 1 data'
+        filtered['id'] == 1
+        filtered['name'] == 'User1'
+        filtered['other_field'] == 123
+        filtered['self'] == 'http://example.com/1'
+        mock_eng.get_document_cls.assert_called_once_with('foo')
+
+    @patch('nefertari.wrappers.engine')
+    def test_apply_privacy_item_admin_calculated(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+
+        class User(object):
+            @classmethod
+            def is_admin(self, obj):
+                return True
+
+        request = Mock(user=User())
         filtered = wrappers.apply_privacy(request)(result=dictset({
             '_type': 'foo',
             'self': 'http://example.com/1',
@@ -197,7 +252,7 @@ class TestWrappers(unittest.TestCase):
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_no_document_cls(self, mock_eng):
         mock_eng.get_document_cls.side_effect = ValueError
-        request = Mock(user=Mock(is_admin=lambda: True))
+        request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(result=dictset({
             '_type': 'foo',
             'self': 'http://example.com/1',
@@ -205,7 +260,7 @@ class TestWrappers(unittest.TestCase):
             'desc': 'User 1 data',
             'id': 1,
             'other_field': 123
-        }))
+        }), is_admin=True)
         assert list(sorted(filtered.keys())) == [
             '_type', 'desc', 'id', 'name', 'other_field', 'self']
 
@@ -215,7 +270,7 @@ class TestWrappers(unittest.TestCase):
             _public_fields=['name', 'desc'],
             _auth_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock(is_admin=lambda: False))
+        request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(result=dictset({
             '_type': 'foo',
             'self': 'http://example.com/1',
@@ -223,7 +278,7 @@ class TestWrappers(unittest.TestCase):
             'desc': 'User 1 data',
             'id': 1,
             'other_field': 123
-        }))
+        }), is_admin=False)
         assert list(sorted(filtered.keys())) == ['_type', 'self']
 
     @patch('nefertari.wrappers.engine')
@@ -232,7 +287,7 @@ class TestWrappers(unittest.TestCase):
             _public_fields=['name', 'desc'],
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock(is_admin=lambda: False))
+        request = Mock(user=Mock())
         result = {
             'total': 1,
             'count': 1,
@@ -245,7 +300,8 @@ class TestWrappers(unittest.TestCase):
                 'other_field': 123
             })]
         }
-        filtered = wrappers.apply_privacy(request)(result=result)
+        filtered = wrappers.apply_privacy(request)(
+            result=result, is_admin=False)
         assert list(sorted(filtered.keys())) == ['count', 'data', 'total']
         assert len(filtered['data']) == 1
         data = filtered['data'][0]
