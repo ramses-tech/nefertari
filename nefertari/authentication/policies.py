@@ -1,6 +1,6 @@
 from pyramid.authentication import CallbackAuthenticationPolicy
 
-from nefertari import engine as eng
+from nefertari import engine
 from .models import apikey_model
 
 
@@ -29,15 +29,15 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
                 principal identifiers (possibly empty) if the user does exist.
                 If callback is None, the username will be assumed to exist with
                 no principals. Optional.
-            :credentials_callback: A callback passed the username, expected to
-                return tuple containing 2 elements: username and user's api key.
+            :credentials_callback: A callback passed the username and current
+                request, expected to return and user's api key.
                 Is used to generate 'WWW-Authenticate' header with a value of
                 valid 'Authorization' request header that should be used to
                 perform requests.
         """
         self.user_model = user_model
         if isinstance(self.user_model, basestring):
-            self.user_model = eng.get_document_cls(self.user_model)
+            self.user_model = engine.get_document_cls(self.user_model)
         apikey_model(self.user_model)
 
         self.check = check
@@ -49,7 +49,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         in 'Authorization' header.
         """
         if self.credentials_callback:
-            username, token = self.credentials_callback(username, request)
+            token = self.credentials_callback(username, request)
             api_key = 'ApiKey {}:{}'.format(username, token)
             return [('WWW-Authenticate', api_key)]
 
