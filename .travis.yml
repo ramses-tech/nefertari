@@ -1,10 +1,7 @@
+# Config file for automatic testing at travis-ci.org
 language: python
-python:
-    - "2.7"
+env:
+  - TOXENV=py27
 install:
-    - pip install -r requirements.dev
-    - pip install coveralls
-script:
-    - py.test --cov nefertari
-after_success:
-    - coveralls
+  - pip install tox
+script: tox
