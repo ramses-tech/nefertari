@@ -11,6 +11,14 @@ from nefertari.utils import dictset
 
 
 class TestWrappers(unittest.TestCase):
+    model_test_data = dictset({
+        '_type': 'foo',
+        'self': 'http://example.com/1',
+        'name': 'User1',
+        'desc': 'User 1 data',
+        'id': 1,
+        'other_field': 123
+    })
 
     def test_issequence(self):
         class A(object):
@@ -123,14 +131,7 @@ class TestWrappers(unittest.TestCase):
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=None)
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }))
+        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
             '_type', 'desc', 'name', 'self']
 
@@ -140,14 +141,7 @@ class TestWrappers(unittest.TestCase):
             _public_fields=['name', 'desc'],
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
-        filtered = wrappers.apply_privacy(None)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }))
+        filtered = wrappers.apply_privacy(None)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
             '_type', 'desc', 'id', 'name', 'other_field', 'self']
 
@@ -158,14 +152,8 @@ class TestWrappers(unittest.TestCase):
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }), is_admin=False)
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=False)
         assert list(sorted(filtered.keys())) == [
             '_type', 'id', 'self']
 
@@ -182,14 +170,7 @@ class TestWrappers(unittest.TestCase):
                 return False
 
         request = Mock(user=User())
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }))
+        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
             '_type', 'id', 'self']
 
@@ -200,14 +181,8 @@ class TestWrappers(unittest.TestCase):
             _auth_fields=['id'])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }), is_admin=True)
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
             '_type', 'desc', 'id', 'name', 'other_field', 'self']
         filtered['_type'] == 'foo'
@@ -231,14 +206,7 @@ class TestWrappers(unittest.TestCase):
                 return True
 
         request = Mock(user=User())
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }))
+        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
             '_type', 'desc', 'id', 'name', 'other_field', 'self']
         filtered['_type'] == 'foo'
@@ -253,14 +221,8 @@ class TestWrappers(unittest.TestCase):
     def test_apply_privacy_item_no_document_cls(self, mock_eng):
         mock_eng.get_document_cls.side_effect = ValueError
         request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }), is_admin=True)
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
             '_type', 'desc', 'id', 'name', 'other_field', 'self']
 
@@ -271,14 +233,8 @@ class TestWrappers(unittest.TestCase):
             _auth_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(result=dictset({
-            '_type': 'foo',
-            'self': 'http://example.com/1',
-            'name': 'User1',
-            'desc': 'User 1 data',
-            'id': 1,
-            'other_field': 123
-        }), is_admin=False)
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=False)
         assert list(sorted(filtered.keys())) == ['_type', 'self']
 
     @patch('nefertari.wrappers.engine')
@@ -291,14 +247,7 @@ class TestWrappers(unittest.TestCase):
         result = {
             'total': 1,
             'count': 1,
-            'data': [dictset({
-                '_type': 'foo',
-                'self': 'http://example.com/1',
-                'name': 'User1',
-                'desc': 'User 1 data',
-                'id': 1,
-                'other_field': 123
-            })]
+            'data': [self.model_test_data]
         }
         filtered = wrappers.apply_privacy(request)(
             result=result, is_admin=False)
