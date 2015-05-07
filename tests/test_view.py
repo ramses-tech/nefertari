@@ -173,7 +173,7 @@ class TestBaseView(object):
         request.params.mixed.return_value = {'param2.foo': 'val2'}
         view = BaseView(context={'foo': 'bar'}, request=request)
         assert request.override_renderer == 'string'
-        assert list(sorted(view._params.keys())) == ['param2']
+        assert view._params.keys() == ['param2']
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_init_json_error(self, run):
@@ -189,7 +189,7 @@ class TestBaseView(object):
         request.params.mixed.return_value = {'param2.foo': 'val2'}
         view = BaseView(context={'foo': 'bar'}, request=request)
         assert request.override_renderer == 'nefertari_json'
-        assert list(sorted(view._params.keys())) == ['param2']
+        assert view._params.keys() == ['param2']
 
     @patch('nefertari.view.BaseView.setup_default_wrappers')
     @patch('nefertari.view.BaseView.convert_ids2objects')
@@ -211,7 +211,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_no_root(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''])
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.root_resource = None
         view.set_public_limits()
         assert not wrap.set_public_limits.called
@@ -220,7 +221,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_no_auth(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''])
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.root_resource = Mock(auth=False)
         view.set_public_limits()
         assert not wrap.set_public_limits.called
@@ -229,7 +231,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_user_authenticated(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''], user='foo')
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.root_resource = Mock(auth=True)
         view.set_public_limits()
         assert not wrap.set_public_limits.called
@@ -238,7 +241,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_applied(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.root_resource = Mock(auth=True)
         view.set_public_limits()
         wrap.set_public_limits.assert_called_once_with(view)
@@ -248,7 +252,9 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_convert_ids2objects_non_relational(self, run, id2obj, eng):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo1': 'bar'},
+            _json_params={'foo': 'bar'})
         view._model_class = 'Model1'
         eng.is_relationship_field.return_value = False
         view.convert_ids2objects()
@@ -260,7 +266,9 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_convert_ids2objects_relational(self, run, id2obj, eng):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo1': 'bar'},
+            _json_params={'foo': 'bar'})
         view._model_class = 'Model1'
         eng.is_relationship_field.return_value = True
         view.convert_ids2objects()
@@ -271,21 +279,24 @@ class TestBaseView(object):
     def test_get_debug(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
         request.registry.settings = {'super.debug': 'true'}
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         assert view.get_debug(package='super')
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_get_debug_no_package(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
         request.registry.settings = {'debug': 'false'}
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         assert not view.get_debug()
 
     @patch('nefertari.view.wrappers')
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_setup_default_wrappers_with_auth(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.root_resource = Mock(auth=True)
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
@@ -299,7 +310,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_setup_default_wrappers_no_auth(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.root_resource = Mock(auth=None)
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 3
@@ -345,14 +357,16 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_not_allowed_action(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         with pytest.raises(JHTTPMethodNotAllowed):
             view.not_allowed_action()
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_add_before_or_after_before(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         callable_ = lambda x: x
         view.add_before_or_after_call(
             action='foo', _callable=callable_, pos=None, before=True)
@@ -361,7 +375,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_add_before_or_after_after(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         callable_ = lambda x: x
         view.add_before_or_after_call(
             action='foo', _callable=callable_, pos=None, before=False)
@@ -370,7 +385,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_add_before_or_after_position(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         callable1 = lambda x: x
         callable2 = lambda x: x + x
         view.add_before_or_after_call(
@@ -386,7 +402,8 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_add_before_or_after_not_callable(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         with pytest.raises(ValueError) as ex:
             view.add_before_or_after_call(
                 action='foo', _callable='asdasd', pos=None,
@@ -400,7 +417,8 @@ class TestBaseView(object):
         request = Mock(
             content_type='', method='', accept=[''], user=None,
             cookies=['1'])
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.subrequest(url='http://', params={'par': 'val'}, method='GET')
         req.blank.assert_called_once_with(
             'http://', cookies=['1'], content_type='application/json',
@@ -415,7 +433,8 @@ class TestBaseView(object):
         request = Mock(
             content_type='', method='', accept=[''], user=None,
             cookies=['1'])
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _query_params={'foo': 'bar'})
         view.subrequest(url='http://', params={'par': 'val'}, method='POST')
         req.blank.assert_called_once_with(
             'http://', cookies=['1'], content_type='application/json',
@@ -426,44 +445,12 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_needs_confirmation(self, run):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._params['__confirmation'] = ''
-        assert not view.needs_confirmation()
-        view._params.pop('__confirmation')
-        assert view.needs_confirmation()
-
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_delete_many_no_model_cls(self, run):
-        request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        assert not view._model_class
-        with pytest.raises(JHTTPBadRequest):
-            view.delete_many()
-
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_delete_many_need_confirm(self, run):
-        request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._model_class = Mock()
-        objs = view.delete_many()
-        view._model_class.get_collection.assert_called_once_with(foo='bar')
-        assert not view._model_class.delete_many.called
-        assert objs == view._model_class.get_collection()
-
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_delete_many(self, run):
-        request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
-            context={}, request=request,
-            _params={'foo': 'bar', '__confirmation': ''})
-        view._model_class = Mock(__name__='Fooo')
-        view._model_class.count.return_value = 1234
-        resp = view.delete_many()
-        assert view._model_class.get_collection.called
-        assert view._model_class.count.called
-        view._model_class._delete_many.assert_called_once_with(
-            view._model_class.get_collection())
-        assert resp.message == 'Deleted 1234 Fooo objects'
+            context={}, request=request, _query_params={'foo': 'bar'})
+        view._query_params['__confirmation'] = ''
+        assert not view.needs_confirmation()
+        view._query_params.pop('__confirmation')
+        assert view.needs_confirmation()
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj(self, run):
@@ -471,10 +458,12 @@ class TestBaseView(object):
         model.id_field.return_value = 'idname'
         model.get.return_value = 'foo'
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._params['user'] = '1'
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['user'] = '1'
         view.id2obj(name='user', model=model)
-        assert view._params['user'] == 'foo'
+        assert view._json_params['user'] == 'foo'
         model.id_field.assert_called_once_with()
         model.get.assert_called_once_with(idname='1')
 
@@ -484,10 +473,12 @@ class TestBaseView(object):
         model.id_field.return_value = 'idname'
         model.get.return_value = 'foo'
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._params['user'] = ['1']
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['user'] = ['1']
         view.id2obj(name='user', model=model)
-        assert view._params['user'] == ['foo']
+        assert view._json_params['user'] == ['foo']
         model.id_field.assert_called_once_with()
         model.get.assert_called_once_with(idname='1')
 
@@ -495,7 +486,9 @@ class TestBaseView(object):
     def test_id2obj_not_in_params(self, run):
         model = Mock()
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
         view.id2obj(name='asdasdasd', model=model)
         assert not model.id_field.called
         assert not model.get.called
@@ -506,10 +499,12 @@ class TestBaseView(object):
         model.id_field.return_value = 'idname'
         model.get.return_value = None
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._params['user'] = '1'
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['user'] = '1'
         view.id2obj(name='user', model=model, setdefault=123)
-        assert view._params['user'] == 123
+        assert view._json_params['user'] == 123
         model.id_field.assert_called_once_with()
         model.get.assert_called_once_with(idname='1')
 
@@ -520,10 +515,12 @@ class TestBaseView(object):
         model.id_field.return_value = 'idname'
         model.get.return_value = None
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._params['user'] = id_
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['user'] = id_
         view.id2obj(name='user', model=model, setdefault=123)
-        assert view._params['user'] == id_
+        assert view._json_params['user'] == id_
         model.id_field.assert_called_once_with()
         assert not model.get.called
 
@@ -533,8 +530,10 @@ class TestBaseView(object):
         model.id_field.return_value = 'idname'
         model.get.return_value = None
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(context={}, request=request, _params={'foo': 'bar'})
-        view._params['user'] = '1'
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['user'] = '1'
         with pytest.raises(JHTTPBadRequest) as ex:
             view.id2obj(name='user', model=model)
         assert str(ex.value) == 'id2obj: Object 1 not found'

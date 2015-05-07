@@ -123,6 +123,8 @@ class apply_privacy(object):
         self.request = request
 
     def _filter_fields(self, data):
+        if '_type' not in data:
+            return data
         try:
             model_cls = engine.get_document_cls(data['_type'])
         except ValueError as ex:
@@ -151,6 +153,8 @@ class apply_privacy(object):
 
     def __call__(self, **kwargs):
         result = kwargs['result']
+        if not isinstance(result, dict):
+            return result
         data = result.get('data', result)
 
         if data:
@@ -305,9 +309,9 @@ def set_public_limits(view):
         'public_max_limit', 100))
 
     try:
-        _limit = int(view._params.get('_limit', 20))
-        _page = int(view._params.get('_page', 0))
-        _start = int(view._params.get('_start', 0))
+        _limit = int(view._query_params.get('_limit', 20))
+        _page = int(view._query_params.get('_page', 0))
+        _start = int(view._query_params.get('_start', 0))
 
         view.add_after_call('index', set_total(view.request, total=public_max),
                             pos=0)
@@ -317,4 +321,4 @@ def set_public_limits(view):
 
     _start = _start or _page * _limit
     if _start + _limit > public_max:
-        view._params['_limit'] = max((public_max - _start), 0)
+        view._query_params['_limit'] = max((public_max - _start), 0)

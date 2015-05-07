@@ -16,7 +16,8 @@ class TicketAuthenticationView(BaseView):
         """ Register new user by POSTing all required data.
 
         """
-        user, created = self._model_class.create_account(self._params)
+        user, created = self._model_class.create_account(
+            self._json_params)
 
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
@@ -26,14 +27,15 @@ class TicketAuthenticationView(BaseView):
         return JHTTPOk('Registered', headers=headers)
 
     def login(self, **params):
-        self._params.update(params)
-        next = self._params.get('next', '')
+        self._json_params.update(params)
+        next = self._query_params.get('next', '')
         login_url = self.request.route_url('login')
         if next.startswith(login_url):
             next = ''  # never use the login form itself as next
 
-        unauthorized_url = self._params.get('unauthorized', None)
-        success, user = self._model_class.authenticate_by_password(self._params)
+        unauthorized_url = self._query_params.get('unauthorized', None)
+        success, user = self._model_class.authenticate_by_password(
+            self._json_params)
 
         if success:
             id_field = user.id_field()
@@ -68,7 +70,7 @@ class TokenAuthenticationView(BaseView):
         User's `Authorization` header value is returned in `WWW-Authenticate`
         header.
         """
-        user, created = self._model_class.create_account(self._params)
+        user, created = self._model_class.create_account(self._json_params)
 
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
@@ -82,9 +84,9 @@ class TokenAuthenticationView(BaseView):
         User's `Authorization` header value is returned in `WWW-Authenticate`
         header.
         """
-        self._params.update(params)
+        self._json_params.update(params)
         success, self.user = self._model_class.authenticate_by_password(
-            self._params)
+            self._json_params)
 
         if success:
             headers = remember(self.request, self.user.username)
