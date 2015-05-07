@@ -41,7 +41,7 @@ class TicketAuthenticationView(BaseView):
             id_field = user.id_field()
             headers = remember(self.request, getattr(user, id_field))
             if next:
-                return JHTTPOk('Logged in', headers=headers)
+                raise JHTTPFound(location=next, headers=headers)
             else:
                 return JHTTPOk('Logged in', headers=headers)
         if user:
@@ -53,7 +53,10 @@ class TicketAuthenticationView(BaseView):
             raise JHTTPNotFound('User not found')
 
     def logout(self):
+        next = self._params.get('next')
         headers = forget(self.request)
+        if next:
+            return JHTTPFound(location=next, headers=headers)
         return JHTTPOk('Logged out', headers=headers)
 
 
