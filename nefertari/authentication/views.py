@@ -53,7 +53,7 @@ class TicketAuthenticationView(BaseView):
             raise JHTTPNotFound('User not found')
 
     def logout(self):
-        next = self._params.get('next')
+        next = self._query_params.get('next')
         headers = forget(self.request)
         if next:
             return JHTTPFound(location=next, headers=headers)
