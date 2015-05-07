@@ -140,6 +140,11 @@ class BaseView(object):
         Only IDs tbat belong to relationship field of `self._model_class`
         are converted.
         """
+
+        if not self._model_class:
+            log.info("%s has no model defined" % self.__class__.__name__)
+            return
+
         for field in self._params.keys():
             if not engine.is_relationship_field(field, self._model_class):
                 continue
