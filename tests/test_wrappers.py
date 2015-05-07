@@ -194,6 +194,29 @@ class TestWrappers(unittest.TestCase):
         mock_eng.get_document_cls.assert_called_once_with('foo')
 
     @patch('nefertari.wrappers.engine')
+    def test_apply_privacy_no_type(self, mock_eng):
+        data = self.model_test_data.copy()
+        data.pop('_type')
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=data, is_admin=True)
+        assert list(sorted(filtered.keys())) == [
+            'desc', 'id', 'name', 'other_field', 'self']
+        filtered['desc'] == 'User 1 data'
+        filtered['id'] == 1
+        filtered['name'] == 'User1'
+        filtered['other_field'] == 123
+        filtered['self'] == 'http://example.com/1'
+        assert not mock_eng.get_document_cls.called
+
+    @patch('nefertari.wrappers.engine')
+    def test_apply_privacy_not_dict(self, mock_eng):
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result='foo', is_admin=True)
+        assert filtered == 'foo'
+
+    @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_admin_calculated(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
@@ -380,30 +403,30 @@ class TestWrappers(unittest.TestCase):
         request.registry.settings = {'public_max_limit': 123}
         view = Mock(
             request=request,
-            _params={'_limit': 100, '_page': 1, '_start': 90})
+            _query_params={'_limit': 100, '_page': 1, '_start': 90})
         wrappers.set_public_limits(view)
         mock_set.assert_called_once_with(view.request, total=123)
         view.add_after_call.assert_called_once_with(
             'index', mock_set(), pos=0)
-        assert view._params['_limit'] == 33
+        assert view._query_params['_limit'] == 33
 
     @patch('nefertari.wrappers.set_total')
     def test_set_public_limits_no_params(self, mock_set):
         request = Mock()
         request.registry.settings = {}
-        view = Mock(request=request, _params={})
+        view = Mock(request=request, _query_params={})
         wrappers.set_public_limits(view)
         mock_set.assert_called_once_with(view.request, total=100)
         view.add_after_call.assert_called_once_with(
             'index', mock_set(), pos=0)
-        assert '_limit' not in view._params
+        assert '_limit' not in view._query_params
 
     @patch('nefertari.wrappers.set_total')
     def test_set_public_limits_value_err(self, mock_set):
         from nefertari.json_httpexceptions import JHTTPBadRequest
         request = Mock()
         request.registry.settings = {}
-        view = Mock(request=request, _params={})
+        view = Mock(request=request, _query_params={})
         mock_set.side_effect = ValueError
         with pytest.raises(JHTTPBadRequest):
             wrappers.set_public_limits(view)

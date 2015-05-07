@@ -87,22 +87,38 @@ class BaseView(object):
 
         return params
 
-    def __init__(self, context, request, _params={}):
+    def __init__(self, context, request, _query_params={}, _json_params={}):
+        """ Prepare data to be used across the view and run init methods.
+
+        Each view has these dicts on data:
+          :_query_params: Params from a query string
+          :_json_params: Request JSON data. Is populated only for
+              PUT, PATCH, POST methods
+          :_params: Join of _query_params and _json_params
+
+        On methods tunneling, _json_params contains the same data as
+        _query_params.
+        """
         self.context = context
         self.request = request
-        self._params = dictset(_params or request.params.mixed())
+        self._query_params = dictset(_query_params or request.params.mixed())
+        self._json_params = dictset(_json_params)
 
         ctype = request.content_type
         if request.method in ['POST', 'PUT', 'PATCH']:
             if ctype == 'application/json':
                 try:
-                    self._params.update(request.json)
+                    self._json_params.update(request.json)
                 except simplejson.JSONDecodeError:
                     log.error(
                         "Expecting JSON. Received: '{}'. Request: {} {}".format(
                             request.body, request.method, request.url))
 
-            self._params = BaseView.convert_dotted(self._params)
+            self._json_params = BaseView.convert_dotted(self._json_params)
+            self._query_params = BaseView.convert_dotted(self._query_params)
+
+        self._params = self._query_params.copy()
+        self._params.update(self._json_params)
 
         # dict of the callables {'action':[callable1, callable2..]}
         # as name implies, before calls are executed before the action is called
@@ -135,17 +151,16 @@ class BaseView(object):
             wrappers.set_public_limits(self)
 
     def convert_ids2objects(self):
-        """ Convert object IDs from `self._params` to objects if needed.
+        """ Convert object IDs from `self._json_params` to objects if needed.
 
         Only IDs tbat belong to relationship field of `self._model_class`
         are converted.
         """
-
         if not self._model_class:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
 
-        for field in self._params.keys():
+        for field in self._json_params.keys():
             if not engine.is_relationship_field(field, self._model_class):
                 continue
             model_cls = engine.relationship_cls(field, self._model_class)
@@ -236,26 +251,10 @@ class BaseView(object):
         return self.request.invoke_subrequest(req)
 
     def needs_confirmation(self):
-        return '__confirmation' not in self._params
-
-    def delete_many(self, **kw):
-        if not self._model_class:
-            log.error("%s _model_class in invalid: %s" % (
-                self.__class__.__name__, self._model_class))
-            raise JHTTPBadRequest
-
-        objs = self._model_class.get_collection(**self._params)
-
-        if self.needs_confirmation():
-            return objs
-
-        count = self._model_class.count(objs)
-        self._model_class._delete_many(objs)
-        return JHTTPOk("Deleted %s %s objects" % (
-            count, self._model_class.__name__))
+        return '__confirmation' not in self._query_params
 
     def id2obj(self, name, model, id_field=None, setdefault=None):
-        if name not in self._params:
+        if name not in self._json_params:
             return
 
         if id_field is None:
@@ -273,11 +272,11 @@ class BaseView(object):
                     raise JHTTPBadRequest('id2obj: Object %s not found' % id_)
                 return obj
 
-        ids = self._params[name]
+        ids = self._json_params[name]
         if isinstance(ids, list):
-            self._params[name] = [_get_object(_id) for _id in ids]
+            self._json_params[name] = [_get_object(_id) for _id in ids]
         else:
-            self._params[name] = _get_object(ids)
+            self._json_params[name] = _get_object(ids)
 
 
 def key_error_view(context, request):
