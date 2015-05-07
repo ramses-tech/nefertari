@@ -323,7 +323,6 @@ class ES(object):
                         }
                     }
                 }
-                print query_string
             else:
                 _params['body'] = {"query": {"match_all": {}}}
 
