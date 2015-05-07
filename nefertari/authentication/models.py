@@ -12,17 +12,6 @@ log = logging.getLogger(__name__)
 crypt = cryptacular.bcrypt.BCRYPTPasswordManager()
 
 
-def lower_strip(value):
-    return (value or '').lower().strip()
-
-
-def crypt_password(password):
-    """ Crypt :password: if it's not crypted yet """
-    if password and not crypt.match(password):
-        password = unicode(crypt.encode(password))
-    return password
-
-
 class AuthModelDefaultMixin(object):
     """ Mixin that implements all methods required for Ticket and Token
     auth systems to work.
@@ -154,6 +143,17 @@ class AuthModelDefaultMixin(object):
         username = authenticated_userid(request)
         if username:
             return cls.get_resource(username=username)
+
+
+def lower_strip(value):
+    return (value or '').lower().strip()
+
+
+def crypt_password(password):
+    """ Crypt :password: if it's not crypted yet """
+    if password and not crypt.match(password):
+        password = unicode(crypt.encode(password))
+    return password
 
 
 class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
