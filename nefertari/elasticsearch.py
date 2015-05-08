@@ -22,6 +22,10 @@ RESERVED = [
 ]
 
 
+class IndexNotFoundException(Exception):
+    pass
+
+
 class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
     def perform_request(self, *args, **kw):
         try:
@@ -34,6 +38,8 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
             return super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
             status_code = e.status_code
+            if status_code == 404:
+                raise IndexNotFoundException()
             if status_code == 'N/A':
                 status_code = 400
             raise exception_response(
@@ -227,13 +233,19 @@ class ES(object):
         if not documents:
             log.info('No documents to index')
             return
-        response = ES.api.mget(
+        query_kwargs = dict(
             index=self.index_name,
             doc_type=self.doc_type,
             fields=['_id'],
             body={'ids': [d['id'] for d in documents]},
         )
-        indexed_ids = set(d['_id'] for d in response['docs'] if d.get('found'))
+        try:
+            response = ES.api.mget(**query_kwargs)
+        except IndexNotFoundException:
+            indexed_ids = set()
+        else:
+            indexed_ids = set(
+                d['_id'] for d in response['docs'] if d.get('found'))
         documents = [d for d in documents if str(d['id']) not in indexed_ids]
 
         if not documents:
@@ -277,9 +289,21 @@ class ES(object):
         )
         if fields:
             params['fields'] = fields
-
-        data = ES.api.mget(**params)
         documents = _ESDocs()
+        documents._nefertari_meta = dict(
+            start=_start,
+            fields=fields,
+        )
+
+        try:
+            data = ES.api.mget(**params)
+        except IndexNotFoundException:
+            if __raise_on_empty:
+                raise JHTTPNotFound(
+                    '{}({}) resource not found (Index does not exist)'.format(
+                        self.doc_type, params))
+            documents._nefertari_meta.update(total=0)
+            return documents
 
         for _d in data['docs']:
             try:
@@ -295,10 +319,8 @@ class ES(object):
 
             documents.append(dict2obj(dictset(_d)))
 
-        documents._nefertari_meta = dict(
+        documents._nefertari_meta.update(
             total=len(documents),
-            start=_start,
-            fields=fields,
         )
 
         return documents
@@ -352,7 +374,10 @@ class ES(object):
         params.pop('size', None)
         params.pop('from_', None)
         params.pop('sort', None)
-        return ES.api.count(**params)['count']
+        try:
+            return ES.api.count(**params)['count']
+        except IndexNotFoundException:
+            return 0
 
     def get_collection(self, **params):
         __raise_on_empty = params.pop('__raise_on_empty', False)
@@ -368,23 +393,34 @@ class ES(object):
         # pop the fields before passing to search.
         # ES does not support passing names of nested structures
         _fields = _params.pop('fields', '')
-        data = ES.api.search(**_params)
         documents = _ESDocs()
+        documents._nefertari_meta = dict(
+            start=_params['from_'],
+            fields=_fields)
+
+        try:
+            data = ES.api.search(**_params)
+        except IndexNotFoundException:
+            if __raise_on_empty:
+                raise JHTTPNotFound(
+                    '{}({}) resource not found (Index does not exist)'.format(
+                        self.doc_type, params))
+            documents._nefertari_meta.update(
+                total=0, took=0)
+            return documents
 
         for da in data['hits']['hits']:
             _d = da['fields'] if _fields else da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 
-        documents._nefertari_meta = dict(
+        documents._nefertari_meta.update(
             total=data['hits']['total'],
-            start=_params['from_'],
-            fields=_fields,
             took=data['took'],
         )
 
         if not documents:
-            msg = "'%s(%s)' resource not found" % (self.doc_type, params)
+            msg = "%s(%s) resource not found" % (self.doc_type, params)
             if __raise_on_empty:
                 raise JHTTPNotFound(msg)
             else:
@@ -402,7 +438,15 @@ class ES(object):
         params.setdefault('ignore', 404)
         params.update(kw)
 
-        data = ES.api.get_source(**params)
+        try:
+            data = ES.api.get_source(**params)
+        except IndexNotFoundException:
+            if __raise:
+                raise JHTTPNotFound(
+                    "{}({}) resource not found (Index does not exist)".format(
+                        self.doc_type, params))
+            data = {}
+
         if not data:
             msg = "'%s(%s)' resource not found" % (self.doc_type, params)
             if __raise:
