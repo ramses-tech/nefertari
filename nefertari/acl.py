@@ -1,7 +1,29 @@
 from pyramid.security import ALL_PERMISSIONS, Allow, Everyone, Authenticated
 
 
-class BaseACL(object):
+class SelfParamMixin(object):
+    """ ACL mixin that implements method to translate input key value
+    to a user ID field, when key value equals to :param_value:
+
+    Value is only converted if user is logged in and :request.user:
+    is an instance of :__context_class__:, thus for routes that display
+    auth users.
+    """
+    param_value = 'self'
+
+    def convert_self_key(self, key):
+        if key != self.param_value:
+            return key
+        user = getattr(self.request, 'user', None)
+        if not user or not self.__context_class__:
+            return key
+        if not isinstance(user, self.__context_class__):
+            return key
+        obj_id = getattr(user, user.id_field()) or key
+        return obj_id
+
+
+class BaseACL(SelfParamMixin):
     """ Base ACL class.
 
     Grants:
@@ -28,6 +50,7 @@ class BaseACL(object):
 
     def __getitem__(self, key):
         assert(self.__context_class__)
+        key = self.convert_self_key(key)
 
         id_field = self.__context_class__.id_field()
         obj = self.__context_class__.get(
