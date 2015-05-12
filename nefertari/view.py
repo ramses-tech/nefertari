@@ -253,18 +253,18 @@ class BaseView(object):
     def needs_confirmation(self):
         return '__confirmation' not in self._query_params
 
-    def id2obj(self, name, model, id_field=None, setdefault=None):
+    def id2obj(self, name, model, pk_field=None, setdefault=None):
         if name not in self._json_params:
             return
 
-        if id_field is None:
-            id_field = model.id_field()
+        if pk_field is None:
+            pk_field = model.pk_field()
 
         def _get_object(id_):
-            if hasattr(id_, 'id_field'):
+            if hasattr(id_, 'pk_field'):
                 return id_
 
-            obj = model.get(**{id_field: id_})
+            obj = model.get(**{pk_field: id_})
             if setdefault:
                 return obj or setdefault
             else:

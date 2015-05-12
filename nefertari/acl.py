@@ -19,7 +19,7 @@ class SelfParamMixin(object):
             return key
         if not isinstance(user, self.__context_class__):
             return key
-        obj_id = getattr(user, user.id_field()) or key
+        obj_id = getattr(user, user.pk_field()) or key
         return obj_id
 
 
@@ -52,9 +52,9 @@ class BaseACL(SelfParamMixin):
         assert(self.__context_class__)
         key = self.convert_self_key(key)
 
-        id_field = self.__context_class__.id_field()
+        pk_field = self.__context_class__.pk_field()
         obj = self.__context_class__.get(
-            __raise=True, **{id_field: key})
+            __raise=True, **{pk_field: key})
         obj.__acl__ = self.context_acl(obj)
         obj.__parent__ = self
         obj.__name__ = key

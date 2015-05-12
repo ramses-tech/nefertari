@@ -155,7 +155,7 @@ class TestAuthModelDefaultMixin(object):
         assert usr is None
         mock_res.assert_called_once_with(username='user1')
 
-    @patch(mixin_path + 'id_field')
+    @patch(mixin_path + 'pk_field')
     @patch(mixin_path + 'get_resource')
     def test_groups_by_userid(self, mock_res, mock_field, engine_mock):
         from nefertari.authentication import models
@@ -167,7 +167,7 @@ class TestAuthModelDefaultMixin(object):
         assert groups == ['g:admin', 'g:user']
         mock_res.assert_called_once_with(idid='user1')
 
-    @patch(mixin_path + 'id_field')
+    @patch(mixin_path + 'pk_field')
     @patch(mixin_path + 'get_resource')
     def test_groups_by_userid_user_not_found(
             self, mock_res, mock_field, engine_mock):
@@ -180,7 +180,7 @@ class TestAuthModelDefaultMixin(object):
         mock_res.assert_called_once_with(idid='user1')
 
     @patch('nefertari.authentication.models.forget')
-    @patch(mixin_path + 'id_field')
+    @patch(mixin_path + 'pk_field')
     @patch(mixin_path + 'get_resource')
     def test_groups_by_userid_query_error(
             self, mock_res, mock_field, mock_forg, engine_mock):
@@ -212,7 +212,7 @@ class TestAuthModelDefaultMixin(object):
         mock_get.assert_called_once_with(email=3, defaults={'email': 3})
 
     @patch('nefertari.authentication.models.authenticated_userid')
-    @patch(mixin_path + 'id_field')
+    @patch(mixin_path + 'pk_field')
     @patch(mixin_path + 'get_resource')
     def test_authuser_by_userid(
             self, mock_res, mock_id, mock_auth, engine_mock):
@@ -224,7 +224,7 @@ class TestAuthModelDefaultMixin(object):
         mock_res.assert_called_once_with(idid=123)
 
     @patch('nefertari.authentication.models.authenticated_userid')
-    @patch(mixin_path + 'id_field')
+    @patch(mixin_path + 'pk_field')
     @patch(mixin_path + 'get_resource')
     def test_authuser_by_userid_not_authenticated(
             self, mock_res, mock_id, mock_auth, engine_mock):

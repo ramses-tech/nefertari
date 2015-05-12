@@ -22,8 +22,8 @@ class TicketAuthenticationView(BaseView):
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
 
-        id_field = user.id_field()
-        headers = remember(self.request, getattr(user, id_field))
+        pk_field = user.pk_field()
+        headers = remember(self.request, getattr(user, pk_field))
         return JHTTPOk('Registered', headers=headers)
 
     def login(self, **params):
@@ -38,8 +38,8 @@ class TicketAuthenticationView(BaseView):
             self._json_params)
 
         if success:
-            id_field = user.id_field()
-            headers = remember(self.request, getattr(user, id_field))
+            pk_field = user.pk_field()
+            headers = remember(self.request, getattr(user, pk_field))
             if next:
                 raise JHTTPFound(location=next, headers=headers)
             else:

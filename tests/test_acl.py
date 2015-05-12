@@ -41,10 +41,10 @@ class TestACLsUnit(object):
     def test_baseacl_getitem(self):
         acl_obj = acl.BaseACL(request='foo')
         clx_cls = Mock()
-        clx_cls.id_field.return_value = 'storyname'
+        clx_cls.pk_field.return_value = 'storyname'
         acl_obj.__context_class__ = clx_cls
         obj = acl_obj.__getitem__('foo')
-        clx_cls.id_field.assert_called_once_with()
+        clx_cls.pk_field.assert_called_once_with()
         clx_cls.get.assert_called_once_with(
             __raise=True, storyname='foo')
         assert obj.__acl__ == acl_obj.__context_acl__
@@ -120,6 +120,6 @@ class TestSelfParamMixin(object):
         obj = acl.SelfParamMixin()
         obj.__context_class__ = Mock
         user = Mock(username='user12')
-        user.id_field.return_value = 'username'
+        user.pk_field.return_value = 'username'
         obj.request = Mock(user=user)
         assert obj.convert_self_key('self') == 'user12'
