@@ -122,3 +122,21 @@ class TestJSONHTTPExceptionsModule(object):
         mock_create.assert_called_once_with(
             resp, data={'foo': 'bar', 'self': 'http://example.com/1'},
             encoder=1)
+
+    @patch.object(jsonex, 'apply_privacy')
+    @patch.object(jsonex, 'create_json_response')
+    def test_jhttpcreated_privacy_applied(self, mock_create, mock_priv):
+        wrapper = Mock()
+        mock_priv.return_value = wrapper
+        wrapper.return_value = {'foo': 'bar', 'self': 'http://example.com/1'}
+        resp = jsonex.JHTTPCreated(
+            resource={'foo': 'bar', 'zoo': 1},
+            location='http://example.com/1',
+            encoder=1,
+            request='Foo')
+        mock_create.assert_called_once_with(
+            resp, data={'foo': 'bar', 'self': 'http://example.com/1'},
+            encoder=1)
+        mock_priv.assert_called_once_with(request='Foo')
+        wrapper.assert_called_once_with(
+            result={'self': 'http://example.com/1', 'foo': 'bar', 'zoo': 1})
