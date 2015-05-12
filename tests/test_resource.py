@@ -299,35 +299,17 @@ class TestResource(Test):
                        grandpa_id=1, id=2)
         )
 
-        self.assertEqual(
-            app.put('/grandpas').body,
-            app.post('/grandpas', params=dict(_method='PUT')).body
-        )
+        self.assertEqual(app.put('/grandpas').body, '"update_many"')
 
-        self.assertEqual(
-            app.delete('/grandpas/1').body,
-            app.post('/grandpas/1', params=dict(_method='DELETE')).body
-        )
+        self.assertEqual(app.delete('/grandpas/1').body, '"delete"')
 
-        self.assertEqual(
-            app.put('/thing').body,
-            app.post('/thing', params=dict(_method='PUT')).body
-        )
+        self.assertEqual(app.put('/thing').body, '"update"')
 
-        self.assertEqual(
-            app.delete('/thing').body,
-            app.post('/thing', params=dict(_method='DELETE')).body
-        )
+        self.assertEqual(app.delete('/thing').body, '"delete"')
 
-        self.assertEqual(
-            app.put('/grandpas/1/wife').body,
-            app.post('/grandpas/1/wife', params=dict(_method='PUT')).body
-        )
+        self.assertEqual(app.put('/grandpas/1/wife').body, '"update"')
 
-        self.assertEqual(
-            app.delete('/grandpas/1/wife').body,
-            app.post('/grandpas/1/wife', params=dict(_method='DELETE')).body
-        )
+        self.assertEqual(app.delete('/grandpas/1/wife').body, '"delete"')
 
         self.assertEqual('"show"', app.get('/grandpas/1').body)
         self.assertEqual('"show"', app.get('/grandpas/1/wife').body)

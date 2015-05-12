@@ -49,50 +49,6 @@ class TestTweens(object):
             'GET (http://example.com) request took 1 seconds')
         assert not mock_log.debug.called
 
-    def test_post_tunneling_get_param(self):
-        request = Mock(
-            GET={'_method': 'PUT'}, POST={}, headers={},
-            method='POST')
-        post_tunneling = tweens.post_tunneling(lambda x: x, None)
-        post_tunneling(request)
-        assert request.GET == {}
-        assert request.POST == {}
-        assert request.headers == {}
-        assert request.method == 'PUT'
-
-    def test_post_tunneling_post_param(self):
-        request = Mock(
-            GET={}, POST={'_method': 'PATCH'}, headers={},
-            method='POST')
-        post_tunneling = tweens.post_tunneling(lambda x: x, None)
-        post_tunneling(request)
-        assert request.GET == {}
-        assert request.POST == {}
-        assert request.headers == {}
-        assert request.method == 'PATCH'
-
-    def test_post_tunneling_header(self):
-        request = Mock(
-            GET={}, POST={}, method='POST',
-            headers={'X-HTTP-Method-Override': 'DELETE'})
-        post_tunneling = tweens.post_tunneling(lambda x: x, None)
-        post_tunneling(request)
-        assert request.GET == {}
-        assert request.POST == {}
-        assert request.headers == {}
-        assert request.method == 'DELETE'
-
-    def test_post_tunneling_not_allowed_method(self):
-        request = Mock(
-            GET={}, POST={}, method='POST',
-            headers={'X-HTTP-Method-Override': 'GET'})
-        post_tunneling = tweens.post_tunneling(lambda x: x, None)
-        post_tunneling(request)
-        assert request.GET == {}
-        assert request.POST == {}
-        assert request.headers == {'X-HTTP-Method-Override': 'GET'}
-        assert request.method == 'POST'
-
     def test_get_tunneling(self):
         class GET(dict):
             def mixed(self):
