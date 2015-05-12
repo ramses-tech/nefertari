@@ -93,33 +93,33 @@ class TestACLsUnit(object):
 
 class TestSelfParamMixin(object):
 
-    def test_convert_self_key_wrong_key(self):
+    def test_resolve_self_key_wrong_key(self):
         obj = acl.SelfParamMixin()
         assert obj.param_value == 'self'
-        assert obj.convert_self_key('') == ''
-        assert obj.convert_self_key('foo') == 'foo'
+        assert obj.resolve_self_key('') == ''
+        assert obj.resolve_self_key('foo') == 'foo'
 
-    def test_convert_self_key_user_not_logged_in(self):
+    def test_resolve_self_key_user_not_logged_in(self):
         obj = acl.SelfParamMixin()
         obj.request = Mock(user=None)
-        assert obj.convert_self_key('self') == 'self'
+        assert obj.resolve_self_key('self') == 'self'
 
-    def test_convert_self_key_no_model_Cls(self):
+    def test_resolve_self_key_no_model_Cls(self):
         obj = acl.SelfParamMixin()
         obj.__context_class__ = None
         obj.request = Mock(user=1)
-        assert obj.convert_self_key('self') == 'self'
+        assert obj.resolve_self_key('self') == 'self'
 
-    def test_convert_self_key_user_wrong_class(self):
+    def test_resolve_self_key_user_wrong_class(self):
         obj = acl.SelfParamMixin()
         obj.__context_class__ = dict
         obj.request = Mock(user='a')
-        assert obj.convert_self_key('self') == 'self'
+        assert obj.resolve_self_key('self') == 'self'
 
-    def test_convert_self_key(self):
+    def test_resolve_self_key(self):
         obj = acl.SelfParamMixin()
         obj.__context_class__ = Mock
         user = Mock(username='user12')
         user.pk_field.return_value = 'username'
         obj.request = Mock(user=user)
-        assert obj.convert_self_key('self') == 'user12'
+        assert obj.resolve_self_key('self') == 'user12'

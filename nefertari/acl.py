@@ -11,7 +11,7 @@ class SelfParamMixin(object):
     """
     param_value = 'self'
 
-    def convert_self_key(self, key):
+    def resolve_self_key(self, key):
         if key != self.param_value:
             return key
         user = getattr(self.request, 'user', None)
@@ -50,7 +50,7 @@ class BaseACL(SelfParamMixin):
 
     def __getitem__(self, key):
         assert(self.__context_class__)
-        key = self.convert_self_key(key)
+        key = self.resolve_self_key(key)
 
         pk_field = self.__context_class__.pk_field()
         obj = self.__context_class__.get(
