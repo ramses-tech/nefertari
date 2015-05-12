@@ -5,7 +5,7 @@ import elasticsearch
 
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
-from nefertari.json_httpexceptions import *
+from nefertari.json_httpexceptions import JHTTPNotFound, exception_response
 from nefertari import engine
 
 log = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ def build_terms(name, values, operator='OR'):
 
 
 def build_qs(params, _raw_terms='', operator='AND'):
-    #if param is _all then remove it
+    # if param is _all then remove it
     params.pop_by_values('_all')
 
     terms = []
@@ -117,7 +117,8 @@ class ES(object):
         try:
             _hosts = ES.settings.hosts
             hosts = []
-            for (host, port) in [split_strip(each, ':') for each in split_strip(_hosts)]:
+            for (host, port) in [
+                    split_strip(each, ':') for each in split_strip(_hosts)]:
                 hosts.append(dict(host=host, port=port))
 
             params = {}
@@ -133,7 +134,8 @@ class ES(object):
             log.info('Including ElasticSearch. %s' % ES.settings)
 
         except KeyError as e:
-            raise Exception('Bad or missing settings for elasticsearch. %s' % e)
+            raise Exception(
+                'Bad or missing settings for elasticsearch. %s' % e)
 
     def __init__(self, source='', index_name=None, chunk_size=100):
         self.doc_type = self.src2type(source)

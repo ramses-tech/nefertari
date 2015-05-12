@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 
 def includeme(config):
     from nefertari.resource import get_root_resource, get_resource_map
-    from nefertari.renderers import JsonRendererFactory, NefertariJsonRendererFactory
+    from nefertari.renderers import (
+        JsonRendererFactory, NefertariJsonRendererFactory)
 
     log.info("%s %s" % (APP_NAME, __version__))
     config.add_directive('get_root_resource', get_root_resource)
@@ -26,7 +27,6 @@ def includeme(config):
 
     config.add_request_method(get_resource_map, 'resource_map', reify=True)
 
-    config.add_tween('nefertari.tweens.post_tunneling')
     config.add_tween('nefertari.tweens.cache_control')
 
     config.add_route('options', '/*path', request_method='OPTIONS')

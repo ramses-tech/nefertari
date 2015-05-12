@@ -4,7 +4,7 @@ import logging
 import cryptacular.bcrypt
 from pyramid.security import authenticated_userid, forget
 
-from nefertari.json_httpexceptions import *
+from nefertari.json_httpexceptions import JHTTPBadRequest
 from nefertari import engine
 from nefertari.utils import dictset
 
@@ -20,15 +20,17 @@ class AuthModelDefaultMixin(object):
     """
     @classmethod
     def get_resource(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_resource(*args, **kwargs)
+        return super(AuthModelDefaultMixin, self).get_resource(
+            *args, **kwargs)
 
     @classmethod
-    def id_field(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).id_field(*args, **kwargs)
+    def pk_field(self, *args, **kwargs):
+        return super(AuthModelDefaultMixin, self).pk_field(*args, **kwargs)
 
     @classmethod
     def get_or_create(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_or_create(*args, **kwargs)
+        return super(AuthModelDefaultMixin, self).get_or_create(
+            *args, **kwargs)
 
     @classmethod
     def is_admin(cls, user):
@@ -98,7 +100,7 @@ class AuthModelDefaultMixin(object):
         Is used by Ticket-based auth as `callback` kwarg.
         """
         try:
-            user = cls.get_resource(**{cls.id_field(): userid})
+            user = cls.get_resource(**{cls.pk_field(): userid})
         except Exception as ex:
             log.error(unicode(ex))
             forget(request)
@@ -131,7 +133,7 @@ class AuthModelDefaultMixin(object):
         """
         _id = authenticated_userid(request)
         if _id:
-            return cls.get_resource(**{cls.id_field(): _id})
+            return cls.get_resource(**{cls.pk_field(): _id})
 
     @classmethod
     def authuser_by_name(cls, request):
@@ -206,8 +208,8 @@ def apikey_model(user_model):
     }
     if hasattr(user_model, '__tablename__'):
         fk_kwargs['ref_column'] = '.'.join([
-            user_model.__tablename__, user_model.id_field()])
-        fk_kwargs['ref_column_type'] = user_model.id_field_type()
+            user_model.__tablename__, user_model.pk_field()])
+        fk_kwargs['ref_column_type'] = user_model.pk_field_type()
 
     class ApiKey(engine.BaseDocument):
         __tablename__ = 'nefertari_apikey'

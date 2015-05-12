@@ -28,56 +28,6 @@ def request_timing(handler, registry):
     return timing
 
 
-def post_tunneling(handler, registry):
-    """Allow other request methods to be tunneled via POST.
-
-    This allows PUT, PATCH and DELETE requests to be tunneled via POST requests.
-    The method can be specified using a parameter or a header...
-
-    The name of the parameter is '_method'; it can be a query or POST
-    parameter. The query parameter will be preferred if both the query and
-    POST parameters are present in the request.
-
-    The name of the header is 'X-HTTP-Method-Override'. If the parameter
-    described above is passed, this will be ignored.
-
-    The request method will be overwritten before it reaches application
-    code, such that the application will never be aware of the original
-    request method. Likewise, the parameter and header will be removed from
-    the request, and the application will never see them.
-
-    """
-    log.info('post_tunneling enabled')
-
-    param_name = '_method'
-    header_name = 'X-HTTP-Method-Override'
-    allowed_methods = set(['PUT', 'DELETE', 'PATCH'])
-    disallowed_message = (
-        'Only these methods may be tunneled over POST: {0}.'
-        .format(sorted(list(allowed_methods))))
-
-    def post_tunneling(request):
-        if request.method == 'POST':
-            method = ''
-
-            if param_name in request.GET:
-                method = request.GET[param_name]
-            elif param_name in request.POST:
-                method = request.POST[param_name]
-            elif header_name in request.headers:
-                method = request.headers[header_name]
-
-            if method in allowed_methods:
-                request.GET.pop(param_name, None)
-                request.POST.pop(param_name, None)
-                request.headers.pop(header_name, None)
-                request.method = method
-
-        return handler(request)
-
-    return post_tunneling
-
-
 def get_tunneling(handler, registry):
     """
     This allows all methods to be tunneled via GET for dev/debuging purposes.
@@ -146,7 +96,7 @@ def cache_control(handler, registry):
     def cache_control(request):
         response = handler(request)
 
-        #change only if the header cache-control is missing
+        # change only if the header cache-control is missing
         add_header = True
         for header in response.headerlist:
             if 'Cache-Control' in header:

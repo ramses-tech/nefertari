@@ -100,13 +100,15 @@ class TestDataUtils(object):
         assert dutils.obj2dict([{'foo': 'bar'}]) == [{'foo': 'bar'}]
 
     def test_obj2dict_object(self):
-        class A(object): pass
+        class A(object):
+            pass
         obj = A()
         obj.foo = 'bar'
         assert dutils.obj2dict(obj) == {'foo': 'bar'}
 
     def test_obj2dict_object_classkey(self):
-        class A(object): pass
+        class A(object):
+            pass
         obj = A()
         obj.foo = 'bar'
         assert dutils.obj2dict(obj, classkey='kls') == {

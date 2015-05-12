@@ -93,7 +93,7 @@ class obj2dict(object):
             return result.to_dict(_keys=_fields, request=self.request)
 
         elif issequence(result):
-            #make sure its mutable, i.e list
+            # make sure its mutable, i.e list
             result = list(result)
             for ix, each in enumerate(result):
                 result[ix] = obj2dict(self.request)(

@@ -217,7 +217,8 @@ class TestES(object):
         mock_proc.assert_called_once_with(
             documents=[
                 {'delete': {'action': 'delete', '_id': 'story1'}},
-                {'index': {'action': 'index', '_id': 'story2'}, '_timestamp': 2},
+                {'index': {'action': 'index', '_id': 'story2'},
+                 '_timestamp': 2},
                 {'_type': 'Story', 'id': 'story2', 'timestamp': 2},
             ],
             operation=es._bulk_body,
@@ -439,7 +440,8 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({'foo': 1, '_limit': 10})
         assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
-        assert params['body'] == {'query': {'query_string': {'query': 'foo:1'}}}
+        assert params['body'] == {
+            'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
         assert params['from_'] == 0
@@ -449,7 +451,8 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({'foo': 1, '_sort': '+a,-b,c'})
         assert params.keys() == ['body', 'doc_type', 'sort', 'index']
-        assert params['body'] == {'query': {'query_string': {'query': 'foo:1'}}}
+        assert params['body'] == {
+            'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
         assert params['sort'] == 'a:asc,b:desc,c:asc'
@@ -458,7 +461,8 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({'foo': 1, '_fields': ['a']})
         assert params.keys() == ['body', 'doc_type', 'fields', 'index']
-        assert params['body'] == {'query': {'query_string': {'query': 'foo:1'}}}
+        assert params['body'] == {
+            'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
         assert params['fields'] == ['a']

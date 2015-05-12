@@ -4,9 +4,9 @@ import pytest
 from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
-    BaseView, error_view, key_error_view, value_error_view,
-    error_view)
-from nefertari.json_httpexceptions import *
+    BaseView, error_view, key_error_view, value_error_view)
+from nefertari.json_httpexceptions import (
+    JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
 from nefertari.wrappers import wrap_me, ValidationError, ResourceNotFound
 
 
@@ -455,7 +455,7 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj(self, run):
         model = Mock()
-        model.id_field.return_value = 'idname'
+        model.pk_field.return_value = 'idname'
         model.get.return_value = 'foo'
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
@@ -464,13 +464,13 @@ class TestBaseView(object):
         view._json_params['user'] = '1'
         view.id2obj(name='user', model=model)
         assert view._json_params['user'] == 'foo'
-        model.id_field.assert_called_once_with()
+        model.pk_field.assert_called_once_with()
         model.get.assert_called_once_with(idname='1')
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_list(self, run):
         model = Mock()
-        model.id_field.return_value = 'idname'
+        model.pk_field.return_value = 'idname'
         model.get.return_value = 'foo'
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
@@ -479,7 +479,7 @@ class TestBaseView(object):
         view._json_params['user'] = ['1']
         view.id2obj(name='user', model=model)
         assert view._json_params['user'] == ['foo']
-        model.id_field.assert_called_once_with()
+        model.pk_field.assert_called_once_with()
         model.get.assert_called_once_with(idname='1')
 
     @patch('nefertari.view.BaseView._run_init_actions')
@@ -490,13 +490,13 @@ class TestBaseView(object):
             context={}, request=request, _json_params={'foo': 'bar'},
             _query_params={'foo1': 'bar1'})
         view.id2obj(name='asdasdasd', model=model)
-        assert not model.id_field.called
+        assert not model.pk_field.called
         assert not model.get.called
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_setdefault(self, run):
         model = Mock()
-        model.id_field.return_value = 'idname'
+        model.pk_field.return_value = 'idname'
         model.get.return_value = None
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
@@ -505,14 +505,14 @@ class TestBaseView(object):
         view._json_params['user'] = '1'
         view.id2obj(name='user', model=model, setdefault=123)
         assert view._json_params['user'] == 123
-        model.id_field.assert_called_once_with()
+        model.pk_field.assert_called_once_with()
         model.get.assert_called_once_with(idname='1')
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_already_object(self, run):
         id_ = Mock()
         model = Mock()
-        model.id_field.return_value = 'idname'
+        model.pk_field.return_value = 'idname'
         model.get.return_value = None
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
@@ -521,13 +521,13 @@ class TestBaseView(object):
         view._json_params['user'] = id_
         view.id2obj(name='user', model=model, setdefault=123)
         assert view._json_params['user'] == id_
-        model.id_field.assert_called_once_with()
+        model.pk_field.assert_called_once_with()
         assert not model.get.called
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_not_found(self, run):
         model = Mock()
-        model.id_field.return_value = 'idname'
+        model.pk_field.return_value = 'idname'
         model.get.return_value = None
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
