@@ -5,7 +5,7 @@ import elasticsearch
 
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
-from nefertari.json_httpexceptions import JHTTPNotFound, exception_response
+from nefertari.json_httpexceptions import JHTTPBadRequest, JHTTPNotFound, exception_response
 from nefertari import engine
 
 log = logging.getLogger(__name__)
@@ -350,11 +350,13 @@ class ES(object):
             else:
                 _params['body'] = {"query": {"match_all": {}}}
 
-        if '_limit' in params:
-            _params['from_'], _params['size'] = process_limit(
-                params.get('_start', None),
-                params.get('_page', None),
-                params['_limit'])
+        if '_limit' not in params:
+            raise JHTTPBadRequest('Missing _limit')
+
+        _params['from_'], _params['size'] = process_limit(
+            params.get('_start', None),
+            params.get('_page', None),
+            params['_limit'])
 
         if '_sort' in params:
             _params['sort'] = apply_sort(params['_sort'])
