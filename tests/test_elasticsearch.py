@@ -419,9 +419,9 @@ class TestES(object):
     def test_build_search_params_no_body(self):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params(
-            {'foo': 1, 'zoo': 2, '_raw_terms': ' AND q:5', '_limit': 10}
+            {'foo': 1, 'zoo': 2, '_raw_terms': ' AND q:5'}
         )
-        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        assert params.keys() == ['body', 'doc_type', 'index']
         assert params['body'] == {
             'query': {'query_string': {'query': 'foo:1 AND zoo:2 AND q:5'}}}
         assert params['index'] == 'foondex'
@@ -429,24 +429,26 @@ class TestES(object):
 
     def test_build_search_params_no_body_no_qs(self):
         obj = es.ES('Foo', 'foondex')
-        params = obj.build_search_params({'_limit': 10})
-        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        params = obj.build_search_params({})
+        assert params.keys() == ['body', 'doc_type', 'index']
         assert params['body'] == {'query': {'match_all': {}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
 
-    def test_build_search_params_no_limit(self):
+    def test_build_search_params_limit(self):
         obj = es.ES('Foo', 'foondex')
-        with pytest.raises(JHTTPBadRequest) as ex:
-            obj.build_search_params({'foo': 1})
-        assert str(ex.value) == 'Missing _limit'
+        params = obj.build_search_params({'foo': 1, '_limit': 10})
+        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        assert params['body'] == {'query': {'query_string': {'query': 'foo:1'}}}
+        assert params['index'] == 'foondex'
+        assert params['doc_type'] == 'foo'
+        assert params['from_'] == 0
+        assert params['size'] == 10
 
     def test_build_search_params_sort(self):
         obj = es.ES('Foo', 'foondex')
-        params = obj.build_search_params({
-            'foo': 1, '_sort': '+a,-b,c', '_limit': 10})
-        assert params.keys() == [
-            'body', 'doc_type', 'index', 'sort', 'from_', 'size']
+        params = obj.build_search_params({'foo': 1, '_sort': '+a,-b,c'})
+        assert params.keys() == ['body', 'doc_type', 'sort', 'index']
         assert params['body'] == {'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
@@ -454,10 +456,8 @@ class TestES(object):
 
     def test_build_search_params_fields(self):
         obj = es.ES('Foo', 'foondex')
-        params = obj.build_search_params({
-            'foo': 1, '_fields': ['a'], '_limit': 10})
-        assert params.keys() == [
-            'body', 'doc_type', 'index', 'fields', 'from_', 'size']
+        params = obj.build_search_params({'foo': 1, '_fields': ['a']})
+        assert params.keys() == ['body', 'doc_type', 'fields', 'index']
         assert params['body'] == {'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
@@ -465,9 +465,8 @@ class TestES(object):
 
     def test_build_search_params_search_fields(self):
         obj = es.ES('Foo', 'foondex')
-        params = obj.build_search_params({
-            'foo': 1, '_search_fields': 'a,b', '_limit': 10})
-        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        params = obj.build_search_params({'foo': 1, '_search_fields': 'a,b'})
+        assert params.keys() == ['body', 'doc_type', 'index']
         assert params['body'] == {'query': {'query_string': {
             'fields': ['b^1', 'a^2'],
             'query': 'foo:1'}}}
