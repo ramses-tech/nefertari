@@ -348,11 +348,13 @@ class ES(object):
             else:
                 _params['body'] = {"query": {"match_all": {}}}
 
-        if '_limit' in params:
-            _params['from_'], _params['size'] = process_limit(
-                params.get('_start', None),
-                params.get('_page', None),
-                params['_limit'])
+        if '_limit' not in params:
+            raise JHTTPBadRequest('Missing _limit')
+
+        _params['from_'], _params['size'] = process_limit(
+            params.get('_start', None),
+            params.get('_page', None),
+            params['_limit'])
 
         if '_sort' in params:
             _params['sort'] = apply_sort(params['_sort'])
