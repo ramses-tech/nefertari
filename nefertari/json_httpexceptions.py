@@ -103,7 +103,8 @@ class JHTTPCreated(http_exc.HTTPCreated):
         if resource and 'location' in kwargs:
             resource['self'] = kwargs['location']
 
-        if resource and request:
+        auth = request and request.registry._root_resources.values()[0].auth
+        if resource and auth:
             wrapper = apply_privacy(request=request)
             resource = wrapper(result=resource)
 
