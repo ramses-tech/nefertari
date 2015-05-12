@@ -4,6 +4,9 @@ import traceback
 from datetime import datetime
 from pyramid import httpexceptions as http_exc
 
+from nefertari.wrappers import apply_privacy
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,10 +97,16 @@ class JHTTPCreated(http_exc.HTTPCreated):
     def __init__(self, *args, **kwargs):
         resource = kwargs.pop('resource', None)
         encoder = kwargs.pop('encoder', None)
+        request = kwargs.pop('request', None)
         super(JHTTPCreated, self).__init__(*args, **kwargs)
 
         if resource and 'location' in kwargs:
             resource['self'] = kwargs['location']
+
+        auth = request and request.registry._root_resources.values()[0].auth
+        if resource and auth:
+            wrapper = apply_privacy(request=request)
+            resource = wrapper(result=resource)
 
         create_json_response(
             self, data=resource,
