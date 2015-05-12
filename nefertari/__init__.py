@@ -12,7 +12,8 @@ log = logging.getLogger(__name__)
 
 def includeme(config):
     from nefertari.resource import get_root_resource, get_resource_map
-    from nefertari.renderers import JsonRendererFactory, NefertariJsonRendererFactory
+    from nefertari.renderers import (
+        JsonRendererFactory, NefertariJsonRendererFactory)
 
     log.info("%s %s" % (APP_NAME, __version__))
     config.add_directive('get_root_resource', get_root_resource)

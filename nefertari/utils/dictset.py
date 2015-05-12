@@ -15,7 +15,8 @@ class dictset(dict):
             return dictset([[k, v] for k, v in self.items() if k in only])
 
         if exclude:
-            return dictset([[k, v] for k, v in self.items() if k not in exclude])
+            return dictset([[k, v] for k, v in self.items()
+                            if k not in exclude])
 
         return dictset()
 
@@ -62,7 +63,8 @@ class dictset(dict):
 
     def asdict(self, name, _type=None, _set=False):
         """
-        Turn this 'a:2,b:blabla,c:True,a:'d' to {a:[2, 'd'], b:'blabla', c:True}
+        Turn this 'a:2,b:blabla,c:True,a:'d' to
+        {a:[2, 'd'], b:'blabla', c:True}
 
         """
 
@@ -146,10 +148,12 @@ class dictset(dict):
     def process_datetime_param(self, name):
         if name in self:
             try:
-                self[name] = datetime.strptime(self[name], "%Y-%m-%dT%H:%M:%SZ")
+                self[name] = datetime.strptime(
+                    self[name], "%Y-%m-%dT%H:%M:%SZ")
             except ValueError:
-                raise ValueError("Bad format for '%s' param. Must be ISO 8601, "
-                                 "YYYY-MM-DDThh:mm:ssZ" % name)
+                raise ValueError(
+                    "Bad format for '%s' param. Must be ISO 8601, "
+                    "YYYY-MM-DDThh:mm:ssZ" % name)
 
         return self.get(name, None)
 

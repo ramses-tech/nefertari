@@ -5,6 +5,7 @@ from nefertari import tweens
 
 def mock_timer():
     mock_timer.time = 0
+
     def time_func():
         mock_timer.time += 1
         return mock_timer.time

@@ -1,7 +1,6 @@
 from mock import Mock
 
 from nefertari import utility_views as uviews
-from nefertari.json_httpexceptions import *
 
 
 class TestOptionsView(object):
@@ -28,7 +27,8 @@ class TestOptionsView(object):
         assert resp is response
         assert response.headers == {
             'Allow': self.header_str,
-            'Access-Control-Allow-Headers': 'origin, x-requested-with, content-type',
+            'Access-Control-Allow-Headers': (
+                'origin, x-requested-with, content-type'),
         }
 
     def test_call_no_headers(self):

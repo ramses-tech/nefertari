@@ -48,7 +48,8 @@ class JsonRendererFactory(object):
         value = self.run_after_calls(value, system)
 
         view = system['view']
-        enc_class = getattr(view, '_json_encoder', _JSONEncoder) or _JSONEncoder
+        enc_class = getattr(
+            view, '_json_encoder', _JSONEncoder) or _JSONEncoder
         return json.dumps(value, cls=enc_class)
 
     def run_after_calls(self, value, system):

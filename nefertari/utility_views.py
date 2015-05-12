@@ -1,10 +1,5 @@
 from pyramid.view import view_config
 
-from nefertari.json_httpexceptions import *
-
-
-log = logging.getLogger(__name__)
-
 
 @view_config(name='options_view', request_method='OPTIONS',
              route_name='options')

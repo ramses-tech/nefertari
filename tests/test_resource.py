@@ -175,8 +175,8 @@ class TestResourceRecognition(Test):
         self.app = TestApp(self.config.make_wsgi_app())
         self.collection_path = '/messages'
         self.collection_name = 'messages'
-        self.member_path     = '/messages/{id}'
-        self.member_name     = 'message'
+        self.member_path = '/messages/{id}'
+        self.member_name = 'message'
 
     def test_get_collection(self):
         self.assertEqual(self.app.get('/messages').body, 'index')
@@ -241,7 +241,7 @@ class TestResource(Test):
             default_view(m)
         )
 
-        #singular
+        # singular
         m = Resource(self.config, member_name='group_member')
         self.assertEqual(
             "test_resource.views.group_member:GroupMemberView",
@@ -263,7 +263,7 @@ class TestResource(Test):
             default_view(m)
         )
 
-        #singular
+        # singular
         m = Resource(self.config, member_name='group_member')
         m.prefix = 'foo'
         self.assertEqual(
@@ -330,48 +330,41 @@ class TestResource(Test):
         config.begin()
         app = TestApp(config.make_wsgi_app())
 
-        #no headers, user renderer==string.returns string
+        # no headers, user renderer==string.returns string
         self.assertEqual('"index"', app.get('/things').body)
 
-        #header is sting, renderer is string. returns string
-        self.assertEqual(
-            'index', app.get('/things',
-            headers={'ACCEPT': 'text/plain'}).body)
+        # header is sting, renderer is string. returns string
+        self.assertEqual('index', app.get('/things',
+                         headers={'ACCEPT': 'text/plain'}).body)
 
-        #header is json, renderer is string. returns json
-        self.assertEqual(
-            '"index"', app.get('/things',
-            headers={'ACCEPT': 'application/json'}).body)
+        # header is json, renderer is string. returns json
+        self.assertEqual('"index"', app.get('/things',
+                         headers={'ACCEPT': 'application/json'}).body)
 
-        #no header. returns json
+        # no header. returns json
         self.assertEqual('"index"', app.get('/2things').body)
 
-        #header==json, renderer==json, returns json
-        self.assertEqual(
-            '"index"', app.get('/2things',
-            headers={'ACCEPT': 'application/json'}).body)
+        # header==json, renderer==json, returns json
+        self.assertEqual('"index"', app.get('/2things',
+                         headers={'ACCEPT': 'application/json'}).body)
 
-        #header==text, renderer==json, returns string
-        self.assertEqual(
-            "index", app.get('/2things',
-            headers={'ACCEPT': 'text/plain'}).body)
+        # header==text, renderer==json, returns string
+        self.assertEqual("index", app.get('/2things',
+                         headers={'ACCEPT': 'text/plain'}).body)
 
         # no header, no renderer. uses default_renderer, returns
         # View._default_renderer==nefertari_json
         self.assertEqual('"index"', app.get('/3things').body)
 
-        self.assertEqual(
-            '"index"', app.get('/3things',
-            headers={'ACCEPT': 'application/json'}).body)
+        self.assertEqual('"index"', app.get('/3things',
+                         headers={'ACCEPT': 'application/json'}).body)
 
-        self.assertEqual(
-            'index', app.get('/3things',
-            headers={'ACCEPT': 'text/plain'}).body)
+        self.assertEqual('index', app.get('/3things',
+                         headers={'ACCEPT': 'text/plain'}).body)
 
-        #bad accept.defaults to json
-        self.assertEqual(
-            '"index"', app.get('/3things',
-            headers={'ACCEPT': 'text/blablabla'}).body)
+        # bad accept.defaults to json
+        self.assertEqual('"index"', app.get('/3things',
+                         headers={'ACCEPT': 'text/blablabla'}).body)
 
     def test_nonBaseView_default_renderer(self, *a):
         config = _create_config()
@@ -390,7 +383,7 @@ class TestResource(Test):
         aa = root.add('a', 'as', view=get_test_view_class('A'))
         bb = aa.add('b', 'bs', view=get_test_view_class('B'))
         cc = bb.add('c', 'cs', view=get_test_view_class('C'))
-        dd = cc.add('d', 'ds', view=get_test_view_class('D'))
+        cc.add('d', 'ds', view=get_test_view_class('D'))
 
         config.begin()
         app = TestApp(config.make_wsgi_app())
@@ -546,7 +539,7 @@ class TestMockedResource(Test):
         m_add_resource_routes = arg[0]
 
         m = Resource(self.config)
-        g = m.add('grandpa', 'grandpas', view=View)
+        m.add('grandpa', 'grandpas', view=View)
 
         m.add('parent', 'parents', parent='grandpa', view=View)
         m_add_resource_routes.assert_called_with(
@@ -598,7 +591,7 @@ class TestMockedResource(Test):
         gm = root.add('grandma', 'grandmas', view=View)
         pa = gm.add('parent', 'parents', view=View)
         boy = pa.add('boy', 'boys', view=View)
-        grchild = boy.add('child', 'children', view=View)
+        boy.add('child', 'children', view=View)
         girl = pa.add('girl', 'girls', view=View)
 
         self.assertEqual(len(root.resource_map), 5)

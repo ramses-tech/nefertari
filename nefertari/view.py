@@ -6,7 +6,8 @@ from collections import defaultdict
 from pyramid.settings import asbool
 from pyramid.request import Request
 
-from nefertari.json_httpexceptions import *
+from nefertari.json_httpexceptions import (
+    JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
 from nefertari.utils import dictset
 from nefertari import wrappers
 from nefertari.resource import ACTIONS
@@ -22,7 +23,7 @@ class ViewMapper(object):
         self.kwargs = kwargs
 
     def __call__(self, view):
-        #i.e index, create etc.
+        # i.e index, create etc.
         action_name = self.kwargs['attr']
 
         def view_mapper_wrapper(context, request):
@@ -30,13 +31,13 @@ class ViewMapper(object):
             matchdict.pop('action', None)
             matchdict.pop('traverse', None)
 
-            #instance of BaseView (or child of)
+            # instance of BaseView (or child of)
             view_obj = view(context, request)
             action = getattr(view_obj, action_name)
             request.action = action_name
 
-            # we should not run "after_calls" here, so lets save them in request
-            # as filters they will be ran in the renderer factory
+            # we should not run "after_calls" here, so lets save them in
+            # request as filters they will be ran in the renderer factory
             request.filters = view_obj._after_calls
 
             try:
@@ -111,7 +112,8 @@ class BaseView(object):
                     self._json_params.update(request.json)
                 except simplejson.JSONDecodeError:
                     log.error(
-                        "Expecting JSON. Received: '{}'. Request: {} {}".format(
+                        "Expecting JSON. Received: '{}'. "
+                        "Request: {} {}".format(
                             request.body, request.method, request.url))
 
             self._json_params = BaseView.convert_dotted(self._json_params)
@@ -121,8 +123,8 @@ class BaseView(object):
         self._params.update(self._json_params)
 
         # dict of the callables {'action':[callable1, callable2..]}
-        # as name implies, before calls are executed before the action is called
-        # after_calls are called after the action returns.
+        # as name implies, before calls are executed before the action is
+        # called after_calls are called after the action returns.
         self._before_calls = defaultdict(list)
         self._after_calls = defaultdict(list)
 
@@ -234,8 +236,10 @@ class BaseView(object):
         else:
             callkind[action].insert(pos, _callable)
 
-    add_before_call = lambda self, *a, **k: self.add_before_or_after_call(*a, before=True, **k)
-    add_after_call = lambda self, *a, **k: self.add_before_or_after_call(*a, before=False, **k)
+    add_before_call = lambda self, *a, **k: self.add_before_or_after_call(
+        *a, before=True, **k)
+    add_after_call = lambda self, *a, **k: self.add_before_or_after_call(
+        *a, before=False, **k)
 
     def subrequest(self, url, params={}, method='GET'):
         req = Request.blank(url, cookies=self.request.cookies,

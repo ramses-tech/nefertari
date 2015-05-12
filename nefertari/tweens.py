@@ -96,7 +96,7 @@ def cache_control(handler, registry):
     def cache_control(request):
         response = handler(request)
 
-        #change only if the header cache-control is missing
+        # change only if the header cache-control is missing
         add_header = True
         for header in response.headerlist:
             if 'Cache-Control' in header:

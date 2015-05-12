@@ -4,9 +4,9 @@ import pytest
 from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
-    BaseView, error_view, key_error_view, value_error_view,
-    error_view)
-from nefertari.json_httpexceptions import *
+    BaseView, error_view, key_error_view, value_error_view)
+from nefertari.json_httpexceptions import (
+    JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
 from nefertari.wrappers import wrap_me, ValidationError, ResourceNotFound
 
 

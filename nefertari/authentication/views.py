@@ -1,6 +1,7 @@
 from pyramid.security import remember, forget
 
-from nefertari.json_httpexceptions import *
+from nefertari.json_httpexceptions import (
+    JHTTPFound, JHTTPConflict, JHTTPUnauthorized, JHTTPNotFound, JHTTPOk)
 from nefertari.view import BaseView
 from .models import AuthUser
 

@@ -4,7 +4,7 @@ import logging
 import cryptacular.bcrypt
 from pyramid.security import authenticated_userid, forget
 
-from nefertari.json_httpexceptions import *
+from nefertari.json_httpexceptions import JHTTPBadRequest
 from nefertari import engine
 from nefertari.utils import dictset
 
@@ -20,7 +20,8 @@ class AuthModelDefaultMixin(object):
     """
     @classmethod
     def get_resource(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_resource(*args, **kwargs)
+        return super(AuthModelDefaultMixin, self).get_resource(
+            *args, **kwargs)
 
     @classmethod
     def pk_field(self, *args, **kwargs):
@@ -28,7 +29,8 @@ class AuthModelDefaultMixin(object):
 
     @classmethod
     def get_or_create(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_or_create(*args, **kwargs)
+        return super(AuthModelDefaultMixin, self).get_or_create(
+            *args, **kwargs)
 
     @classmethod
     def is_admin(cls, user):
