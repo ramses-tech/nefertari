@@ -1,7 +1,7 @@
 from pyramid.authentication import CallbackAuthenticationPolicy
 
 from nefertari import engine
-from .models import apikey_model
+from .models import create_apikey_model
 
 
 class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
@@ -16,7 +16,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
 
     You may also find useful `nefertari.authentication.views.
     TokenAuthenticationView`
-    view which offers basic functionality to create, claim, and reset the 
+    view which offers basic functionality to create, claim, and reset the
     token.
     """
     def __init__(self, user_model, check=None, credentials_callback=None):
@@ -39,7 +39,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         self.user_model = user_model
         if isinstance(self.user_model, basestring):
             self.user_model = engine.get_document_cls(self.user_model)
-        apikey_model(self.user_model)
+        create_apikey_model(self.user_model)
 
         self.check = check
         self.credentials_callback = credentials_callback

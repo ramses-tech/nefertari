@@ -100,7 +100,7 @@ class TokenAuthenticationView(BaseView):
         else:
             raise JHTTPNotFound('User not found')
 
-    def token_reset(self, **params):
+    def reset_token(self, **params):
         """ Reset current token by POSTing 'login' and 'password'.
 
         User's `Authorization` header value is returned in `WWW-Authenticate`

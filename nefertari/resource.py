@@ -140,7 +140,7 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
     return action_route
 
 
-def default_view(resource):
+def get_default_view_path(resource):
     "Returns the dotted path to the default view class."
 
     parts = [a.member_name for a in resource.ancestors] +\
@@ -243,7 +243,7 @@ class Resource(object):
                                 prefix=prefix)
 
         view = maybe_dotted(
-            kwargs.pop('view', None) or default_view(new_resource))
+            kwargs.pop('view', None) or get_default_view_path(new_resource))
 
         for name, val in kwargs.pop('view_args', {}).items():
             setattr(view, name, val)
@@ -307,7 +307,7 @@ class Resource(object):
 
         return new_resource
 
-    def add_from(self, resource, **kwargs):
+    def add_from_child(self, resource, **kwargs):
         """ Add a resource with its all children resources to the current
         resource.
         """
@@ -315,4 +315,4 @@ class Resource(object):
         new_resource = self.add(
             resource.member_name, resource.collection_name, **kwargs)
         for child in resource.children:
-            new_resource.add_from(child, **kwargs)
+            new_resource.add_from_child(child, **kwargs)

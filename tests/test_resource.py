@@ -227,8 +227,8 @@ class TestResourceRecognition(Test):
 
 class TestResource(Test):
 
-    def test_default_view(self, *a):
-        from nefertari.resource import Resource, default_view
+    def test_get_default_view_path(self, *a):
+        from nefertari.resource import Resource, get_default_view_path
 
         m = Resource(
             self.config,
@@ -238,18 +238,18 @@ class TestResource(Test):
 
         self.assertEqual(
             "test_resource.views.group_members:GroupMembersView",
-            default_view(m)
+            get_default_view_path(m)
         )
 
         # singular
         m = Resource(self.config, member_name='group_member')
         self.assertEqual(
             "test_resource.views.group_member:GroupMemberView",
-            default_view(m)
+            get_default_view_path(m)
         )
 
-    def test_default_view_resource_prefix(self, *a):
-        from nefertari.resource import Resource, default_view
+    def test_get_default_view_path_resource_prefix(self, *a):
+        from nefertari.resource import Resource, get_default_view_path
 
         m = Resource(
             self.config,
@@ -260,7 +260,7 @@ class TestResource(Test):
 
         self.assertEqual(
             "test_resource.views.foo_group_members:FooGroupMembersView",
-            default_view(m)
+            get_default_view_path(m)
         )
 
         # singular
@@ -268,7 +268,7 @@ class TestResource(Test):
         m.prefix = 'foo'
         self.assertEqual(
             "test_resource.views.foo_group_member:FooGroupMemberView",
-            default_view(m)
+            get_default_view_path(m)
         )
 
     def test_singular_resource(self, *a):
@@ -597,7 +597,7 @@ class TestMockedResource(Test):
         self.assertEqual(len(root.resource_map), 5)
 
         gp = root.add('grandpa', 'grandpas', view=View)
-        gp.add_from(pa, view=View)
+        gp.add_from_child(pa, view=View)
 
         self.assertEqual(
             pa.children[0],
