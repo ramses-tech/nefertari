@@ -8,6 +8,7 @@ from pyramid.config import Configurator
 from zope.dottedname.resolve import resolve
 
 from nefertari.utils import dictset, split_strip, to_dicts
+from nefertari import engine
 
 
 def main(argv=sys.argv, quiet=False):
@@ -38,7 +39,8 @@ class ESCommand(object):
             '--quiet', help='Quiet mode', action='store_true',
             default=False)
         parser.add_argument(
-            '--models', help='List of dotted paths of models to index',
+            '--models',
+            help='Comma-separeted list of model names to index',
             required=True)
         parser.add_argument(
             '--params', help='Url-encoded params for each model')
@@ -71,11 +73,10 @@ class ESCommand(object):
     def run(self, quiet=False):
         from nefertari.elasticsearch import ES
         ES.setup(self.settings)
-        models_paths = split_strip(self.options.models)
+        model_names = split_strip(self.options.models)
 
-        for path in models_paths:
-            model = resolve(path)
-            model_name = path.split('.')[-1]
+        for model_name in model_names:
+            model = engine.get_document_cls(model_name)
 
             params = self.options.params or ''
             params = dict([
