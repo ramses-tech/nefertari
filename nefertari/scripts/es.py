@@ -8,6 +8,7 @@ from pyramid.config import Configurator
 from zope.dottedname.resolve import resolve
 
 from nefertari.utils import dictset, split_strip, to_dicts
+from nefertari import engine
 
 
 def main(argv=sys.argv, quiet=False):
@@ -38,7 +39,9 @@ class ESCommand(object):
             '--quiet', help='Quiet mode', action='store_true',
             default=False)
         parser.add_argument(
-            '--models', help='List of dotted paths of models to index',
+            '--models',
+            help=('Comma-separeted list of dotted paths or names '
+                  'of models to index'),
             required=True)
         parser.add_argument(
             '--params', help='Url-encoded params for each model')
@@ -68,14 +71,29 @@ class ESCommand(object):
 
         self.settings = dictset(registry.settings)
 
+    def resolve_model(self, model_str):
+        """ Given a model string, returns model class and model name.
+
+        Params:
+            :model_str: Dotted path to model class or model name in the exact
+                case it was defined. E.g. if you defined a model named
+                'FooBar', pass 'FooBar' value here.
+        """
+        if '.' in model_str:
+            model = resolve(model_str)
+            model_name = model_str.split('.')[-1]
+        else:
+            model = engine.get_document_cls(model_str)
+            model_name = model_str
+        return model, model_name
+
     def run(self, quiet=False):
         from nefertari.elasticsearch import ES
         ES.setup(self.settings)
-        models_paths = split_strip(self.options.models)
+        model_strings = split_strip(self.options.models)
 
-        for path in models_paths:
-            model = resolve(path)
-            model_name = path.split('.')[-1]
+        for model_str in model_strings:
+            model, model_name = self.resolve_model(model_str)
 
             params = self.options.params or ''
             params = dict([
