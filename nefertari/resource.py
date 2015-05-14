@@ -40,7 +40,7 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
         resources or relations between resources.
 
     ``name_prefix``
-        Perpends the route names that are generated with the
+        Prepends the route names that are generated with the
         name_prefix given. Combined with the path_prefix option,
         it's easy to generate route names and paths that represent
         resources that are in relations.

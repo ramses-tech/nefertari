@@ -3,7 +3,7 @@ from pyramid.security import ALL_PERMISSIONS, Allow, Everyone, Authenticated
 
 class SelfParamMixin(object):
     """ ACL mixin that implements method to translate input key value
-    to a user ID field, when key value equals to :param_value:
+    to a user ID field, when key value equals :param_value:
 
     Value is only converted if user is logged in and :request.user:
     is an instance of :__context_class__:, thus for routes that display

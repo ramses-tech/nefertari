@@ -93,11 +93,11 @@ class BaseView(object):
 
         Each view has these dicts on data:
           :_query_params: Params from a query string
-          :_json_params: Request JSON data. Is populated only for
+          :_json_params: Request JSON data. Populated only for
               PUT, PATCH, POST methods
           :_params: Join of _query_params and _json_params
 
-        On methods tunneling, _json_params contains the same data as
+        For method tunneling, _json_params contains the same data as
         _query_params.
         """
         self.context = context

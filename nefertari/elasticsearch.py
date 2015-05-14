@@ -220,14 +220,14 @@ class ES(object):
             log.warning('Empty body')
 
     def index(self, documents, chunk_size=None):
-        """ Reindex all `document`. """
+        """ Reindex all `document`s. """
         self._bulk('index', documents, chunk_size)
 
     def index_missing(self, documents, chunk_size=None):
         """ Index documents from a `document` that are missing from index.
 
-        To determine what documents are missing `mget` call with a list of
-        document IDs from `documents` is performed. Then `document` are
+        Determines which documents are missing `mget` call from a list of
+        document IDs as `documents`. Then `document`s are
         filtered to drop documents that were found.
         """
         log.info('Indexing documents of type `{}` missing from '

@@ -16,7 +16,7 @@ class AuthModelDefaultMixin(object):
     """ Mixin that implements all methods required for Ticket and Token
     auth systems to work.
 
-    All implemented methods must me class methods.
+    All implemented methods must be class methods.
     """
     @classmethod
     def get_resource(self, *args, **kwargs):
@@ -34,7 +34,7 @@ class AuthModelDefaultMixin(object):
 
     @classmethod
     def is_admin(cls, user):
-        """ Determine if :user: is an admin. Is used by `apply_privacy` wrapper.
+        """ Determine if :user: is an admin. Used by `apply_privacy` wrapper.
         """
         return 'admin' in user.groups
 
@@ -42,7 +42,7 @@ class AuthModelDefaultMixin(object):
     def token_credentials(cls, username, request):
         """ Get api token for user with username of :username:
 
-        Is used by Token-based auth as `credentials_callback` kwarg.
+        Used by Token-based auth as `credentials_callback` kwarg.
         """
         try:
             user = cls.get_resource(username=username)
@@ -55,10 +55,10 @@ class AuthModelDefaultMixin(object):
 
     @classmethod
     def groups_by_token(cls, username, token, request):
-        """ Get user's groups if user with :username: exists and his api key
-        token equals to :token:
+        """ Get user's groups if user with :username: exists and their api key
+        token equals :token:
 
-        Is used by Token-based authentication as `check` kwarg.
+        Used by Token-based authentication as `check` kwarg.
         """
         try:
             user = cls.get_resource(username=username)
@@ -74,7 +74,7 @@ class AuthModelDefaultMixin(object):
     def authenticate_by_password(cls, params):
         """ Authenticate user with login and password from :params:
 
-        Is used both by Token and Ticket-based auths (called from views).
+        Used both by Token and Ticket-based auths (called from views).
         """
         def verify_password(user, password):
             return crypt.check(user.password, password)
@@ -97,7 +97,7 @@ class AuthModelDefaultMixin(object):
     def groups_by_userid(cls, userid, request):
         """ Return group identifiers of user with id :userid:
 
-        Is used by Ticket-based auth as `callback` kwarg.
+        Used by Ticket-based auth as `callback` kwarg.
         """
         try:
             user = cls.get_resource(**{cls.pk_field(): userid})
@@ -112,7 +112,7 @@ class AuthModelDefaultMixin(object):
     def create_account(cls, params):
         """ Create auth user instance with data from :params:.
 
-        Is used by both Token and Ticket-based auths to register a user (
+        Used by both Token and Ticket-based auths to register a user (
         called from views).
         """
         user_params = dictset(params).subset(
@@ -128,7 +128,7 @@ class AuthModelDefaultMixin(object):
     def authuser_by_userid(cls, request):
         """ Get user by ID.
 
-        Is used by Ticket-based auth. Is added as request method to populate
+        Used by Ticket-based auth. Is added as request method to populate
         `request.user`.
         """
         _id = authenticated_userid(request)
@@ -139,7 +139,7 @@ class AuthModelDefaultMixin(object):
     def authuser_by_name(cls, request):
         """ Get user by username
 
-        Is used by Token-based auth. Is added as request method to populate
+        Used by Token-based auth. Is added as request method to populate
         `request.user`.
         """
         username = authenticated_userid(request)
@@ -152,7 +152,7 @@ def lower_strip(value):
 
 
 def crypt_password(password):
-    """ Crypt :password: if it's not crypted yet """
+    """ Crypt :password: if it's not crypted yet. """
     if password and not crypt.match(password):
         password = unicode(crypt.encode(password))
     return password
@@ -187,12 +187,12 @@ def apikey_token():
 def apikey_model(user_model):
     """ Generate ApiKey model class and connect it with :user_model:.
 
-    ApiKey is generated having relationship to user model class :user_model:
-    and has One-to-One relationship with backreference.
-    ApiKey is setup to be auto-generated when new :user_model: is created.
+    ApiKey is generated with relationship to user model class :user_model:
+    as a One-to-One relationship with a backreference.
+    ApiKey is set up to be auto-generated when a new :user_model: is created.
 
     Returns ApiKey document class. If ApiKey is already defined, it is not
-    generated again.
+    generated.
 
     Arguments:
         :user_model: Class that represents user model for which api keys will

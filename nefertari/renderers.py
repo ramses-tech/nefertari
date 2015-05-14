@@ -32,7 +32,7 @@ class JsonRendererFactory(object):
     def __call__(self, value, system):
         """ Call the renderer implementation with the value
         and the system value passed in as arguments and return
-        the result (a string or unicode object).  The value is
+        the result (a string or unicode object). The value is
         the return value of a view.  The system value is a
         dictionary containing available system values
         (e.g. view, context, and request). """
@@ -64,7 +64,7 @@ class JsonRendererFactory(object):
 
 class NefertariJsonRendererFactory(JsonRendererFactory):
 
-    """Yarhp specific json renderer which will apply
+    """Special json renderer which will apply
     all after_calls(filters) to the result.
     """
 

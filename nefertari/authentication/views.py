@@ -69,7 +69,7 @@ class TokenAuthenticationView(BaseView):
     _model_class = AuthUser
 
     def register(self):
-        """ Register new user by POSTing all required data.
+        """ Register a new user by POSTing all required data.
 
         User's `Authorization` header value is returned in `WWW-Authenticate`
         header.

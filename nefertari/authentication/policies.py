@@ -7,23 +7,24 @@ from .models import apikey_model
 class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
     """ ApiKey authentication policy.
 
-    Relies of `Authorization` header being used on request, e.g.:
+    Relies on `Authorization` header being used in request, e.g.:
         `Authorization: ApiKey username:token`
 
     To use this policy, instantiate it with required arguments, as described
     in `__init__` method and register it with Pyramid's
     `Configurator.set_authentication_policy`.
 
-    You may also find usefull `nefertari.authentication.views.
+    You may also find useful `nefertari.authentication.views.
     TokenAuthenticationView`
-    view which offers basic functionality to create, claim, reset token.
+    view which offers basic functionality to create, claim, and reset the 
+    token.
     """
     def __init__(self, user_model, check=None, credentials_callback=None):
         """ Init the policy.
 
         Arguments:
             :user_model: String name or class of a User model for which ApiKey
-                model to be generated
+                model is to be generated
             :check: A callback passed the username, api_key and the request,
                 expected to return None if user doesn't exist or a sequence of
                 principal identifiers (possibly empty) if the user does exist.
@@ -45,7 +46,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         super(ApiKeyAuthenticationPolicy, self).__init__()
 
     def remember(self, request, username, **kw):
-        """ Return 'WWW-Authenticate' header with a value that should be used
+        """ Returns 'WWW-Authenticate' header with a value that should be used
         in 'Authorization' header.
         """
         if self.credentials_callback:
