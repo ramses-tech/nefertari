@@ -39,7 +39,7 @@ class AuthModelDefaultMixin(object):
         return 'admin' in user.groups
 
     @classmethod
-    def token_credentials(cls, username, request):
+    def get_token_credentials(cls, username, request):
         """ Get api token for user with username of :username:
 
         Used by Token-based auth as `credentials_callback` kwarg.
@@ -54,7 +54,7 @@ class AuthModelDefaultMixin(object):
                 return user.api_key.token
 
     @classmethod
-    def groups_by_token(cls, username, token, request):
+    def get_groups_by_token(cls, username, token, request):
         """ Get user's groups if user with :username: exists and their api key
         token equals :token:
 
@@ -94,7 +94,7 @@ class AuthModelDefaultMixin(object):
         return success, user
 
     @classmethod
-    def groups_by_userid(cls, userid, request):
+    def get_groups_by_userid(cls, userid, request):
         """ Return group identifiers of user with id :userid:
 
         Used by Ticket-based auth as `callback` kwarg.
@@ -125,7 +125,7 @@ class AuthModelDefaultMixin(object):
             raise JHTTPBadRequest('Failed to create account.')
 
     @classmethod
-    def authuser_by_userid(cls, request):
+    def get_authuser_by_userid(cls, request):
         """ Get user by ID.
 
         Used by Ticket-based auth. Is added as request method to populate
@@ -136,7 +136,7 @@ class AuthModelDefaultMixin(object):
             return cls.get_resource(**{cls.pk_field(): _id})
 
     @classmethod
-    def authuser_by_name(cls, request):
+    def get_authuser_by_name(cls, request):
         """ Get user by username
 
         Used by Token-based auth. Is added as request method to populate
@@ -151,7 +151,7 @@ def lower_strip(value):
     return (value or '').lower().strip()
 
 
-def crypt_password(password):
+def encrypt_password(password):
     """ Crypt :password: if it's not crypted yet. """
     if password and not crypt.match(password):
         password = unicode(crypt.encode(password))
@@ -173,18 +173,18 @@ class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
     email = engine.StringField(
         unique=True, required=True, processors=[lower_strip])
     password = engine.StringField(
-        min_length=3, required=True, processors=[crypt_password])
+        min_length=3, required=True, processors=[encrypt_password])
     groups = engine.ListField(
         item_type=engine.StringField,
         choices=['admin', 'user'], default=['user'])
 
 
-def apikey_token():
+def create_apikey_token():
     """ Generate ApiKey.token using uuid library. """
     return uuid.uuid4().hex.replace('-', '')
 
 
-def apikey_model(user_model):
+def create_apikey_model(user_model):
     """ Generate ApiKey model class and connect it with :user_model:.
 
     ApiKey is generated with relationship to user model class :user_model:
@@ -215,7 +215,7 @@ def apikey_model(user_model):
         __tablename__ = 'nefertari_apikey'
 
         id = engine.IdField(primary_key=True)
-        token = engine.StringField(default=apikey_token)
+        token = engine.StringField(default=create_apikey_token)
         user = engine.Relationship(
             document=user_model.__name__,
             uselist=False,
@@ -226,7 +226,7 @@ def apikey_model(user_model):
             **fk_kwargs)
 
         def reset_token(self):
-            self.update({'token': apikey_token()})
+            self.update({'token': create_apikey_token()})
             return self.token
 
     # Setup ApiKey autogeneration on :user_model: creation

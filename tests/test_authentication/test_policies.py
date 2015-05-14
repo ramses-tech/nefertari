@@ -4,7 +4,7 @@ from nefertari import authentication as auth
 from .fixtures import engine_mock
 
 
-@patch('nefertari.authentication.policies.apikey_model')
+@patch('nefertari.authentication.policies.create_apikey_model')
 class TestApiKeyAuthenticationPolicy(object):
 
     def test_init(self, mock_apikey, engine_mock):
