@@ -13,13 +13,14 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   overview
    getting_started
+   views
    database_backends
    auth
    making_requests
    development_tools
    example_project
+   why
    changelog
 
 

@@ -1,6 +1,9 @@
 Database Backends
 =================
 
+Introduction
+------------
+
 Nefertari implements database engines on top of two different ORMs: `SQLAlchemy <http://www.sqlalchemy.org>`_ and `MongoEngine <http://mongoengine.org/>`_. These two engines wrap the underlying APIs of each ORM and provide a standardized syntax for using either one, making it easy to switch between them with minimal changes.
 
 Each Nefertari engine is maintained in its own repository:
@@ -11,7 +14,7 @@ Each Nefertari engine is maintained in its own repository:
 Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ or the database engine itself to read (GET) any given resource. You can read more about **ESBaseDocument** in the `Wrapper API <database_backends.html#wrapper-api>`_ section below.
 
 Field abstractions
--------------------
+------------------
 
 * BigIntegerField
 * BooleanField
