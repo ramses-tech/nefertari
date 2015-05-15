@@ -1,6 +1,9 @@
 Changelog
 =========
 
+* :release:`0.2.2 <2015-05-15>`
+* :support:`0` Step-by-step Getting started guide
+
 * :release:`0.2.1 <2015-04-21>`
 * :support:`0` Specify any field as primary, and have it respected by all relations endpoints.
 * :feature:`0` Added DictField type.

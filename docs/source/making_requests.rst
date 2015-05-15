@@ -7,7 +7,7 @@ Query syntax
 ===============================             ===========
 url parameter                               description
 ===============================             ===========
-``_m=<method>``                             to tunnel any http method using GET, e.g. _m=POST
+``_m=<method>``                             to tunnel any http method using GET, e.g. _m=POST [#]_
 ``_limit=<n>``                              to limit the returned collection to <n> results (default: 20, max limit: 100 for unauthenticated users)
 ``_sort=<field_name>``                      to sort collection by <field_name>
 ``_start=<n>``                              to start collection from the <n>th resource
@@ -28,4 +28,23 @@ url parameter                               description
 ``_search_fields=<field_list>``             use with ``?q=<keywords>`` to restrict search to specific fields
 ===============================             ===========
 
-.. [#] The full syntax of ElasticSearch querying is beyond the scope of this documentation. You can read more on the `ElasticSearch Query String Query <http://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl-query-string-query.html>`_ page and more specifically on `Ranges <http://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl-query-string-query.html#_ranges_2>`_ to do things like: ``?date=[2014-01-01 TO *]``
+.. [#] To update listfields and dictfields, you can use the following syntax: ``_m=PATCH&<listfield>=<comma_separated_list>&<dictfield>.<key>=<value>``
+.. [#] The full syntax of ElasticSearch querying is beyond the scope of this documentation. You can read more on the ElasticSearch Query String Query `documentation <http://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl-query-string-query.html>`_ to do things like fuzzy search: ``?name=fuzzy~`` or date range search: ``?date=[2015-01-01 TO *]``
+
+update_many()
+-------------
+
+If update_many() is defined in your view, you will be able to update a single field across an entire collection or filtered collection. E.g.
+
+PATCH `/api/<collection>?q=<keywords>`
+
+.. code-block:: json
+
+    {
+        "<field_name>":"<new_value>"
+    }
+
+delete_many()
+-------------
+
+Similarly, if delete_many() is defined, you will be able to delete an entire collection or filtered collection. E.g. DELETE `/api/<collection>?_missing_=<field_name>`

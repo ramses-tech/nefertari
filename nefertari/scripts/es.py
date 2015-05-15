@@ -48,9 +48,10 @@ class ESCommand(object):
         parser.add_argument('--chunk', help='Index chunk size', type=int)
         parser.add_argument(
             '--force',
-            help=('Force reindex of all documents. Only documents that '
-                  'are missing from index are indexed by default.'),
-            type=bool, default=False)
+            help=('Force reindexing of all documents. By default, only '
+                'documents that are missing from index are indexed.'),
+            action='store_true',
+            default=False)
 
         self.options = parser.parse_args()
         if not self.options.config:
@@ -70,7 +71,7 @@ class ESCommand(object):
 
         self.settings = dictset(registry.settings)
 
-    def run(self, quiet=False):
+    def run(self):
         from nefertari.elasticsearch import ES
         ES.setup(self.settings)
         model_names = split_strip(self.options.models)
@@ -92,6 +93,6 @@ class ESCommand(object):
             if self.options.force:
                 es.index(documents, chunk_size=chunk_size)
             else:
-                es.index_missing(documents, chunk_size=chunk_size)
+                es.index_missing_documents(documents, chunk_size=chunk_size)
 
         return 0

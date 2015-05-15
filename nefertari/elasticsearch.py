@@ -223,15 +223,15 @@ class ES(object):
         """ Reindex all `document`s. """
         self._bulk('index', documents, chunk_size)
 
-    def index_missing(self, documents, chunk_size=None):
-        """ Index documents from a `document` that are missing from index.
+    def index_missing_documents(self, documents, chunk_size=None):
+        """ Index documents that are missing from ES index.
 
-        Determines which documents are missing `mget` call from a list of
-        document IDs as `documents`. Then `document`s are
-        filtered to drop documents that were found.
+        Determines which documents are missing using ES `mget` call which
+        returns a list of document IDs as `documents`. Then missing
+        `documents` from that list are indexed.
         """
-        log.info('Indexing documents of type `{}` missing from '
-                 'index `{}`'.format(self.doc_type, self.index_name))
+        log.info('Trying to index documents of type `{}` missing from '
+                 '`{}` index'.format(self.doc_type, self.index_name))
         if not documents:
             log.info('No documents to index')
             return

@@ -2,7 +2,7 @@ Development Tools
 =================
 
 Indexing in ElasticSearch
------------------------------
+-------------------------
 
 ``nefertari.index`` console script can be used to manually (re-)index models from your database engine to ElasticSearch.
 
@@ -13,7 +13,7 @@ You can run it like so::
 The available options are:
 
 --config        specify ini file to use (required)
---models        list of dotted paths of models to index. Models must be subclasses of ESBaseDocument.
+--models        list of models to index (e.g. User). Models must subclass ESBaseDocument.
 --params        URL-encoded parameters for each module
 --quiet         "quiet mode" (surpress output)
 --index         Specify name of index. E.g. the slug at the end of http://localhost:9200/example_api
