@@ -51,7 +51,6 @@ Install nefertari and the database backend you want to use, e.g. sqla or mongodb
 
 
     def main(global_config, **settings):
-        from .models import Item
 
         config = Configurator(settings=settings)
         config.include('nefertari.engine')
@@ -63,9 +62,11 @@ Install nefertari and the database backend you want to use, e.g. sqla or mongodb
 
         root = config.get_root_resource()
 
+        from .models import Item
         root.add(
             'myitem', 'myitems',
-            id_name='myitem_' + Story.pk_field())
+            id_name='myitem_' + Item.pk_field(),
+            view='myproject.views.ItemsView')
 
 
         # Use the engine helper to bootstrap the db
@@ -155,7 +156,7 @@ When using SQLA, each view must define the following properties:
 Optional properties:
     * *_json_encoder*: encoder to encode objects to JSON. Database-specific encoders are available at ``nefertari.engine.JSONEncoder``.
 
-Your views should reside in a package and each module of that package should contain views for a particular root level route. In our example, the ``users`` route view must be at ``views.users.UsersView``.
+Your views should reside in a package and each module of that package should contain views for a particular root level route. In our example, the ``users`` route view must be at ``views.users.UsersView``. Or you can explicitly provide view name, or view class as ``view`` keyword argument to ``config.get_root_resource()`` in your project's ``main`` function.
 
 Note that in case of a singular resource (i.e. Likes), there is no "index" view and "show" returns only the one item.
 Also, note that "delete", "update" and other actions that would normally require an id, do not in Nefertari, because there is only one object being referenced.
