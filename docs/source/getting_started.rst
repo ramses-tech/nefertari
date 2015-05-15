@@ -156,7 +156,7 @@ When using SQLA, each view must define the following properties:
 Optional properties:
     * *_json_encoder*: encoder to encode objects to JSON. Database-specific encoders are available at ``nefertari.engine.JSONEncoder``.
 
-Your views should reside in a package and each module of that package should contain views for a particular root level route. In our example, the ``users`` route view must be at ``views.users.UsersView``. Or you can explicitly provide view name, or view class as ``view`` keyword argument to ``config.get_root_resource()`` in your project's ``main`` function.
+Your views should reside in a package and each module of that package should contain views for a particular root level route. In our example, the ``users`` route view must be at ``views.users.UsersView``. Or you can explicitly provide view name, or view class as ``view`` keyword argument to ``resource.add()`` in your project's ``main`` function.
 
 Note that in case of a singular resource (i.e. Likes), there is no "index" view and "show" returns only the one item.
 Also, note that "delete", "update" and other actions that would normally require an id, do not in Nefertari, because there is only one object being referenced.
