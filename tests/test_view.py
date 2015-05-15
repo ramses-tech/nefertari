@@ -272,8 +272,8 @@ class TestBaseView(object):
         view._model_class = 'Model1'
         eng.is_relationship_field.return_value = True
         view.convert_ids2objects()
-        eng.relationship_cls.assert_called_once_with('foo', 'Model1')
-        id2obj.assert_called_once_with('foo', eng.relationship_cls())
+        eng.get_relationship_cls.assert_called_once_with('foo', 'Model1')
+        id2obj.assert_called_once_with('foo', eng.get_relationship_cls())
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_get_debug(self, run):
