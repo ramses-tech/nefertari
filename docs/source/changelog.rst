@@ -3,12 +3,12 @@ Changelog
 
 * :release:`0.3.0 <2015-05-18>`
 * :support:`-` Step-by-step 'Getting started' guide
-* :bug:`- major` Fixed several bugs related to ElasticSearch indexing
-* :support:`-` Increased test coverave
+* :bug:`- major` Fixed several issues related to ElasticSearch indexing
+* :support:`-` Increased test/coverave
 * :support:`-` Added ability to PATCH/DELETE collections
 
 * :release:`0.2.1 <2015-04-21>`
-* :bug:`-` Fixied URL parsing for DictField and ListField values with _m=VERB options
+* :bug:`-` Fixed URL parsing for DictField and ListField values with _m=VERB options
 
 * :release:`0.2.0 <2015-04-07>`
 * :feature:`-` Added script to index Elasticsearch models
