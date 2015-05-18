@@ -1,7 +1,7 @@
 Getting started
 ===============
 
-**1. Create a Pyramid "starter" project** in a virtualenv directory (see the `pyramid documentation <http://docs.pylonsproject.org/docs/pyramid/en/latest/narr/project.html>`_)
+**1. Create a Pyramid "starter" project** in a virtualenv directory (see the `pyramid documentation <http://docs.pylonsproject.org/docs/pyramid/en/latest/narr/project.html>`_ if you've never done that before)
 
 .. code-block:: shell
 

@@ -7,8 +7,8 @@ Nefertari is a REST API framework for Pyramid that uses Elasticsearch for reads 
 
 Nefertari currently powers `Brandicted <http://brandicted.com/>`_ and `Cerri <http://www.cerri.com/>`_. She is fully production ready and actively maintained.
 
-Contents
-========
+Table of Content
+================
 
 .. toctree::
    :maxdepth: 2
@@ -23,12 +23,6 @@ Contents
    why
    changelog
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
 
 .. image:: nefertari.jpg
 
