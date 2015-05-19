@@ -143,14 +143,20 @@ class ES(object):
     @classmethod
     def create_index(cls, index_name=None):
         index_name = index_name or ES.settings.index_name
-        ES.api.indices.create(index_name)
+        try:
+            ES.api.indices.exists([index_name])
+        except IndexNotFoundException:
+            ES.api.indices.create(index_name)
+            ES.index_created = True
 
     @classmethod
     def setup_mappings(cls):
         models = engine.get_document_classes()
         for model_name, model_cls in models.items():
-            es = ES(model_cls.__name__)
-            es.put_mapping(body=model_cls.get_es_mapping())
+
+            if getattr(model_cls, '_index_enabled', False):
+                es = ES(model_cls.__name__)
+                es.put_mapping(body=model_cls.get_es_mapping())
 
     def __init__(self, source='', index_name=None, chunk_size=100):
         self.doc_type = self.src2type(source)
