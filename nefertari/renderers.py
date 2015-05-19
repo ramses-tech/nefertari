@@ -32,7 +32,7 @@ class JsonRendererFactory(object):
     def __call__(self, value, system):
         """ Call the renderer implementation with the value
         and the system value passed in as arguments and return
-        the result (a string or unicode object).  The value is
+        the result (a string or unicode object). The value is
         the return value of a view.  The system value is a
         dictionary containing available system values
         (e.g. view, context, and request). """
@@ -48,7 +48,8 @@ class JsonRendererFactory(object):
         value = self.run_after_calls(value, system)
 
         view = system['view']
-        enc_class = getattr(view, '_json_encoder', _JSONEncoder) or _JSONEncoder
+        enc_class = getattr(
+            view, '_json_encoder', _JSONEncoder) or _JSONEncoder
         return json.dumps(value, cls=enc_class)
 
     def run_after_calls(self, value, system):
@@ -63,14 +64,14 @@ class JsonRendererFactory(object):
 
 class NefertariJsonRendererFactory(JsonRendererFactory):
 
-    """Yarhp specific json renderer which will apply
+    """Special json renderer which will apply
     all after_calls(filters) to the result.
     """
 
     def run_after_calls(self, value, system):
         request = system.get('request')
         if request and hasattr(request, 'action'):
-            after_calls = getattr(request, 'filters', [])
+            after_calls = getattr(request, 'filters', {})
             for call in after_calls.get(request.action, []):
                 value = call(**dict(request=request, result=value))
 

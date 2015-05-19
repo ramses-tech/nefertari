@@ -11,8 +11,10 @@ from nefertari.renderers import _JSONEncoder
 log = logging.getLogger(__name__)
 
 
-def json_dumps(body):
-    return json.dumps(body, cls=_JSONEncoder)
+def json_dumps(body, encoder=None):
+    if encoder is None:
+        encoder = _JSONEncoder
+    return json.dumps(body, cls=encoder)
 
 
 def split_strip(_str, on=','):
@@ -82,14 +84,14 @@ def snake2camel(text):
     return ''.join([a.title() for a in text.split("_")])
 
 
-def maybe_dotted(modul, throw=True):
-    """ If ``modul`` is a dotted string pointing to the modul,
-    imports and returns the modul object.
+def maybe_dotted(module, throw=True):
+    """ If ``module`` is a dotted string pointing to the module,
+    imports and returns the module object.
     """
     try:
-        return Configurator().maybe_dotted(modul)
-    except ImportError, e:
-        err = '%s not found. %s' % (modul, e)
+        return Configurator().maybe_dotted(module)
+    except ImportError as e:
+        err = '%s not found. %s' % (module, e)
         if throw:
             raise ImportError(err)
         else:
@@ -110,7 +112,7 @@ def isnumeric(value):
     try:
         float(value)
         return True
-    except ValueError:
+    except (ValueError, TypeError):
         return False
 
 

@@ -4,7 +4,8 @@ import traceback
 from datetime import datetime
 from pyramid import httpexceptions as http_exc
 
-from nefertari.utils import dictset, json_dumps
+from nefertari.wrappers import apply_privacy
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,9 @@ def add_stack():
 
 def create_json_response(obj, request=None, log_it=False, show_stack=False,
                          **extra):
+    from nefertari.utils import json_dumps
     body = dict()
+    encoder = extra.pop('encoder', None)
     for attr in BASE_ATTRS:
         body[attr] = extra.pop(attr, None) or getattr(obj, attr, None)
 
@@ -41,7 +44,7 @@ def create_json_response(obj, request=None, log_it=False, show_stack=False,
 
     body.update(extra)
 
-    obj.body = json_dumps(body)
+    obj.body = json_dumps(body, encoder=encoder)
     show_stack = log_it or show_stack
     status = obj.status_int
 
@@ -62,6 +65,7 @@ def exception_response(status_code, **kw):
 
 class JBase(object):
     def __init__(self, *arg, **kw):
+        from nefertari.utils import dictset
         kw = dictset(kw)
         self.__class__.__base__.__init__(
             self, *arg,
@@ -74,7 +78,9 @@ thismodule = sys.modules[__name__]
 
 
 http_exceptions = http_exc.status_map.values() + [
-    http_exc.HTTPBadRequest, http_exc.HTTPInternalServerError]
+    http_exc.HTTPBadRequest,
+    http_exc.HTTPInternalServerError,
+]
 
 
 for exc_cls in http_exceptions:
@@ -90,9 +96,18 @@ def httperrors(context, request):
 class JHTTPCreated(http_exc.HTTPCreated):
     def __init__(self, *args, **kwargs):
         resource = kwargs.pop('resource', None)
+        encoder = kwargs.pop('encoder', None)
+        request = kwargs.pop('request', None)
         super(JHTTPCreated, self).__init__(*args, **kwargs)
 
         if resource and 'location' in kwargs:
             resource['self'] = kwargs['location']
 
-        create_json_response(self, **dict(data=resource))
+        auth = request and request.registry._root_resources.values()[0].auth
+        if resource and auth:
+            wrapper = apply_privacy(request=request)
+            resource = wrapper(result=resource)
+
+        create_json_response(
+            self, data=resource,
+            encoder=encoder)

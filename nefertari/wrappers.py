@@ -3,6 +3,8 @@ from hashlib import md5
 
 import logging
 
+from nefertari import engine
+
 log = logging.getLogger(__name__)
 
 
@@ -69,12 +71,16 @@ class callable_base(object):
 # After calls.
 
 class obj2dict(object):
+    """ Convert object to dictionary.
+
+    Sequence of objects is converted to sequence of dicts.
+    Conversion is performed by calling object's 'to_dict' method.
+    """
     def __init__(self, request):
         self.request = request
 
     def __call__(self, **kwargs):
         '''converts objects in `result` into dicts'''
-
         result = kwargs['result']
         if isinstance(result, dict):
             return result
@@ -87,7 +93,7 @@ class obj2dict(object):
             return result.to_dict(_keys=_fields, request=self.request)
 
         elif issequence(result):
-            #make sure its mutable, i.e list
+            # make sure its mutable, i.e list
             result = list(result)
             for ix, each in enumerate(result):
                 result[ix] = obj2dict(self.request)(
@@ -96,12 +102,95 @@ class obj2dict(object):
         return result
 
 
+class apply_privacy(object):
+    """ Apply privacy rules to a JSON output.
+
+    Passed 'result' kwarg's value may be a dictset or a collection JSON
+    output which contains objects' data under 'data' key as a sequence of
+    dictsets.
+
+    Privacy is applied checking model's (got using '_type' key value) fields:
+      * _public_fields: Fields visible to non-authenticated users.
+      * _auth_fields: Fields visible to authenticated users.
+
+    Admin can see all the fields. Whether user is admin, is checked by
+    calling 'is_admin()' method on 'self.request.user'.
+
+    If this wrapper is called without request, no filtering is performed.
+    Fields visible to all types of users: 'self', '_type'.
+    """
+    def __init__(self, request):
+        self.request = request
+
+    def _filter_fields(self, data):
+        if '_type' not in data:
+            return data
+        try:
+            model_cls = engine.get_document_cls(data['_type'])
+        except ValueError as ex:
+            log.error(str(ex))
+            return data
+
+        public_fields = set(getattr(model_cls, '_public_fields', None) or [])
+        auth_fields = set(getattr(model_cls, '_auth_fields', None) or [])
+        fields = set(data.keys())
+
+        user = getattr(self.request, 'user', None)
+        if self.request:
+            # User authenticated
+            if user:
+                # User not admin
+                if not self.is_admin:
+                    fields &= auth_fields
+
+            # User not authenticated
+            else:
+                fields &= public_fields
+
+        fields.add('_type')
+        fields.add('self')
+        return data.subset(fields)
+
+    def __call__(self, **kwargs):
+        result = kwargs['result']
+        if not isinstance(result, dict):
+            return result
+        data = result.get('data', result)
+
+        if data:
+            self.is_admin = kwargs.get('is_admin')
+            if self.is_admin is None:
+                user = getattr(self.request, 'user', None)
+                self.is_admin = user is not None and type(user).is_admin(user)
+            if issequence(data) and not isinstance(data, dict):
+                kwargs = {'is_admin': self.is_admin}
+                data = [apply_privacy(self.request)(result=d, **kwargs)
+                        for d in data]
+            else:
+                data = self._filter_fields(data)
+
+        if 'data' in result:
+            result['data'] = data
+        else:
+            result = data
+        return result
+
+
 class wrap_in_dict(object):
+    """ Wraps 'result' kwarg value in dict.
+
+    If object passed in 'result' kwarg has metadata in '_nefertari_meta'
+    attribute, it's metadata is preserved and then applied if object
+    is converted to a sequence of dicts.
+
+    Conversion of object from 'result' kwargs is performed by calling
+    `obj2dict` wrapper.
+    """
     def __init__(self, request):
         self.request = request
 
     def __call__(self, **kwargs):
-        '''if result is a list then wrap it in the dict'''
+        """ If result is a list then wrap it in the dict. """
         result = kwargs['result']
 
         if hasattr(result, '_nefertari_meta'):
@@ -121,6 +210,14 @@ class wrap_in_dict(object):
 
 
 class add_meta(object):
+    """ Add metadata to results.
+
+    In particular adds:
+      * 'count': Number of results. Equals to number of objects in
+        `result['data']`
+      * 'self': For each object in `result['data']` adds a url which points
+        to current object
+    """
     def __init__(self, request):
         self.request = request
 
@@ -132,33 +229,40 @@ class add_meta(object):
             for each in result['data']:
                 try:
                     each.setdefault('self', "%s/%s" % (
-                        self.request.current_route_url(),
+                        self.request.path_url,
                         urllib.quote(str(each['id']))))
                 except TypeError:
                     pass
-        except (TypeError, KeyError):
-            pass
         finally:
             return result
 
 
 class add_confirmation_url(object):
+    """ Add confirmation url to confirm some action.
+
+    Confirmation url is generated using `self.request.url`, `s__confirmation`
+    query param and a method name in `_m` param.
+    """
     def __init__(self, request):
         self.request = request
 
     def __call__(self, **kwargs):
-        from nefertari.engine import BaseDocument
         result = kwargs['result']
         q_or_a = '&' if self.request.params else '?'
 
         return dict(
             method=self.request.method,
-            count=BaseDocument.count(result),
+            count=engine.BaseDocument.count(result),
             confirmation_url=self.request.url+'%s__confirmation&_m=%s' % (
                 q_or_a, self.request.method))
 
 
 class add_etag(object):
+    """ Add ETAG header to response.
+
+    Etag is generated md5-encoding '_version' + 'id' of each object
+    in a sequence of objects returned.
+    """
     def __init__(self, request):
         self.request = request
 
@@ -176,7 +280,7 @@ class add_etag(object):
             for each in result['data']:
                 etag_src += etag(each)
 
-        except (TypeError, KeyError) as e:
+        except (TypeError, KeyError):
             pass
 
         finally:
@@ -195,7 +299,7 @@ class set_total(object):
         try:
             result._nefertari_meta['total'] = min(
                 self.total, result._nefertari_meta['total'])
-        except (AttributeError, TypeError) as e:
+        except (AttributeError, TypeError):
             pass
         return result
 
@@ -205,9 +309,9 @@ def set_public_limits(view):
         'public_max_limit', 100))
 
     try:
-        _limit = int(view._params.get('_limit', 20))
-        _page = int(view._params.get('_page', 0))
-        _start = int(view._params.get('_start', 0))
+        _limit = int(view._query_params.get('_limit', 20))
+        _page = int(view._query_params.get('_page', 0))
+        _start = int(view._query_params.get('_start', 0))
 
         view.add_after_call('index', set_total(view.request, total=public_max),
                             pos=0)
@@ -215,6 +319,6 @@ def set_public_limits(view):
         from nefertari.json_httpexceptions import JHTTPBadRequest
         raise JHTTPBadRequest("Bad _limit/_page param")
 
-    _start = _start or _page*_limit
+    _start = _start or _page * _limit
     if _start + _limit > public_max:
-        view._params['_limit'] = max((public_max - _start), 0)
+        view._query_params['_limit'] = max((public_max - _start), 0)

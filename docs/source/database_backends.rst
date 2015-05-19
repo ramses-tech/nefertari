@@ -1,25 +1,54 @@
 Database Backends
 =================
 
-Nefertari implements database engines on top of two different ORMs: `SQLAlchemy <http://www.sqlalchemy.org>`_ and `MongoEngine <http://mongoengine.org/>`_. As such, Nefertari can be used with exising models implemented using either mapper library.
+Introduction
+------------
 
-These two engines wrap the underlying APIs of each ORM and provide a standardized syntax for using either one, making it easy to switch between them with minimal changes.
+Nefertari implements database engines on top of two different ORMs: `SQLAlchemy <http://www.sqlalchemy.org>`_ and `MongoEngine <http://mongoengine.org/>`_. These two engines wrap the underlying APIs of each ORM and provide a standardized syntax for using either one, making it easy to switch between them with minimal changes.
 
-Each Nefertari engine is developed in its own repository:
+Each Nefertari engine is maintained in its own repository:
 
-* `SQLA Engine <http://nefertari-sqla.readthedocs.org/en/latest/>`_
-* `MongoDB Engine <http://nefertari-mongodb.readthedocs.org/en/latest/>`_
+* `Nefertari SQLA Engine <https://github.com/brandicted/nefertari-sqla>`_
+* `Nefertari MongoDB Engine <https://github.com/brandicted/nefertari-mongodb>`_
 
-Nefertari can use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ to read/GET any given resource. You can read more about **ESBaseDocument** in the `Wrapper API <database_backends.html#wrapper-api>`_ section below.
+Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ or the database engine itself to read (GET) any given resource. You can read more about **ESBaseDocument** in the `Wrapper API <database_backends.html#wrapper-api>`_ section below.
 
+Field abstractions
+------------------
+
+* BigIntegerField
+* BooleanField
+* DateField
+* DateTimeField
+* ChoiceField
+* FloatField
+* IntegerField
+* IntervalField
+* BinaryField
+* DecimalField
+* PickleField
+* SmallIntegerField
+* StringField
+* TextField
+* TimeField
+* UnicodeField
+* UnicodeTextField
+* Relationship
+* IdField
+* ForeignKeyField
+* ListField
+* DictField
 
 Wrapper API
 -----------
 
-Both of the database engines used by Nefertari implement a similar "Wrapper API" for developers to use within a Nefertari project. Use the following base classes in your project to leverage the powers of Nefertari. To see them in action, check out the `example project <https://github.com/brandicted/nefertari-example>`_.
+Both of the database engines used by Nefertari implement a similar "Wrapper API" for developers to use within a Nefertari project. You can read more about either engine's in their respective documentation:
+
+ * `Nefertari SQLA documentation <http://nefertari-sqla.readthedocs.org/en/stable/>`_
+ * `Nefertari MongoDB documentation <http://nefertari-mongodb.readthedocs.org/en/stable/>`_
 
 **BaseMixin**
-    Mixin with a most of the API of *BaseDocument*. *BaseDocument* subclasses from this mixin.
+    Mixin with most of the API of *BaseDocument*. *BaseDocument* subclasses from this mixin.
 
 **BaseDocument**
     Base for regular models defined in your application. Just subclass it to define your model's fields. Relevant attributes:
@@ -50,27 +79,3 @@ Both of the database engines used by Nefertari implement a similar "Wrapper API"
 
 **relationship_cls(field, model_cls)**
     Return class which is pointed to by relationship field *field* from model *model_cls*.
-
-Field abstractions
--------------------
-
-* BigIntegerField
-* BooleanField
-* DateField
-* DateTimeField
-* ChoiceField
-* FloatField
-* IntegerField
-* IntervalField
-* BinaryField
-* DecimalField
-* PickleField
-* SmallIntegerField
-* StringField
-* TextField
-* TimeField
-* UnicodeField
-* UnicodeTextField
-* Relationship
-* PrimaryKeyField
-* ForeignKeyField

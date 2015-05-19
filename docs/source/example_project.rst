@@ -1,4 +1,4 @@
 Example Project
 ===============
 
-For an example of how to use Nefertari see the `Example Project <https://github.com/brandicted/nefertari-example>`_.
+For a more complete example of a Pyramid project using Nefertari, you can take a look at the `Example Project <https://github.com/brandicted/nefertari-example>`_.

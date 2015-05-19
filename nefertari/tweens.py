@@ -17,7 +17,7 @@ def request_timing(handler, registry):
         try:
             return handler(request)
         finally:
-            delta = time.time()-start
+            delta = time.time() - start
             msg = '%s (%s) request took %s seconds' % (
                 request.method, request.url, delta)
             if delta > threshold:
@@ -26,56 +26,6 @@ def request_timing(handler, registry):
                 log.debug(msg)
 
     return timing
-
-
-def post_tunneling(handler, registry):
-    """Allow other request methods to be tunneled via POST.
-
-    This allows PUT, PATCH and DELETE requests to be tunneled via POST requests.
-    The method can be specified using a parameter or a header...
-
-    The name of the parameter is '_method'; it can be a query or POST
-    parameter. The query parameter will be preferred if both the query and
-    POST parameters are present in the request.
-
-    The name of the header is 'X-HTTP-Method-Override'. If the parameter
-    described above is passed, this will be ignored.
-
-    The request method will be overwritten before it reaches application
-    code, such that the application will never be aware of the original
-    request method. Likewise, the parameter and header will be removed from
-    the request, and the application will never see them.
-
-    """
-    log.info('post_tunneling enabled')
-
-    param_name = '_method'
-    header_name = 'X-HTTP-Method-Override'
-    allowed_methods = set(['PUT', 'DELETE', 'PATCH'])
-    disallowed_message = (
-        'Only these methods may be tunneled over POST: {0}.'
-        .format(sorted(list(allowed_methods))))
-
-    def post_tunneling(request):
-        if request.method == 'POST':
-            method = ''
-
-            if param_name in request.GET:
-                method = request.GET[param_name]
-            elif param_name in request.POST:
-                method = request.POST[param_name]
-            elif header_name in request.headers:
-                method = request.headers[header_name]
-
-            if method in allowed_methods:
-                request.GET.pop(param_name, None)
-                request.POST.pop(param_name, None)
-                request.headers.pop(header_name, None)
-                request.method = method
-
-        return handler(request)
-
-    return post_tunneling
 
 
 def get_tunneling(handler, registry):
@@ -103,9 +53,10 @@ def get_tunneling(handler, registry):
 def cors(handler, registry):
     log.info('cors_tunneling enabled')
 
+    allow_origins_setting = registry.settings.get('cors.allow_origins', '')
+
     allow_origins = [
-        each.strip() for each in
-        registry.settings.get('cors.allow_origins', '').split(',')]
+        each.strip() for each in allow_origins_setting.split(',')]
     allow_credentials = registry.settings.get('cors.allow_credentials', None)
 
     def cors(request):
@@ -121,7 +72,7 @@ def cors(handler, registry):
 
         return response
 
-    if not allow_origins:
+    if not allow_origins_setting:
         log.warning('cors.allow_origins is not set')
     else:
         log.info('Allow Origins = %s ' % allow_origins)
@@ -129,7 +80,7 @@ def cors(handler, registry):
     if allow_credentials is None:
         log.warning('cors.allow_credentials is not set')
 
-    elif asbool(allow_credentials) and allow_origins == '*':
+    elif asbool(allow_credentials) and allow_origins_setting == '*':
         log.error('Not allowed Access-Control-Allow-Credentials '
                   'to set to TRUE if origin is *')
         return
@@ -145,7 +96,7 @@ def cache_control(handler, registry):
     def cache_control(request):
         response = handler(request)
 
-        #change only if the header cache-control is missing
+        # change only if the header cache-control is missing
         add_header = True
         for header in response.headerlist:
             if 'Cache-Control' in header:
@@ -180,9 +131,9 @@ from pyramid.events import ContextFound
 
 def enable_selfalias(config, id_name):
     """
-    This allows to replace id_name with "self".
-    i.e. /users/joe/account == /users/self/account if joe is in the session
-    as authorized user
+    This allows replacing id_name with "self".
+    e.g. /users/joe/account == /users/self/account if joe is in the session
+    as an authorized user
     """
 
     def context_found_subscriber(event):

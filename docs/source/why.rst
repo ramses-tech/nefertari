@@ -1,5 +1,5 @@
-Overview
-========
+Why Nefertari?
+==============
 
 Nefertari is a tool for making REST APIs using the Pyramid web framework.
 

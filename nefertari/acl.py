@@ -1,9 +1,29 @@
-from pyramid.security import (
-    ALL_PERMISSIONS, Allow, Everyone, Deny,
-    Authenticated)
+from pyramid.security import ALL_PERMISSIONS, Allow, Everyone, Authenticated
 
 
-class BaseACL(object):
+class SelfParamMixin(object):
+    """ ACL mixin that implements method to translate input key value
+    to a user ID field, when key value equals :param_value:
+
+    Value is only converted if user is logged in and :request.user:
+    is an instance of :__context_class__:, thus for routes that display
+    auth users.
+    """
+    param_value = 'self'
+
+    def resolve_self_key(self, key):
+        if key != self.param_value:
+            return key
+        user = getattr(self.request, 'user', None)
+        if not user or not self.__context_class__:
+            return key
+        if not isinstance(user, self.__context_class__):
+            return key
+        obj_id = getattr(user, user.pk_field()) or key
+        return obj_id
+
+
+class BaseACL(SelfParamMixin):
     """ Base ACL class.
 
     Grants:
@@ -30,10 +50,11 @@ class BaseACL(object):
 
     def __getitem__(self, key):
         assert(self.__context_class__)
+        key = self.resolve_self_key(key)
 
-        id_field = self.__context_class__.id_field()
+        pk_field = self.__context_class__.pk_field()
         obj = self.__context_class__.get(
-            __raise=True, **{id_field: key})
+            __raise=True, **{pk_field: key})
         obj.__acl__ = self.context_acl(obj)
         obj.__parent__ = self
         obj.__name__ = key
@@ -67,8 +88,9 @@ class GuestACL(BaseACL):
         super(GuestACL, self).__init__(request)
         self.acl = (Allow, Everyone, ['index', 'show'])
 
-    def context_acl(self, context):
+    def context_acl(self, obj):
         return [
+            (Allow, 'g:admin', ALL_PERMISSIONS),
             (Allow, Everyone, ['index', 'show']),
         ]
 
@@ -82,10 +104,10 @@ class AuthenticatedReadACL(BaseACL):
 
     def __init__(self, request):
         super(AuthenticatedReadACL, self).__init__(request)
-        self.acl = (Allow, Authenticated, ['index', 'show'])
+        self.acl = (Allow, Authenticated, 'index')
 
-    def context_acl(self, context):
+    def context_acl(self, obj):
         return [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, ['index', 'show']),
+            (Allow, Authenticated, 'show'),
         ]

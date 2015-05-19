@@ -29,8 +29,8 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
     ``member_name`` should be the appropriate singular version of the resource
     given your locale and used with members of the collection.
 
-    ``collection_name`` will be used to refer to the resource collection methods
-    and should be a plural version of the member_name argument.
+    ``collection_name`` will be used to refer to the resource collection
+    methods and should be a plural version of the member_name argument.
 
     All keyword arguments are optional.
 
@@ -40,7 +40,7 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
         resources or relations between resources.
 
     ``name_prefix``
-        Perpends the route names that are generated with the
+        Prepends the route names that are generated with the
         name_prefix given. Combined with the path_prefix option,
         it's easy to generate route names and paths that represent
         resources that are in relations.
@@ -123,17 +123,24 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
 
     if collection_name:
         add_route_and_view(
-            config, 'update_many', name_prefix + (collection_name or member_name),
+            config, 'update_many',
+            name_prefix + (collection_name or member_name),
             path, 'PUT', traverse=_traverse)
 
         add_route_and_view(
-            config, 'delete_many', name_prefix + (collection_name or member_name),
+            config, 'update_many',
+            name_prefix + (collection_name or member_name),
+            path, 'PATCH', traverse=_traverse)
+
+        add_route_and_view(
+            config, 'delete_many',
+            name_prefix + (collection_name or member_name),
             path, 'DELETE', traverse=_traverse)
 
     return action_route
 
 
-def default_view(resource):
+def get_default_view_path(resource):
     "Returns the dotted path to the default view class."
 
     parts = [a.member_name for a in resource.ancestors] +\
@@ -191,18 +198,19 @@ class Resource(object):
     ancestors = property(get_ancestors)
     resource_map = property(lambda self: self.config.registry._resources_map)
     is_root = property(lambda self: not self.member_name)
-    is_singular = property(lambda self: not self.is_root and not self.collection_name)
+    is_singular = property(
+        lambda self: not self.is_root and not self.collection_name)
 
     def add(self, member_name, collection_name='', parent=None, uid='',
             **kwargs):
         """
         :param member_name: singular name of the resource. It should be the
-            appropriate singular version of the resource given your locale and used
-            with members of the collection.
+            appropriate singular version of the resource given your locale
+            and used with members of the collection.
 
-        :param collection_name: plural name of the resource. It will be used to
-            refer to the resource collection methods and should be a plural version
-            of the ``member_name`` argument.
+        :param collection_name: plural name of the resource. It will be used
+            to refer to the resource collection methods and should be a
+            plural version of the ``member_name`` argument.
             Note: if collection_name is empty, it means resource is singular
 
         :param parent: parent resource name or object.
@@ -211,7 +219,8 @@ class Resource(object):
 
         :param kwargs:
             view: custom view to overwrite the default one.
-            the rest of the keyward arguments are passed to add_resource_routes call.
+            the rest of the keyward arguments are passed to
+            add_resource_routes call.
 
         :return: ResourceMap object
         """
@@ -221,7 +230,8 @@ class Resource(object):
 
         prefix = kwargs.pop('prefix', '')
 
-        uid = (uid or ':'.join(filter(bool, [parent.uid, prefix, member_name])))
+        uid = (uid or
+               ':'.join(filter(bool, [parent.uid, prefix, member_name])))
 
         if uid in self.resource_map:
             raise ValueError('%s already exists in resource map' % uid)
@@ -233,7 +243,7 @@ class Resource(object):
                                 prefix=prefix)
 
         view = maybe_dotted(
-            kwargs.pop('view', None) or default_view(new_resource))
+            kwargs.pop('view', None) or get_default_view_path(new_resource))
 
         for name, val in kwargs.pop('view_args', {}).items():
             setattr(view, name, val)
@@ -260,7 +270,7 @@ class Resource(object):
             kwargs['path_prefix'] = '/'.join(path_segs)
 
         if prefix:
-            kwargs['path_prefix'] += '/'+prefix
+            kwargs['path_prefix'] += '/' + prefix
 
         name_segs = [a.member_name for a in new_resource.ancestors]
         name_segs.insert(1, prefix)
@@ -273,6 +283,7 @@ class Resource(object):
 
         kwargs.setdefault('auth', root_resource.auth)
         kwargs.setdefault('factory', root_resource.default_factory)
+        _factory = maybe_dotted(kwargs['factory'])
 
         kwargs['auth'] = kwargs.get('auth', root_resource.auth)
 
@@ -291,10 +302,12 @@ class Resource(object):
             new_resource))
 
         parent.children.append(new_resource)
+        view._resource = new_resource
+        view._factory = _factory
 
         return new_resource
 
-    def add_from(self, resource, **kwargs):
+    def add_from_child(self, resource, **kwargs):
         """ Add a resource with its all children resources to the current
         resource.
         """
@@ -302,4 +315,4 @@ class Resource(object):
         new_resource = self.add(
             resource.member_name, resource.collection_name, **kwargs)
         for child in resource.children:
-            new_resource.add_from(child, **kwargs)
+            new_resource.add_from_child(child, **kwargs)

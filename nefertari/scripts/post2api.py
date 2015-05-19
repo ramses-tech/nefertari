@@ -28,14 +28,14 @@ def load(inputfile, destination):
 def load_singular_objects(inputfile, destination):
     parent_route, dynamic_part = destination.split('{')
     parent_route = parent_route.strip('/')
-    id_field, singlular_field = dynamic_part.split('}')
+    pk_field, singlular_field = dynamic_part.split('}')
     singlular_field = singlular_field.strip('/')
 
     json_file = open(inputfile)
     json_data = json.load(json_file)
     objects_count = len(json_data)
 
-    query_string = '?_limit={}'.format(objects_count, id_field)
+    query_string = '?_limit={}'.format(objects_count)
     parent_objects = requests.get(parent_route + query_string).json()['data']
 
     for parent in parent_objects:

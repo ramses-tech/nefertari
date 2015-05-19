@@ -23,7 +23,8 @@ def includeme(config):
             try:
                 sock.sendto(
                     'PING', 0,
-                    (Settings['logstash.host'], Settings.asint('logstash.port')))
+                    (Settings['logstash.host'],
+                        Settings.asint('logstash.port')))
                 recv, svr = sock.recvfrom(255)
                 sock.shutdown(2)
             except Exception as e:

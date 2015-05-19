@@ -1,5 +1,5 @@
-pytest==2.6.4
-pytest-cov==1.8.1
+pytest
+pytest-cov
 mock
 webtest
 Sphinx

@@ -6,10 +6,12 @@ from collections import defaultdict
 from pyramid.settings import asbool
 from pyramid.request import Request
 
-from nefertari.json_httpexceptions import *
+from nefertari.json_httpexceptions import (
+    JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
 from nefertari.utils import dictset
 from nefertari import wrappers
 from nefertari.resource import ACTIONS
+from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ class ViewMapper(object):
         self.kwargs = kwargs
 
     def __call__(self, view):
-        #i.e index, create etc.
+        # i.e index, create etc.
         action_name = self.kwargs['attr']
 
         def view_mapper_wrapper(context, request):
@@ -29,13 +31,13 @@ class ViewMapper(object):
             matchdict.pop('action', None)
             matchdict.pop('traverse', None)
 
-            #instance of BaseView (or child of)
+            # instance of BaseView (or child of)
             view_obj = view(context, request)
             action = getattr(view_obj, action_name)
             request.action = action_name
 
-            # we should not run "after_calls" here, so lets save them in request
-            # as filters they will be ran in the renderer factory
+            # we should not run "after_calls" here, so lets save them in
+            # request as filters they will be ran in the renderer factory
             request.filters = view_obj._after_calls
 
             try:
@@ -65,55 +67,105 @@ class BaseView(object):
     _json_encoder = None
     _model_class = None
 
-    def __init__(self, context, request, _params={}):
+    @staticmethod
+    def convert_dotted(params):
+        """ Convert dotted keys in :params: dictset to a nested dictset.
+
+        E.g. {'settings.foo': 'bar'} -> {'settings': {'foo': 'bar'}}
+        """
+        if not isinstance(params, dictset):
+            params = dictset(params)
+
+        dotted = defaultdict(dict)
+        dotted_items = {k: v for k, v in params.items() if '.' in k}
+
+        if dotted_items:
+            for key, value in dotted_items.items():
+                field, subfield = key.split('.')
+                dotted[field].update({subfield: value})
+            params = params.subset(['-' + k for k in dotted_items.keys()])
+            params.update(dict(dotted))
+
+        return params
+
+    def __init__(self, context, request, _query_params={}, _json_params={}):
+        """ Prepare data to be used across the view and run init methods.
+
+        Each view has these dicts on data:
+          :_query_params: Params from a query string
+          :_json_params: Request JSON data. Populated only for
+              PUT, PATCH, POST methods
+          :_params: Join of _query_params and _json_params
+
+        For method tunneling, _json_params contains the same data as
+        _query_params.
+        """
         self.context = context
         self.request = request
-
-        self._params = dictset(_params or request.params.mixed())
+        self._query_params = dictset(_query_params or request.params.mixed())
+        self._json_params = dictset(_json_params)
 
         ctype = request.content_type
         if request.method in ['POST', 'PUT', 'PATCH']:
             if ctype == 'application/json':
                 try:
-                    self._params.update(request.json)
+                    self._json_params.update(request.json)
                 except simplejson.JSONDecodeError:
                     log.error(
-                        "Expecting JSON. Received: '{}'. Request: {} {}".format(
+                        "Expecting JSON. Received: '{}'. "
+                        "Request: {} {}".format(
                             request.body, request.method, request.url))
 
+            self._json_params = BaseView.convert_dotted(self._json_params)
+            self._query_params = BaseView.convert_dotted(self._query_params)
+
+        self._params = self._query_params.copy()
+        self._params.update(self._json_params)
+
         # dict of the callables {'action':[callable1, callable2..]}
-        # as name implies, before calls are executed before the action is called
-        # after_calls are called after the action returns.
+        # as name implies, before calls are executed before the action is
+        # called after_calls are called after the action returns.
         self._before_calls = defaultdict(list)
         self._after_calls = defaultdict(list)
 
         # no accept headers, use default
         if '' in request.accept:
             request.override_renderer = self._default_renderer
-
         elif 'application/json' in request.accept:
             request.override_renderer = 'nefertari_json'
-
         elif 'text/plain' in request.accept:
             request.override_renderer = 'string'
 
+        self._run_init_actions()
+
+    def _run_init_actions(self):
         self.setup_default_wrappers()
         self.convert_ids2objects()
+        self.set_public_limits()
 
-        if not getattr(self.request, 'user', None):
+    def set_public_limits(self):
+        """ Set public limits if auth is enabled and user is not
+        authenticated.
+        """
+        root_resource = getattr(self, 'root_resource', None)
+        auth_enabled = root_resource is not None and root_resource.auth
+        if auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
     def convert_ids2objects(self):
-        """ Convert object IDs from `self._params` to objects if needed.
+        """ Convert object IDs from `self._json_params` to objects if needed.
 
         Only IDs tbat belong to relationship field of `self._model_class`
         are converted.
         """
-        from nefertari.engine import is_relationship_field, relationship_cls
-        for field in self._params.keys():
-            if not is_relationship_field(field, self._model_class):
+        if not self._model_class:
+            log.info("%s has no model defined" % self.__class__.__name__)
+            return
+
+        for field in self._json_params.keys():
+            if not engine.is_relationship_field(field, self._model_class):
                 continue
-            model_cls = relationship_cls(field, self._model_class)
+            model_cls = engine.get_relationship_cls(field, self._model_class)
             self.id2obj(field, model_cls)
 
     def get_debug(self, package=None):
@@ -124,9 +176,18 @@ class BaseView(object):
         return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
+        root_resource = getattr(self, 'root_resource', None)
+        auth_enabled = root_resource and root_resource.auth
+
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+        ]
+        if auth_enabled:
+            self._after_calls['index'] += [
+                wrappers.apply_privacy(self.request),
+            ]
+        self._after_calls['index'] += [
             wrappers.add_etag(self.request),
         ]
 
@@ -134,6 +195,10 @@ class BaseView(object):
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
         ]
+        if auth_enabled:
+            self._after_calls['show'] += [
+                wrappers.apply_privacy(self.request),
+            ]
 
         self._after_calls['delete'] = [
             wrappers.add_confirmation_url(self.request)
@@ -171,53 +236,39 @@ class BaseView(object):
         else:
             callkind[action].insert(pos, _callable)
 
-    add_before_call = lambda self, *a, **k: self.add_before_or_after_call(*a, before=True, **k)
-    add_after_call = lambda self, *a, **k: self.add_before_or_after_call(*a, before=False, **k)
+    add_before_call = lambda self, *a, **k: self.add_before_or_after_call(
+        *a, before=True, **k)
+    add_after_call = lambda self, *a, **k: self.add_before_or_after_call(
+        *a, before=False, **k)
 
     def subrequest(self, url, params={}, method='GET'):
         req = Request.blank(url, cookies=self.request.cookies,
                             content_type='application/json',
                             method=method)
 
-        if req.method == 'GET' and params:
+        if method == 'GET' and params:
             req.body = urllib.urlencode(params)
 
-        if req.method == 'POST':
+        if method == 'POST':
             req.body = json.dumps(params)
 
         return self.request.invoke_subrequest(req)
 
     def needs_confirmation(self):
-        return '__confirmation' not in self._params
+        return '__confirmation' not in self._query_params
 
-    def delete_many(self, **kw):
-        if not self._model_class:
-            log.error("%s _model_class in invalid: %s" % (
-                self.__class__.__name__, self._model_class))
-            raise JHTTPBadRequest
-
-        objs = self._model_class.get_collection(**self._params)
-
-        if self.needs_confirmation():
-            return objs
-
-        count = self._model_class.count(objs)
-        self._model_class._delete_many(objs)
-        return JHTTPOk("Deleted %s %s objects" % (
-            count, self._model_class.__name__))
-
-    def id2obj(self, name, model, id_field=None, setdefault=None):
-        if name not in self._params:
+    def id2obj(self, name, model, pk_field=None, setdefault=None):
+        if name not in self._json_params:
             return
 
-        if id_field is None:
-            id_field = model.id_field()
+        if pk_field is None:
+            pk_field = model.pk_field()
 
         def _get_object(id_):
-            if isinstance(id_, model):
+            if hasattr(id_, 'pk_field'):
                 return id_
 
-            obj = model.get(**{id_field: id_})
+            obj = model.get(**{pk_field: id_})
             if setdefault:
                 return obj or setdefault
             else:
@@ -225,11 +276,11 @@ class BaseView(object):
                     raise JHTTPBadRequest('id2obj: Object %s not found' % id_)
                 return obj
 
-        ids = self._params[name]
+        ids = self._json_params[name]
         if isinstance(ids, list):
-            self._params[name] = [_get_object(_id) for _id in ids]
+            self._json_params[name] = [_get_object(_id) for _id in ids]
         else:
-            self._params[name] = _get_object(ids)
+            self._json_params[name] = _get_object(ids)
 
 
 def key_error_view(context, request):

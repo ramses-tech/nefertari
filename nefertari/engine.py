@@ -1,5 +1,5 @@
 """
-Extend global scope with an engine-specific variables/objects.
+Extend global scope with engine-specific variables/objects.
 
 Usage
 -----
@@ -17,17 +17,17 @@ Notes
 -----
 
 Db setup should be performed after loading models, as some engines require
-models schema to be defined before creating the database. If your database
-does not have above requirement, it's up to you to decide when to setup
-db.
+model schemas to be defined before creating the database. If your database
+does not have the above requirement, it's up to you to decide when to set up 
+the db.
 
-The specified engine module is also `config.include`d here thus running
+The specified engine module is also `config.include`d here, thus running the 
 engine's `icludeme` function and allowing setting up required state,
 performing some actions, etc.
 
-Specified engine may be either module or package.
-In case you build a custom engine, variables you expect to use from it,
-should be importable from package itself.
+The engine specified may be either a module or a package.
+In case you build a custom engine, variables you expect to use from it 
+should be importable from the package itself.
 E.g. ``from your.package import BaseDocument``
 
 nefertari relies on 'nefertari.engine' being included when configuring the app.

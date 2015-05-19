@@ -5,8 +5,8 @@ import elasticsearch
 
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
-from nefertari.json_httpexceptions import *
-from nefertari.engine import ESJSONSerializer
+from nefertari.json_httpexceptions import JHTTPBadRequest, JHTTPNotFound, exception_response
+from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +22,10 @@ RESERVED = [
 ]
 
 
+class IndexNotFoundException(Exception):
+    pass
+
+
 class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
     def perform_request(self, *args, **kw):
         try:
@@ -33,10 +37,13 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
 
             return super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
-            if e.status_code == 'N/A':
-                e.status_code = 400
+            status_code = e.status_code
+            if status_code == 404:
+                raise IndexNotFoundException()
+            if status_code == 'N/A':
+                status_code = 400
             raise exception_response(
-                e.status_code,
+                status_code,
                 detail='elasticsearch error.',
                 extra=dict(data=e))
 
@@ -46,13 +53,17 @@ def includeme(config):
     ES.setup(Settings)
 
 
+def _bulk_body(body):
+    return ES.api.bulk(body=body)
+
+
 def apply_sort(_sort):
     _sort_param = []
 
     if _sort:
         for each in [e.strip() for e in _sort.split(',')]:
             if each.startswith('-'):
-                _sort_param.append(each[1:]+':desc')
+                _sort_param.append(each[1:] + ':desc')
             elif each.startswith('+'):
                 _sort_param.append(each[1:] + ':asc')
             else:
@@ -66,7 +77,7 @@ def build_terms(name, values, operator='OR'):
 
 
 def build_qs(params, _raw_terms='', operator='AND'):
-    #if param is _all then remove it
+    # if param is _all then remove it
     params.pop_by_values('_all')
 
     terms = []
@@ -106,7 +117,8 @@ class ES(object):
         try:
             _hosts = ES.settings.hosts
             hosts = []
-            for (host, port) in [split_strip(each, ':') for each in split_strip(_hosts)]:
+            for (host, port) in [
+                    split_strip(each, ':') for each in split_strip(_hosts)]:
                 hosts.append(dict(host=host, port=port))
 
             params = {}
@@ -117,12 +129,13 @@ class ES(object):
                 )
 
             ES.api = elasticsearch.Elasticsearch(
-                hosts=hosts, serializer=ESJSONSerializer(),
+                hosts=hosts, serializer=engine.ESJSONSerializer(),
                 connection_class=ESHttpConnection, **params)
             log.info('Including ElasticSearch. %s' % ES.settings)
 
         except KeyError as e:
-            raise Exception('Bad or missing settings for elasticsearch. %s' % e)
+            raise Exception(
+                'Bad or missing settings for elasticsearch. %s' % e)
 
     def __init__(self, source='', index_name=None, chunk_size=100):
         self.doc_type = self.src2type(source)
@@ -154,8 +167,9 @@ class ES(object):
         _docs = []
         for doc in documents:
             if not isinstance(doc, dict):
-                raise ValueError('document type must be `dict` not a '
-                                 '%s' % (type(doc)))
+                raise ValueError(
+                    'Document type must be `dict` not a `{}`'.format(
+                        type(doc).__name__))
 
             if '_type' in doc:
                 _doc_type = self.src2type(doc['_type'])
@@ -176,7 +190,9 @@ class ES(object):
         return _docs
 
     def _bulk(self, action, documents, chunk_size=None):
-        chunk_size = chunk_size or self.chunk_size
+        if chunk_size is None:
+            chunk_size = self.chunk_size
+
         if not documents:
             log.debug('empty documents: %s' % self.doc_type)
             return
@@ -198,34 +214,40 @@ class ES(object):
             # meta, document, meta, ...
             self.process_chunks(
                 documents=body,
-                operation=lambda b: ES.api.bulk(body=b),
+                operation=_bulk_body,
                 chunk_size=chunk_size*2)
         else:
-            log.warning('empty body')
+            log.warning('Empty body')
 
     def index(self, documents, chunk_size=None):
-        """ Reindex all `document`. """
+        """ Reindex all `document`s. """
         self._bulk('index', documents, chunk_size)
 
-    def index_missing(self, documents, chunk_size=None):
-        """ Index documents from a `document` that are missing from index.
+    def index_missing_documents(self, documents, chunk_size=None):
+        """ Index documents that are missing from ES index.
 
-        To determine what documents are missing `mget` call with a list of
-        document IDs from `documents` is performed. Then `document` are
-        filtered to drop documents that were found.
+        Determines which documents are missing using ES `mget` call which
+        returns a list of document IDs as `documents`. Then missing
+        `documents` from that list are indexed.
         """
-        log.info('Indexing documents of type `{}` missing from '
-                 'index `{}`'.format(self.doc_type, self.index_name))
+        log.info('Trying to index documents of type `{}` missing from '
+                 '`{}` index'.format(self.doc_type, self.index_name))
         if not documents:
             log.info('No documents to index')
             return
-        response = ES.api.mget(
+        query_kwargs = dict(
             index=self.index_name,
             doc_type=self.doc_type,
             fields=['_id'],
             body={'ids': [d['id'] for d in documents]},
         )
-        indexed_ids = set(d['_id'] for d in response['docs'] if d.get('found'))
+        try:
+            response = ES.api.mget(**query_kwargs)
+        except IndexNotFoundException:
+            indexed_ids = set()
+        else:
+            indexed_ids = set(
+                d['_id'] for d in response['docs'] if d.get('found'))
         documents = [d for d in documents if str(d['id']) not in indexed_ids]
 
         if not documents:
@@ -239,7 +261,8 @@ class ES(object):
         if not isinstance(ids, list):
             ids = [ids]
 
-        self._bulk('delete', [{'id':_id, '_type': self.doc_type} for _id in ids])
+        documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
+        self._bulk('delete', documents)
 
     def get_by_ids(self, ids, **params):
         if not ids:
@@ -268,9 +291,21 @@ class ES(object):
         )
         if fields:
             params['fields'] = fields
-
-        data = ES.api.mget(**params)
         documents = _ESDocs()
+        documents._nefertari_meta = dict(
+            start=_start,
+            fields=fields,
+        )
+
+        try:
+            data = ES.api.mget(**params)
+        except IndexNotFoundException:
+            if __raise_on_empty:
+                raise JHTTPNotFound(
+                    '{}({}) resource not found (Index does not exist)'.format(
+                        self.doc_type, params))
+            documents._nefertari_meta.update(total=0)
+            return documents
 
         for _d in data['docs']:
             try:
@@ -286,10 +321,8 @@ class ES(object):
 
             documents.append(dict2obj(dictset(_d)))
 
-        documents._nefertari_meta = dict(
+        documents._nefertari_meta.update(
             total=len(documents),
-            start=_start,
-            fields=fields,
         )
 
         return documents
@@ -314,15 +347,16 @@ class ES(object):
                         }
                     }
                 }
-                print query_string
             else:
                 _params['body'] = {"query": {"match_all": {}}}
 
-        if '_limit' in params:
-            _params['from_'], _params['size'] = process_limit(
-                params.get('_start', None),
-                params.get('_page', None),
-                params['_limit'])
+        if '_limit' not in params:
+            raise JHTTPBadRequest('Missing _limit')
+
+        _params['from_'], _params['size'] = process_limit(
+            params.get('_start', None),
+            params.get('_page', None),
+            params['_limit'])
 
         if '_sort' in params:
             _params['sort'] = apply_sort(params['_sort'])
@@ -344,7 +378,10 @@ class ES(object):
         params.pop('size', None)
         params.pop('from_', None)
         params.pop('sort', None)
-        return ES.api.count(**params)['count']
+        try:
+            return ES.api.count(**params)['count']
+        except IndexNotFoundException:
+            return 0
 
     def get_collection(self, **params):
         __raise_on_empty = params.pop('__raise_on_empty', False)
@@ -360,23 +397,34 @@ class ES(object):
         # pop the fields before passing to search.
         # ES does not support passing names of nested structures
         _fields = _params.pop('fields', '')
-        data = ES.api.search(**_params)
         documents = _ESDocs()
+        documents._nefertari_meta = dict(
+            start=_params['from_'],
+            fields=_fields)
+
+        try:
+            data = ES.api.search(**_params)
+        except IndexNotFoundException:
+            if __raise_on_empty:
+                raise JHTTPNotFound(
+                    '{}({}) resource not found (Index does not exist)'.format(
+                        self.doc_type, params))
+            documents._nefertari_meta.update(
+                total=0, took=0)
+            return documents
 
         for da in data['hits']['hits']:
-            _d = da['fields'] if 'fields' in _params else da['_source']
+            _d = da['fields'] if _fields else da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 
-        documents._nefertari_meta = dict(
+        documents._nefertari_meta.update(
             total=data['hits']['total'],
-            start=_params['from_'],
-            fields=_fields,
             took=data['took'],
         )
 
         if not documents:
-            msg = "'%s(%s)' resource not found" % (self.doc_type, params)
+            msg = "%s(%s) resource not found" % (self.doc_type, params)
             if __raise_on_empty:
                 raise JHTTPNotFound(msg)
             else:
@@ -394,7 +442,15 @@ class ES(object):
         params.setdefault('ignore', 404)
         params.update(kw)
 
-        data = ES.api.get_source(**params)
+        try:
+            data = ES.api.get_source(**params)
+        except IndexNotFoundException:
+            if __raise:
+                raise JHTTPNotFound(
+                    "{}({}) resource not found (Index does not exist)".format(
+                        self.doc_type, params))
+            data = {}
+
         if not data:
             msg = "'%s(%s)' resource not found" % (self.doc_type, params)
             if __raise:

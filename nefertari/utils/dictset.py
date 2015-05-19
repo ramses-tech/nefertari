@@ -15,7 +15,8 @@ class dictset(dict):
             return dictset([[k, v] for k, v in self.items() if k in only])
 
         if exclude:
-            return dictset([[k, v] for k, v in self.items() if k not in exclude])
+            return dictset([[k, v] for k, v in self.items()
+                            if k not in exclude])
 
         return dictset()
 
@@ -62,7 +63,8 @@ class dictset(dict):
 
     def asdict(self, name, _type=None, _set=False):
         """
-        Turn this 'a:2,b:blabla,c:True,a:'d' to {a:[2, 'd'], b:'blabla', c:True}
+        Turn this 'a:2,b:blabla,c:True,a:'d' to
+        {a:[2, 'd'], b:'blabla', c:True}
 
         """
 
@@ -76,13 +78,14 @@ class dictset(dict):
         _dict = {}
         for item in split_strip(dict_str):
             key, _, val = item.partition(':')
+            val = _type(val)
             if key in _dict:
-                if type(_dict[key]) is list:
+                if isinstance(_dict[key], list):
                     _dict[key].append(val)
                 else:
                     _dict[key] = [_dict[key], val]
             else:
-                _dict[key] = _type(val)
+                _dict[key] = val
 
         if _set:
             self[name] = _dict
@@ -90,7 +93,7 @@ class dictset(dict):
         return _dict
 
     def mget(self, prefix, defaults={}):
-        if prefix[-1] != '.':
+        if not prefix.endswith('.'):
             prefix += '.'
 
         _dict = dictset(defaults)
@@ -145,10 +148,12 @@ class dictset(dict):
     def process_datetime_param(self, name):
         if name in self:
             try:
-                self[name] = datetime.strptime(self[name], "%Y-%m-%dT%H:%M:%SZ")
+                self[name] = datetime.strptime(
+                    self[name], "%Y-%m-%dT%H:%M:%SZ")
             except ValueError:
-                raise ValueError("Bad format for '%s' param. Must be ISO 8601, "
-                                 "YYYY-MM-DDThh:mm:ssZ" % name)
+                raise ValueError(
+                    "Bad format for '%s' param. Must be ISO 8601, "
+                    "YYYY-MM-DDThh:mm:ssZ" % name)
 
         return self.get(name, None)
 
@@ -161,6 +166,7 @@ class dictset(dict):
 
         elif default is not None:
             self[name] = default
+        return self.get(name, None)
 
     def process_int_param(self, name, default=None):
         if name in self:
@@ -171,6 +177,7 @@ class dictset(dict):
 
         elif default is not None:
             self[name] = default
+        return self.get(name, None)
 
     def process_dict_param(self, name, _type=None, pop=False):
         return self.asdict(name, _type, _set=not pop)
