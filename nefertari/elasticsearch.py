@@ -5,7 +5,8 @@ import elasticsearch
 
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
-from nefertari.json_httpexceptions import JHTTPBadRequest, JHTTPNotFound, exception_response
+from nefertari.json_httpexceptions import (
+    JHTTPBadRequest, JHTTPNotFound, exception_response)
 from nefertari import engine
 
 log = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
 def includeme(config):
     Settings = dictset(config.registry.settings)
     ES.setup(Settings)
+    ES.create_index()
 
 
 def _bulk_body(body):
@@ -137,10 +139,33 @@ class ES(object):
             raise Exception(
                 'Bad or missing settings for elasticsearch. %s' % e)
 
+    @classmethod
+    def create_index(cls, index_name=None):
+        index_name = index_name or ES.settings.index_name
+        try:
+            ES.api.indices.exists([index_name])
+        except IndexNotFoundException:
+            ES.api.indices.create(index_name)
+
+    @classmethod
+    def setup_mappings(cls):
+        models = engine.get_document_classes()
+        for model_name, model_cls in models.items():
+            if getattr(model_cls, '_index_enabled', False):
+                es = ES(model_cls.__name__)
+                es.put_mapping(body=model_cls.get_es_mapping())
+
     def __init__(self, source='', index_name=None, chunk_size=100):
         self.doc_type = self.src2type(source)
         self.index_name = index_name or ES.settings.index_name
         self.chunk_size = chunk_size
+
+    def put_mapping(self, body, **kwargs):
+        ES.api.indices.put_mapping(
+            doc_type=self.doc_type,
+            body=body,
+            index=self.index_name,
+            **kwargs)
 
     def process_chunks(self, documents, operation, chunk_size):
         """ Apply `operation` to chunks of `documents` of size `chunk_size`.
