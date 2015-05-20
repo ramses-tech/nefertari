@@ -53,7 +53,6 @@ def includeme(config):
     Settings = dictset(config.registry.settings)
     ES.setup(Settings)
     ES.create_index()
-    ES.setup_mappings()
 
 
 def _bulk_body(body):
