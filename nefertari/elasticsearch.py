@@ -59,6 +59,28 @@ def _bulk_body(body):
     return ES.api.bulk(body=body)
 
 
+def process_fields_param(fields):
+    """ Process 'fields' ES param.
+
+    * Fields list is split if needed
+    * '_type' field is added, if not present, so the actual value is
+      displayed instead of 'None'
+    * '_source=False' is returned as well, so document source is not
+      loaded from ES. This is done because source is not used when
+      'fields' param is provided
+    """
+    if not fields:
+        return fields
+    if isinstance(fields, basestring):
+        fields = split_strip(fields)
+    if '_type' not in fields:
+        fields.append('_type')
+    return {
+        'fields': fields,
+        '_source': False,
+    }
+
+
 def apply_sort(_sort):
     _sort_param = []
 
@@ -315,7 +337,9 @@ class ES(object):
             body=dict(docs=docs)
         )
         if fields:
-            params['fields'] = fields
+            fields_params = process_fields_param(fields)
+            params.update(fields_params)
+
         documents = _ESDocs()
         documents._nefertari_meta = dict(
             start=_start,
@@ -419,13 +443,15 @@ class ES(object):
         if '_count' in params:
             return self.do_count(_params)
 
-        # pop the fields before passing to search.
-        # ES does not support passing names of nested structures
-        _fields = _params.pop('fields', '')
+        fields = _params.pop('fields', '')
+        if fields:
+            fields_params = process_fields_param(fields)
+            _params.update(fields_params)
+
         documents = _ESDocs()
         documents._nefertari_meta = dict(
             start=_params['from_'],
-            fields=_fields)
+            fields=fields)
 
         try:
             data = ES.api.search(**_params)
@@ -439,7 +465,7 @@ class ES(object):
             return documents
 
         for da in data['hits']['hits']:
-            _d = da['fields'] if _fields else da['_source']
+            _d = da['fields'] if fields else da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 
