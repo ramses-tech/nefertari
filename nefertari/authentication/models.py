@@ -147,15 +147,15 @@ class AuthModelDefaultMixin(object):
             return cls.get_resource(username=username)
 
 
-def lower_strip(value):
-    return (value or '').lower().strip()
+def lower_strip(instance, new_value):
+    return (new_value or '').lower().strip()
 
 
-def encrypt_password(password):
-    """ Crypt :password: if it's not crypted yet. """
-    if password and not crypt.match(password):
-        password = unicode(crypt.encode(password))
-    return password
+def encrypt_password(instance, new_value):
+    """ Crypt :new_value: if it's not crypted yet. """
+    if new_value and not crypt.match(new_value):
+        new_value = unicode(crypt.encode(new_value))
+    return new_value
 
 
 class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
