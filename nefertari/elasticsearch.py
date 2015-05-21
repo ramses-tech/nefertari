@@ -38,6 +38,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
 
             return super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
+            log.error(e.error)
             status_code = e.status_code
             if status_code == 404:
                 raise IndexNotFoundException()
@@ -150,10 +151,13 @@ class ES(object):
     @classmethod
     def setup_mappings(cls):
         models = engine.get_document_classes()
-        for model_name, model_cls in models.items():
-            if getattr(model_cls, '_index_enabled', False):
-                es = ES(model_cls.__name__)
-                es.put_mapping(body=model_cls.get_es_mapping())
+        try:
+            for model_name, model_cls in models.items():
+                if getattr(model_cls, '_index_enabled', False):
+                    es = ES(model_cls.__name__)
+                    es.put_mapping(body=model_cls.get_es_mapping())
+        except JHTTPBadRequest as ex:
+            raise Exception(ex.json['extra']['data'])
 
     def __init__(self, source='', index_name=None, chunk_size=100):
         self.doc_type = self.src2type(source)
