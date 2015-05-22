@@ -218,6 +218,10 @@ class TestResourceRecognition(Test):
 
     def test_put_member(self):
         result = self.app.put('/messages/1').body
+        self.assertEqual(result, 'replace')
+
+    def test_patch_member(self):
+        result = self.app.patch('/messages/1').body
         self.assertEqual(result, 'update')
 
     def test_delete_member(self):
@@ -303,11 +307,15 @@ class TestResource(Test):
 
         self.assertEqual(app.delete('/grandpas/1').body, '"delete"')
 
-        self.assertEqual(app.put('/thing').body, '"update"')
+        self.assertEqual(app.put('/thing').body, '"replace"')
+
+        self.assertEqual(app.patch('/thing').body, '"update"')
 
         self.assertEqual(app.delete('/thing').body, '"delete"')
 
-        self.assertEqual(app.put('/grandpas/1/wife').body, '"update"')
+        self.assertEqual(app.put('/grandpas/1/wife').body, '"replace"')
+
+        self.assertEqual(app.patch('/grandpas/1/wife').body, '"update"')
 
         self.assertEqual(app.delete('/grandpas/1/wife').body, '"delete"')
 
