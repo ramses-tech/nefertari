@@ -152,6 +152,10 @@ class BaseView(object):
         """
         if model_cls is None:
             model_cls = self._model_class
+        if not model_cls:
+            log.info("%s has no model defined" % self.__class__.__name__)
+            return
+
         empty_values = model_cls.get_null_values()
         for field, value in empty_values.items():
             if field not in self._json_params:
