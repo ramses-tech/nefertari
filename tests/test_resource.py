@@ -32,6 +32,9 @@ def get_test_view_class(name=''):
         def convert_ids2objects(self, *args, **kwargs):
             pass
 
+        def fill_null_values(self, *args, **kwargs):
+            pass
+
     return View
 
 
