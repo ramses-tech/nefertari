@@ -142,6 +142,18 @@ class BaseView(object):
         self.setup_default_wrappers()
         self.convert_ids2objects()
         self.set_public_limits()
+        if self.request.method == 'PUT':
+            self.fill_null_values()
+
+    def fill_null_values(self):
+        """ Fill missing model fields in JSON with {key: None}.
+
+        Only run for PUT requests.
+        """
+        empty_values = self._model_class.get_null_values()
+        for field, value in empty_values.items():
+            if field not in self._json_params:
+                self._json_params[field] = value
 
     def set_public_limits(self):
         """ Set public limits if auth is enabled and user is not
