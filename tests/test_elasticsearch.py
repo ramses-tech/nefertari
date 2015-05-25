@@ -100,7 +100,7 @@ class TestES(object):
         obj = es.ES(source='Foo')
         assert obj.index_name == mock_set.index_name
         assert obj.doc_type == 'foo'
-        assert obj.chunk_size == 100
+        assert obj.chunk_size == mock_set.asint()
         obj = es.ES(source='Foo', index_name='a', chunk_size=2)
         assert obj.index_name == 'a'
         assert obj.doc_type == 'foo'
