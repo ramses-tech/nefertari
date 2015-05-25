@@ -115,6 +115,7 @@ class ES(object):
     @classmethod
     def setup(cls, settings):
         ES.settings = settings.mget('elasticsearch')
+        ES.settings.setdefault('chunk_size', 500)
 
         try:
             _hosts = ES.settings.hosts
@@ -155,9 +156,11 @@ class ES(object):
                 es = ES(model_cls.__name__)
                 es.put_mapping(body=model_cls.get_es_mapping())
 
-    def __init__(self, source='', index_name=None, chunk_size=100):
+    def __init__(self, source='', index_name=None, chunk_size=None):
         self.doc_type = self.src2type(source)
         self.index_name = index_name or ES.settings.index_name
+        if chunk_size is None:
+            chunk_size = ES.settings.asint('chunk_size')
         self.chunk_size = chunk_size
 
     def put_mapping(self, body, **kwargs):
@@ -167,10 +170,12 @@ class ES(object):
             index=self.index_name,
             **kwargs)
 
-    def process_chunks(self, documents, operation, chunk_size):
+    def process_chunks(self, documents, operation, chunk_size=None):
         """ Apply `operation` to chunks of `documents` of size `chunk_size`.
 
         """
+        if chunk_size is None:
+            chunk_size = self.chunk_size
         start = end = 0
         count = len(documents)
 
