@@ -106,7 +106,7 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
         'GET', traverse=_traverse)
 
     add_route_and_view(
-        config, 'update', name_prefix + member_name, path + id_name,
+        config, 'replace', name_prefix + member_name, path + id_name,
         'PUT', traverse=_traverse)
 
     add_route_and_view(
