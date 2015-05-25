@@ -56,7 +56,7 @@ def includeme(config):
 
 
 def _bulk_body(body):
-    return ES.api.bulk(body=body)
+    return ES.api.bulk(body=body, refresh=True)
 
 
 def apply_sort(_sort):
@@ -497,5 +497,5 @@ class ES(object):
     @classmethod
     def index_refs(cls, db_obj):
         for model_cls, documents in db_obj.get_reference_documents():
-            if getattr(model_cls, '_index_enabled', False):
+            if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(documents)

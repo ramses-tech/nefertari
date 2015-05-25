@@ -90,7 +90,8 @@ class TestHelperFunctions(object):
     @patch('nefertari.elasticsearch.ES')
     def test_bulk_body(self, mock_es):
         es._bulk_body('foo')
-        mock_es.api.bulk.assert_called_once_with(body='foo')
+        mock_es.api.bulk.assert_called_once_with(
+            body='foo', refresh=True)
 
 
 class TestES(object):
