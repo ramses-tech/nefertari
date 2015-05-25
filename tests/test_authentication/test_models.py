@@ -9,15 +9,15 @@ class TestModelHelpers(object):
 
     def test_lower_strip(self, engine_mock):
         from nefertari.authentication import models
-        assert models.lower_strip('Foo   ') == 'foo'
-        assert models.lower_strip(None) == ''
+        assert models.lower_strip(None, 'Foo   ') == 'foo'
+        assert models.lower_strip(None, None) == ''
 
     def test_encrypt_password(self, engine_mock):
         from nefertari.authentication import models
-        encrypted = models.encrypt_password('foo')
+        encrypted = models.encrypt_password(None, 'foo')
         assert models.crypt.match(encrypted)
         assert encrypted != 'foo'
-        assert encrypted == models.encrypt_password(encrypted)
+        assert encrypted == models.encrypt_password(None, encrypted)
 
     @patch('nefertari.authentication.models.uuid.uuid4')
     def test_create_apikey_token(self, mock_uuid, engine_mock):
