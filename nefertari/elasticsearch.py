@@ -38,6 +38,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
 
             return super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
+            log.error(e.error)
             status_code = e.status_code
             if status_code == 404:
                 raise IndexNotFoundException()
@@ -57,6 +58,28 @@ def includeme(config):
 
 def _bulk_body(body):
     return ES.api.bulk(body=body, refresh=True)
+
+
+def process_fields_param(fields):
+    """ Process 'fields' ES param.
+
+    * Fields list is split if needed
+    * '_type' field is added, if not present, so the actual value is
+      displayed instead of 'None'
+    * '_source=False' is returned as well, so document source is not
+      loaded from ES. This is done because source is not used when
+      'fields' param is provided
+    """
+    if not fields:
+        return fields
+    if isinstance(fields, basestring):
+        fields = split_strip(fields)
+    if '_type' not in fields:
+        fields.append('_type')
+    return {
+        'fields': fields,
+        '_source': False,
+    }
 
 
 def apply_sort(_sort):
@@ -151,10 +174,13 @@ class ES(object):
     @classmethod
     def setup_mappings(cls):
         models = engine.get_document_classes()
-        for model_name, model_cls in models.items():
-            if getattr(model_cls, '_index_enabled', False):
-                es = ES(model_cls.__name__)
-                es.put_mapping(body=model_cls.get_es_mapping())
+        try:
+            for model_name, model_cls in models.items():
+                if getattr(model_cls, '_index_enabled', False):
+                    es = ES(model_cls.__name__)
+                    es.put_mapping(body=model_cls.get_es_mapping())
+        except JHTTPBadRequest as ex:
+            raise Exception(ex.json['extra']['data'])
 
     def __init__(self, source='', index_name=None, chunk_size=None):
         self.doc_type = self.src2type(source)
@@ -320,7 +346,9 @@ class ES(object):
             body=dict(docs=docs)
         )
         if fields:
-            params['fields'] = fields
+            fields_params = process_fields_param(fields)
+            params.update(fields_params)
+
         documents = _ESDocs()
         documents._nefertari_meta = dict(
             start=_start,
@@ -424,13 +452,15 @@ class ES(object):
         if '_count' in params:
             return self.do_count(_params)
 
-        # pop the fields before passing to search.
-        # ES does not support passing names of nested structures
-        _fields = _params.pop('fields', '')
+        fields = _params.pop('fields', '')
+        if fields:
+            fields_params = process_fields_param(fields)
+            _params.update(fields_params)
+
         documents = _ESDocs()
         documents._nefertari_meta = dict(
             start=_params['from_'],
-            fields=_fields)
+            fields=fields)
 
         try:
             data = ES.api.search(**_params)
@@ -444,7 +474,7 @@ class ES(object):
             return documents
 
         for da in data['hits']['hits']:
-            _d = da['fields'] if _fields else da['_source']
+            _d = da['fields'] if fields else da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 

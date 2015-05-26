@@ -40,6 +40,21 @@ class TestESHttpConnection(object):
 
 
 class TestHelperFunctions(object):
+    def test_process_fields_param_no_fields(self):
+        assert es.process_fields_param(None) is None
+
+    def test_process_fields_param_string(self):
+        assert es.process_fields_param('foo,bar') == {
+            'fields': ['foo', 'bar', '_type'],
+            '_source': False
+        }
+
+    def test_process_fields_param_list(self):
+        assert es.process_fields_param(['foo', 'bar']) == {
+            'fields': ['foo', 'bar', '_type'],
+            '_source': False
+        }
+
     @patch('nefertari.elasticsearch.ES')
     def test_includeme(self, mock_es):
         config = Mock()
@@ -369,7 +384,7 @@ class TestES(object):
         docs = obj.get_by_ids(documents, _limit=1, _fields=['name'])
         mock_mget.assert_called_once_with(
             body={'docs': [{'_index': 'foondex', '_type': 'story', '_id': 1}]},
-            fields=['name']
+            fields=['name', '_type'], _source=False
         )
         assert len(docs) == 1
         assert not hasattr(docs[0], '_id')
@@ -377,7 +392,7 @@ class TestES(object):
         assert docs[0].name == 'bar'
         assert docs._nefertari_meta['total'] == 1
         assert docs._nefertari_meta['start'] == 0
-        assert docs._nefertari_meta['fields'] == ['name']
+        assert docs._nefertari_meta['fields'] == ['name', '_type']
 
     @patch('nefertari.elasticsearch.ES.api.mget')
     def test_get_by_ids_no_index_raise(self, mock_mget):
@@ -526,14 +541,16 @@ class TestES(object):
         }
         docs = obj.get_collection(
             fields=['foo'], body={'foo': 'bar'}, from_=0)
-        mock_search.assert_called_once_with(body={'foo': 'bar'}, from_=0)
+        mock_search.assert_called_once_with(
+            body={'foo': 'bar'}, fields=['foo', '_type'], from_=0,
+            _source=False)
         assert len(docs) == 1
         assert docs[0].id == 1
         assert docs[0]._score == 2
         assert docs[0].foo == 'bar'
         assert docs._nefertari_meta['total'] == 4
         assert docs._nefertari_meta['start'] == 0
-        assert docs._nefertari_meta['fields'] == ['foo']
+        assert docs._nefertari_meta['fields'] == ['foo', '_type']
         assert docs._nefertari_meta['took'] == 2.8
 
     @patch('nefertari.elasticsearch.ES.api.search')

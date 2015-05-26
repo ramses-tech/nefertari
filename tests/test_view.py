@@ -207,6 +207,21 @@ class TestBaseView(object):
         conv.assert_called_once_with()
         setpub.assert_called_once_with()
 
+    @patch('nefertari.view.BaseView._run_init_actions')
+    def test_fill_null_values(self, run):
+        request = Mock(content_type='', method='', accept=[''])
+        view = BaseView(
+            context={}, request=request,
+            _query_params={'foo': 'bar'})
+        view._model_class = Mock()
+        view._model_class.get_null_values.return_value = {
+            'name': None, 'email': 1, 'foo': None}
+        view._json_params = {'foo': 'bar'}
+        view.fill_null_values()
+        assert view._json_params == {
+            'foo': 'bar', 'name': None, 'email': 1
+        }
+
     @patch('nefertari.view.wrappers')
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_no_root(self, run, wrap):
