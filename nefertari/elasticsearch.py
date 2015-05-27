@@ -536,4 +536,5 @@ class ES(object):
     def index_refs(cls, db_obj, refresh_index=None):
         for model_cls, documents in db_obj.get_reference_documents():
             if getattr(model_cls, '_index_enabled', False) and documents:
-                cls(model_cls.__name__).index(documents, refresh_index)
+                cls(model_cls.__name__).index(
+                    documents, refresh_index=refresh_index)

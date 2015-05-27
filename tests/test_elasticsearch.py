@@ -694,7 +694,7 @@ class TestES(object):
         db_obj.get_reference_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
         es.ES.index_refs(db_obj)
-        mock_ind.assert_called_once_with(docs, None)
+        mock_ind.assert_called_once_with(docs, refresh_index=None)
 
     @patch('nefertari.elasticsearch.ES.settings')
     @patch('nefertari.elasticsearch.ES.index')
