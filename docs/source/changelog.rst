@@ -1,6 +1,10 @@
 Changelog
 =========
 
+* :release:`0.3.1 <2015-05-27>`
+* :bug:`-` fixed PUT to replace all fields and PATCH to update some
+* :bug:`-` fixed posting to singular resources e.d. /api/users/<username>/profile
+
 * :release:`0.3.0 <2015-05-18>`
 * :support:`-` Step-by-step 'Getting started' guide
 * :bug:`- major` Fixed several issues related to ElasticSearch indexing

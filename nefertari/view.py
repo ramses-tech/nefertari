@@ -142,6 +142,24 @@ class BaseView(object):
         self.setup_default_wrappers()
         self.convert_ids2objects()
         self.set_public_limits()
+        if self.request.method == 'PUT':
+            self.fill_null_values()
+
+    def fill_null_values(self, model_cls=None):
+        """ Fill missing model fields in JSON with {key: None}.
+
+        Only run for PUT requests.
+        """
+        if model_cls is None:
+            model_cls = self._model_class
+        if not model_cls:
+            log.info("%s has no model defined" % self.__class__.__name__)
+            return
+
+        empty_values = model_cls.get_null_values()
+        for field, value in empty_values.items():
+            if field not in self._json_params:
+                self._json_params[field] = value
 
     def set_public_limits(self):
         """ Set public limits if auth is enabled and user is not
@@ -152,20 +170,22 @@ class BaseView(object):
         if auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
-    def convert_ids2objects(self):
+    def convert_ids2objects(self, model_cls=None):
         """ Convert object IDs from `self._json_params` to objects if needed.
 
         Only IDs tbat belong to relationship field of `self._model_class`
         are converted.
         """
-        if not self._model_class:
+        if model_cls is None:
+            model_cls = self._model_class
+        if not model_cls:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
 
         for field in self._json_params.keys():
-            if not engine.is_relationship_field(field, self._model_class):
+            if not engine.is_relationship_field(field, model_cls):
                 continue
-            model_cls = engine.get_relationship_cls(field, self._model_class)
+            model_cls = engine.get_relationship_cls(field, model_cls)
             self.id2obj(field, model_cls)
 
     def get_debug(self, package=None):
