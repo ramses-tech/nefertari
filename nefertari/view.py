@@ -45,11 +45,11 @@ class ViewMapper(object):
                 for call in view_obj._before_calls.get(action_name, []):
                     call(request=request)
 
-            except wrappers.ValidationError, e:
+            except wrappers.ValidationError as e:
                 log.error('validation error: %s', e)
                 raise JHTTPBadRequest(e.args)
 
-            except wrappers.ResourceNotFound, e:
+            except wrappers.ResourceNotFound as e:
                 log.error('resource not found: %s', e)
                 raise JHTTPNotFound()
 
