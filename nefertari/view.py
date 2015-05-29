@@ -173,7 +173,7 @@ class BaseView(object):
     def convert_ids2objects(self, model_cls=None):
         """ Convert object IDs from `self._json_params` to objects if needed.
 
-        Only IDs tbat belong to relationship field of `self._model_class`
+        Only IDs that belong to relationship field of `self._model_class`
         are converted.
         """
         if model_cls is None:
