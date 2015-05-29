@@ -1,6 +1,11 @@
 Changelog
 =========
 
+* :release:`0.3.1 <2015-05-27>`
+* :bug:`-` Fixed PUT to replace all fields and PATCH to update some
+* :bug:`-` Fixed posting to singular resources e.d. /api/users/<username>/profile
+* :bug:`-` Fixed ES mapping error when values of field were all null
+
 * :release:`0.3.0 <2015-05-18>`
 * :support:`-` Step-by-step 'Getting started' guide
 * :bug:`- major` Fixed several issues related to ElasticSearch indexing
