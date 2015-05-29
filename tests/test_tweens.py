@@ -1,3 +1,4 @@
+import six
 from mock import Mock, patch
 
 from nefertari import tweens
@@ -198,7 +199,7 @@ class TestTweens(object):
         assert config.subscribed == []
         tweens.enable_selfalias(config, 'foo')
         assert len(config.subscribed) == 1
-        assert callable(config.subscribed[0][0])
+        assert six.callable(config.subscribed[0][0])
         assert config.subscribed[0][1] is ContextFound
 
     def test_context_found_subscriber_alias_enabled(self):

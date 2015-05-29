@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import logging
 
 import elasticsearch
+import six
 
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
@@ -46,7 +47,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 status_code = 400
             raise exception_response(
                 status_code,
-                detail='elasticsearch error.',
+                detail=six.b('elasticsearch error.'),
                 extra=dict(data=e))
 
 
@@ -72,7 +73,7 @@ def process_fields_param(fields):
     """
     if not fields:
         return fields
-    if isinstance(fields, basestring):
+    if isinstance(fields, six.string_types):
         fields = split_strip(fields)
     if '_type' not in fields:
         fields.append('_type')
@@ -115,7 +116,8 @@ def build_qs(params, _raw_terms='', operator='AND'):
         else:
             terms.append('%s:%s' % (k, v))
 
-    _terms = (' %s ' % operator).join(filter(bool, terms)) + _raw_terms
+    terms = sorted([term for term in terms if term])
+    _terms = (' %s ' % operator).join(terms) + _raw_terms
 
     return _terms
 
@@ -252,7 +254,7 @@ class ES(object):
 
         body = []
         for meta, doc in documents:
-            action = meta.keys()[0]
+            action = list(meta.keys())[0]
             if action == 'delete':
                 body += [meta]
             elif action == 'index':

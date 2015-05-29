@@ -4,7 +4,7 @@ from nefertari import utility_views as uviews
 
 
 class TestOptionsView(object):
-    header_str = 'HEAD, TRACE, GET, PATCH, PUT, POST, OPTIONS, DELETE'
+    header_str = 'DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE'
 
     def test_call_methods_header(self):
         response = Mock(headers={})

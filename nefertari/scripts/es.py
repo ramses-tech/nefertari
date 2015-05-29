@@ -1,11 +1,10 @@
 from argparse import ArgumentParser
 import sys
-import urlparse
 import logging
 
 from pyramid.paster import bootstrap
 from pyramid.config import Configurator
-from zope.dottedname.resolve import resolve
+from six.moves import urllib
 
 from nefertari.utils import dictset, split_strip, to_dicts
 from nefertari import engine
@@ -81,7 +80,7 @@ class ESCommand(object):
 
             params = self.options.params or ''
             params = dict([
-                [k, v[0]] for k, v in urlparse.parse_qs(params).items()
+                [k, v[0]] for k, v in urllib.parse.parse_qs(params).items()
             ])
             params.setdefault('_limit', params.get('_limit', 10000))
             chunk_size = self.options.chunk or params['_limit']

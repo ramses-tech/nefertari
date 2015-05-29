@@ -1,8 +1,10 @@
 import json
 import logging
-import urllib
 import simplejson
 from collections import defaultdict
+
+import six
+from six.moves import urllib
 from pyramid.settings import asbool
 from pyramid.request import Request
 
@@ -243,7 +245,7 @@ class BaseView(object):
 
     def add_before_or_after_call(self, action, _callable, pos=None,
                                  before=True):
-        if not callable(_callable):
+        if not six.callable(_callable):
             raise ValueError('%s is not a callable' % _callable)
 
         if before:
@@ -267,7 +269,7 @@ class BaseView(object):
                             method=method)
 
         if method == 'GET' and params:
-            req.body = urllib.urlencode(params)
+            req.body = urllib.parse.urlencode(params)
 
         if method == 'POST':
             req.body = json.dumps(params)

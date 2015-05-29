@@ -1,8 +1,9 @@
 import os
 import logging
-from contextlib import contextmanager
 import json
+from contextlib import contextmanager
 
+import six
 from pyramid.config import Configurator
 
 from nefertari.renderers import _JSONEncoder
@@ -19,7 +20,7 @@ def json_dumps(body, encoder=None):
 
 def split_strip(_str, on=','):
     lst = _str if isinstance(_str, list) else _str.split(on)
-    return filter(bool, [e.strip() for e in lst])
+    return list(filter(bool, [e.strip() for e in lst]))
 
 
 def process_limit(start, page, limit):
@@ -50,12 +51,12 @@ def extend_list(param):
     _new = []
     if isinstance(param, (list, set)):
         for each in param:
-            if isinstance(each, basestring) and each.find(',') != -1:
+            if isinstance(each, six.string_types) and each.find(',') != -1:
                 _new.extend(split_strip(each))
             else:
                 _new.append(each)
 
-    elif isinstance(param, basestring) and param.find(',') != -1:
+    elif isinstance(param, six.string_types) and param.find(',') != -1:
         _new = split_strip(param)
 
     return _new
@@ -65,7 +66,7 @@ def process_fields(_fields):
     fields_only = []
     fields_exclude = []
 
-    if isinstance(_fields, basestring):
+    if isinstance(_fields, six.string_types):
         _fields = split_strip(_fields)
 
     for field in extend_list(_fields):
@@ -118,6 +119,8 @@ def isnumeric(value):
 
 def issequence(arg):
     """Return True if `arg` acts as a list and does not look like a string."""
-    return (not hasattr(arg, 'strip') and
-            hasattr(arg, '__getitem__') or
-            hasattr(arg, '__iter__'))
+    string_behaviour = (
+        isinstance(arg, six.string_types) or
+        isinstance(arg, six.text_type))
+    list_behaviour = hasattr(arg, '__getitem__') or hasattr(arg, '__iter__')
+    return not string_behaviour and list_behaviour

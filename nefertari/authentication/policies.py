@@ -1,3 +1,4 @@
+import six
 from pyramid.authentication import CallbackAuthenticationPolicy
 
 from nefertari import engine
@@ -37,7 +38,7 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
                 perform requests.
         """
         self.user_model = user_model
-        if isinstance(self.user_model, basestring):
+        if isinstance(self.user_model, six.string_types):
             self.user_model = engine.get_document_cls(self.user_model)
         create_apikey_model(self.user_model)
 
@@ -85,10 +86,13 @@ class ApiKeyAuthenticationPolicy(CallbackAuthenticationPolicy):
         if authmeth.lower() != 'apikey':
             return None
 
-        try:
-            auth = authbytes.decode('utf-8')
-        except UnicodeDecodeError:
-            auth = authbytes.decode('latin-1')
+        if six.PY2 or isinstance(authbytes, bytes):
+            try:
+                auth = authbytes.decode('utf-8')
+            except UnicodeDecodeError:
+                auth = authbytes.decode('latin-1')
+        else:
+            auth = authbytes
 
         try:
             username, api_key = auth.split(':', 1)

@@ -1,5 +1,6 @@
 import logging
 
+import six
 import pytest
 from mock import Mock, patch, call
 from elasticsearch.exceptions import TransportError
@@ -16,7 +17,8 @@ class TestESHttpConnection(object):
         mock_log.level = logging.DEBUG
         conn = es.ESHttpConnection()
         conn.pool = Mock()
-        conn.pool.urlopen.return_value = Mock(data='foo', status=200)
+        conn.pool.urlopen.return_value = Mock(
+            data=six.b('foo'), status=200)
         conn.perform_request('POST', 'http://localhost:9200')
         mock_log.debug.assert_called_once_with(
             "('POST', 'http://localhost:9200')")
@@ -94,7 +96,7 @@ class TestHelperFunctions(object):
 
     def test_build_operator(self):
         qs = es.build_qs(dictset({'foo': 1, 'qoo': 2}), operator='OR')
-        assert qs == 'qoo:2 OR foo:1'
+        assert qs == 'foo:1 OR qoo:2'
 
     def test_es_docs(self):
         assert issubclass(es._ESDocs, list)
@@ -186,9 +188,9 @@ class TestES(object):
         prepared = obj.prep_bulk_documents('myaction', docs)
         assert len(prepared) == 2
         doc1meta, doc1 = prepared[0]
-        assert doc1meta.keys() == ['myaction']
-        assert doc1meta['myaction'].keys() == [
-            'action', '_type', '_id', '_index']
+        assert list(doc1meta.keys()) == ['myaction']
+        assert sorted(doc1meta['myaction'].keys()) == sorted([
+            'action', '_type', '_id', '_index'])
         assert doc1 == {'_type': 'Story', 'id': 'story1'}
         assert doc1meta['myaction']['action'] == 'myaction'
         assert doc1meta['myaction']['_index'] == 'foondex'
@@ -203,9 +205,9 @@ class TestES(object):
         prepared = obj.prep_bulk_documents('myaction', docs)
         assert len(prepared) == 1
         doc2meta, doc2 = prepared[0]
-        assert doc2meta.keys() == ['myaction']
-        assert doc2meta['myaction'].keys() == [
-            'action', '_type', '_id', '_index']
+        assert list(doc2meta.keys()) == ['myaction']
+        assert sorted(doc2meta['myaction'].keys()) == sorted([
+            'action', '_type', '_id', '_index'])
         assert doc2 == {'id': 'story2'}
         assert doc2meta['myaction']['action'] == 'myaction'
         assert doc2meta['myaction']['_index'] == 'foondex'
@@ -391,7 +393,8 @@ class TestES(object):
         assert docs[0].name == 'bar'
         assert docs._nefertari_meta['total'] == 1
         assert docs._nefertari_meta['start'] == 0
-        assert docs._nefertari_meta['fields'] == ['name', '_type']
+        assert sorted(docs._nefertari_meta['fields']) == sorted([
+            'name', '_type'])
 
     @patch('nefertari.elasticsearch.ES.api.mget')
     def test_get_by_ids_no_index_raise(self, mock_mget):
@@ -437,7 +440,8 @@ class TestES(object):
         params = obj.build_search_params(
             {'foo': 1, 'zoo': 2, '_raw_terms': ' AND q:5', '_limit': 10}
         )
-        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'from_', 'size', 'index'])
         assert params['body'] == {
             'query': {'query_string': {'query': 'foo:1 AND zoo:2 AND q:5'}}}
         assert params['index'] == 'foondex'
@@ -446,7 +450,8 @@ class TestES(object):
     def test_build_search_params_no_body_no_qs(self):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({'_limit': 10})
-        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'from_', 'size', 'index'])
         assert params['body'] == {'query': {'match_all': {}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
@@ -461,8 +466,8 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({
             'foo': 1, '_sort': '+a,-b,c', '_limit': 10})
-        assert params.keys() == [
-            'body', 'doc_type', 'index', 'sort', 'from_', 'size']
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'index', 'sort', 'from_', 'size'])
         assert params['body'] == {
             'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
@@ -473,8 +478,8 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({
             'foo': 1, '_fields': ['a'], '_limit': 10})
-        assert params.keys() == [
-            'body', 'doc_type', 'index', 'fields', 'from_', 'size']
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'index', 'fields', 'from_', 'size'])
         assert params['body'] == {
             'query': {'query_string': {'query': 'foo:1'}}}
         assert params['index'] == 'foondex'
@@ -485,7 +490,8 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params({
             'foo': 1, '_search_fields': 'a,b', '_limit': 10})
-        assert params.keys() == ['body', 'doc_type', 'from_', 'size', 'index']
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'from_', 'size', 'index'])
         assert params['body'] == {'query': {'query_string': {
             'fields': ['b^1', 'a^2'],
             'query': 'foo:1'}}}
@@ -549,7 +555,8 @@ class TestES(object):
         assert docs[0].foo == 'bar'
         assert docs._nefertari_meta['total'] == 4
         assert docs._nefertari_meta['start'] == 0
-        assert docs._nefertari_meta['fields'] == ['foo', '_type']
+        assert sorted(docs._nefertari_meta['fields']) == sorted([
+            'foo', '_type'])
         assert docs._nefertari_meta['took'] == 2.8
 
     @patch('nefertari.elasticsearch.ES.api.search')

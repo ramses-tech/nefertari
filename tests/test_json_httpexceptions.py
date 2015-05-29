@@ -1,6 +1,7 @@
 import json
 
 import pytest
+import six
 from mock import Mock, patch
 
 from nefertari import json_httpexceptions as jsonex
@@ -34,11 +35,11 @@ class TestJSONHTTPExceptionsModule(object):
             status_code=402, explanation='success',
             message='foo', title='bar')
         assert obj2.content_type == 'application/json'
-        assert isinstance(obj2.body, basestring)
-        body = json.loads(obj2.body)
-        assert body.keys() == [
-            'remote_addr', 'status_code', 'explanation', 'title',
-            'message', 'id', 'timestamp', 'request_url', 'client_addr'
+        assert isinstance(obj2.body, six.binary_type)
+        body = json.loads(obj2.body.decode('utf-8'))
+        assert sorted(body.keys()) == [
+            'client_addr', 'explanation', 'id', 'message', 'remote_addr',
+            'request_url', 'status_code', 'timestamp', 'title'
         ]
         assert body['remote_addr'] == '127.0.0.2'
         assert body['client_addr'] == '127.0.0.1'
@@ -59,7 +60,7 @@ class TestJSONHTTPExceptionsModule(object):
             message='foo', title='bar')
         obj2 = jsonex.create_json_response(
             obj, None, encoder=_JSONEncoder)
-        body = json.loads(obj2.body)
+        body = json.loads(obj2.body.decode('utf-8'))
         assert body['status_code'] == 402
         assert body['explanation'] == 'success'
         assert body['title'] == 'bar'

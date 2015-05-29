@@ -91,7 +91,7 @@ class TestBaseView(object):
                 BaseView.__init__(self, context, request)
 
             def show(self, id):
-                return u'John Doe'
+                return 'John Doe'
 
             def convert_ids2objects(self, *args, **kwargs):
                 pass
@@ -100,7 +100,7 @@ class TestBaseView(object):
         request.matched_route.pattern = '/users'
         view = UsersView(request.context, request)
 
-        assert u'John Doe' == view.show(1)
+        assert 'John Doe' == view.show(1)
 
         with pytest.raises(JHTTPMethodNotAllowed):
             view.index()
@@ -173,7 +173,7 @@ class TestBaseView(object):
         request.params.mixed.return_value = {'param2.foo': 'val2'}
         view = BaseView(context={'foo': 'bar'}, request=request)
         assert request.override_renderer == 'string'
-        assert view._params.keys() == ['param2']
+        assert list(view._params.keys()) == ['param2']
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_init_json_error(self, run):
@@ -189,7 +189,7 @@ class TestBaseView(object):
         request.params.mixed.return_value = {'param2.foo': 'val2'}
         view = BaseView(context={'foo': 'bar'}, request=request)
         assert request.override_renderer == 'nefertari_json'
-        assert view._params.keys() == ['param2']
+        assert list(view._params.keys()) == ['param2']
 
     @patch('nefertari.view.BaseView.setup_default_wrappers')
     @patch('nefertari.view.BaseView.convert_ids2objects')
@@ -439,7 +439,7 @@ class TestBaseView(object):
             'http://', cookies=['1'], content_type='application/json',
             method='GET')
         view.request.invoke_subrequest.assert_called_once_with(req.blank())
-        ulib.urlencode.assert_called_once_with({'par': 'val'})
+        ulib.parse.urlencode.assert_called_once_with({'par': 'val'})
 
     @patch('nefertari.view.json')
     @patch('nefertari.view.Request')
