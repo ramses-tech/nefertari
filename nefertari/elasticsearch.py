@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import logging
+from functools import partial
 
 import elasticsearch
 
@@ -56,8 +57,11 @@ def includeme(config):
     ES.create_index()
 
 
-def _bulk_body(body):
-    return ES.api.bulk(body=body)
+def _bulk_body(body, refresh_index=None):
+    kwargs = {'body': body}
+    if refresh_index is not None:
+        kwargs['refresh'] = refresh_index
+    return ES.api.bulk(**kwargs)
 
 
 def process_fields_param(fields):
@@ -138,6 +142,7 @@ class ES(object):
     @classmethod
     def setup(cls, settings):
         ES.settings = settings.mget('elasticsearch')
+        ES.settings.setdefault('chunk_size', 500)
 
         try:
             _hosts = ES.settings.hosts
@@ -181,9 +186,11 @@ class ES(object):
         except JHTTPBadRequest as ex:
             raise Exception(ex.json['extra']['data'])
 
-    def __init__(self, source='', index_name=None, chunk_size=100):
+    def __init__(self, source='', index_name=None, chunk_size=None):
         self.doc_type = self.src2type(source)
         self.index_name = index_name or ES.settings.index_name
+        if chunk_size is None:
+            chunk_size = ES.settings.asint('chunk_size')
         self.chunk_size = chunk_size
 
     def put_mapping(self, body, **kwargs):
@@ -193,10 +200,12 @@ class ES(object):
             index=self.index_name,
             **kwargs)
 
-    def process_chunks(self, documents, operation, chunk_size):
+    def process_chunks(self, documents, operation, chunk_size=None):
         """ Apply `operation` to chunks of `documents` of size `chunk_size`.
 
         """
+        if chunk_size is None:
+            chunk_size = self.chunk_size
         start = end = 0
         count = len(documents)
 
@@ -206,7 +215,7 @@ class ES(object):
             end += chunk_size
 
             bulk = documents[start:end]
-            operation(bulk)
+            operation(body=bulk)
 
             start += chunk_size
             count -= chunk_size
@@ -240,7 +249,8 @@ class ES(object):
 
         return _docs
 
-    def _bulk(self, action, documents, chunk_size=None):
+    def _bulk(self, action, documents, chunk_size=None,
+              refresh_index=None):
         if chunk_size is None:
             chunk_size = self.chunk_size
 
@@ -263,18 +273,21 @@ class ES(object):
         if body:
             # Use chunk_size*2, because `body` is a sequence of
             # meta, document, meta, ...
+            operation = partial(_bulk_body, refresh_index=refresh_index)
             self.process_chunks(
                 documents=body,
-                operation=_bulk_body,
+                operation=operation,
                 chunk_size=chunk_size*2)
         else:
             log.warning('Empty body')
 
-    def index(self, documents, chunk_size=None):
+    def index(self, documents, chunk_size=None,
+              refresh_index=None):
         """ Reindex all `document`s. """
-        self._bulk('index', documents, chunk_size)
+        self._bulk('index', documents, chunk_size, refresh_index)
 
-    def index_missing_documents(self, documents, chunk_size=None):
+    def index_missing_documents(self, documents, chunk_size=None,
+                                refresh_index=None):
         """ Index documents that are missing from ES index.
 
         Determines which documents are missing using ES `mget` call which
@@ -306,14 +319,14 @@ class ES(object):
                      'index `{}`'.format(self.doc_type, self.index_name))
             return
 
-        self._bulk('index', documents, chunk_size)
+        self._bulk('index', documents, chunk_size, refresh_index)
 
-    def delete(self, ids):
+    def delete(self, ids, refresh_index=None):
         if not isinstance(ids, list):
             ids = [ids]
 
         documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
-        self._bulk('delete', documents)
+        self._bulk('delete', documents, refresh_index=refresh_index)
 
     def get_by_ids(self, ids, **params):
         if not ids:
@@ -520,7 +533,8 @@ class ES(object):
         return self.get_resource(**kw)
 
     @classmethod
-    def index_refs(cls, db_obj):
+    def index_refs(cls, db_obj, refresh_index=None):
         for model_cls, documents in db_obj.get_reference_documents():
-            if getattr(model_cls, '_index_enabled', False):
-                cls(model_cls.__name__).index(documents)
+            if getattr(model_cls, '_index_enabled', False) and documents:
+                cls(model_cls.__name__).index(
+                    documents, refresh_index=refresh_index)
