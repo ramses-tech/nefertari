@@ -48,7 +48,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 status_code = 400
             raise exception_response(
                 status_code,
-                detail=six.b('elasticsearch error.'),
+                detail=six.b('Elasticsearch error'),
                 extra=dict(data=e))
 
 

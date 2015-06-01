@@ -299,6 +299,8 @@ class BaseView(object):
                 return obj
 
         ids = self._json_params[name]
+        if not ids:
+            return
         if isinstance(ids, list):
             self._json_params[name] = [_get_object(_id) for _id in ids]
         else:
