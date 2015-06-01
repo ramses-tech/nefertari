@@ -55,11 +55,6 @@ class ESCommand(object):
                   'documents that are missing from index are indexed.'),
             action='store_true',
             default=False)
-        parser.add_argument(
-            '--refresh',
-            help='Refresh the index after performing the operation',
-            action='store_true',
-            default=False)
 
         self.options = parser.parse_args()
         if not self.options.config:
@@ -100,9 +95,8 @@ class ESCommand(object):
             documents = to_dicts(query_set)
 
             if self.options.force:
-                es.index(documents, refresh_index=self.options.refresh)
+                es.index(documents)
             else:
-                es.index_missing_documents(
-                    documents, refresh_index=self.options.refresh)
+                es.index_missing_documents(documents)
 
         return 0
