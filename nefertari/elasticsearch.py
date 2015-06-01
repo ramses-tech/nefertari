@@ -59,7 +59,9 @@ def includeme(config):
 
 def _bulk_body(body, refresh_index=None):
     kwargs = {'body': body}
-    if refresh_index is not None:
+    refresh_provided = refresh_index is not None
+    refresh_enabled = ES.settings.asbool('enable_refresh_query')
+    if refresh_provided and refresh_enabled:
         kwargs['refresh'] = refresh_index
     return ES.api.bulk(**kwargs)
 

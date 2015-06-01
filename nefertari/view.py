@@ -136,6 +136,12 @@ class BaseView(object):
         elif 'text/plain' in request.accept:
             request.override_renderer = 'string'
 
+        if '_refresh_index' in self._query_params:
+            self.refresh_index = self._query_params.asbool(
+                '_refresh_index', pop=True)
+        else:
+            self.refresh_index = None
+
         self._run_init_actions()
 
     def _run_init_actions(self):
