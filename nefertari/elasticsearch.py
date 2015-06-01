@@ -187,6 +187,13 @@ class ES(object):
             raise Exception(
                 'Bad or missing settings for elasticsearch. %s' % e)
 
+    def __init__(self, source='', index_name=None, chunk_size=None):
+        self.doc_type = self.src2type(source)
+        self.index_name = index_name or ES.settings.index_name
+        if chunk_size is None:
+            chunk_size = ES.settings.asint('chunk_size')
+        self.chunk_size = chunk_size
+
     @classmethod
     def create_index(cls, index_name=None):
         index_name = index_name or ES.settings.index_name
@@ -206,12 +213,11 @@ class ES(object):
         except JHTTPBadRequest as ex:
             raise Exception(ex.json['extra']['data'])
 
-    def __init__(self, source='', index_name=None, chunk_size=None):
-        self.doc_type = self.src2type(source)
-        self.index_name = index_name or ES.settings.index_name
-        if chunk_size is None:
-            chunk_size = ES.settings.asint('chunk_size')
-        self.chunk_size = chunk_size
+    def delete_mapping(self):
+        ES.api.indices.delete_mapping(
+            index=self.index_name,
+            doc_type=self.doc_type,
+        )
 
     def put_mapping(self, body, **kwargs):
         ES.api.indices.put_mapping(

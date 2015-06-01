@@ -39,7 +39,8 @@ class ESCommand(object):
             default=False)
         parser.add_argument(
             '--models',
-            help='Comma-separeted list of model names to index',
+            help=('Comma-separated list of model names to index '
+                  '(required)'),
             required=True)
         parser.add_argument(
             '--params', help='Url-encoded params for each model')
@@ -51,8 +52,9 @@ class ESCommand(object):
             type=int)
         parser.add_argument(
             '--force',
-            help=('Force reindexing of all documents. By default, only '
-                  'documents that are missing from index are indexed.'),
+            help=('Recreate ES mappings and reindex all documents of provided '
+                  'models. By default, only documents that are missing from '
+                  'index are indexed.'),
             action='store_true',
             default=False)
         parser.add_argument(
@@ -85,6 +87,7 @@ class ESCommand(object):
         model_names = split_strip(self.options.models)
 
         for model_name in model_names:
+            self.log.info('Processing model `{}`'.format(model_name))
             model = engine.get_document_cls(model_name)
 
             params = self.options.params or ''
@@ -100,8 +103,15 @@ class ESCommand(object):
             documents = to_dicts(query_set)
 
             if self.options.force:
+                self.log.info('Recreating `{}` ES mapping'.format(model_name))
+                es.delete_mapping()
+                es.put_mapping(body=model.get_es_mapping())
+                self.log.info('Indexing all `{}` documents'.format(
+                    model_name))
                 es.index(documents, refresh_index=self.options.refresh)
             else:
+                self.log.info('Indexing missing `{}` documents'.format(
+                    model_name))
                 es.index_missing_documents(
                     documents, refresh_index=self.options.refresh)
 
