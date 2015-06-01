@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import json
 import logging
 from functools import partial
 
@@ -29,6 +30,23 @@ class IndexNotFoundException(Exception):
 
 
 class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
+    def _catch_index_error(self, response):
+        """ Catch and raise index errors which are not critical and thus
+        not raised by elasticsearch-py.
+        """
+        code, headers, raw_data = response
+        if not raw_data:
+            return
+        data = json.loads(raw_data)
+        if not data or not data.get('errors'):
+            return
+        try:
+            error_dict = data['items'][0]['index']
+            message = error_dict['error']
+        except (KeyError, IndexError):
+            return
+        raise exception_response(400, detail=message)
+
     def perform_request(self, *args, **kw):
         try:
             if log.level == logging.DEBUG:
@@ -36,8 +54,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 if len(msg) > 512:
                     msg = msg[:300] + '...TRUNCATED...' + msg[-212:]
                 log.debug(msg)
-
-            return super(ESHttpConnection, self).perform_request(*args, **kw)
+            resp = super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
             log.error(e.error)
             status_code = e.status_code
@@ -49,6 +66,9 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 status_code,
                 detail='elasticsearch error.',
                 extra=dict(data=e))
+        else:
+            self._catch_index_error(resp)
+            return resp
 
 
 def includeme(config):
@@ -169,6 +189,13 @@ class ES(object):
             raise Exception(
                 'Bad or missing settings for elasticsearch. %s' % e)
 
+    def __init__(self, source='', index_name=None, chunk_size=None):
+        self.doc_type = self.src2type(source)
+        self.index_name = index_name or ES.settings.index_name
+        if chunk_size is None:
+            chunk_size = ES.settings.asint('chunk_size')
+        self.chunk_size = chunk_size
+
     @classmethod
     def create_index(cls, index_name=None):
         index_name = index_name or ES.settings.index_name
@@ -188,12 +215,11 @@ class ES(object):
         except JHTTPBadRequest as ex:
             raise Exception(ex.json['extra']['data'])
 
-    def __init__(self, source='', index_name=None, chunk_size=None):
-        self.doc_type = self.src2type(source)
-        self.index_name = index_name or ES.settings.index_name
-        if chunk_size is None:
-            chunk_size = ES.settings.asint('chunk_size')
-        self.chunk_size = chunk_size
+    def delete_mapping(self):
+        ES.api.indices.delete_mapping(
+            index=self.index_name,
+            doc_type=self.doc_type,
+        )
 
     def put_mapping(self, body, **kwargs):
         ES.api.indices.put_mapping(
