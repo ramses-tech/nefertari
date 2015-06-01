@@ -306,15 +306,15 @@ class BaseView(object):
 
 
 def key_error_view(context, request):
-    return JHTTPBadRequest("Bad or missing param '%s'" % context.message)
+    return JHTTPBadRequest("Bad or missing param '%s'" % context.args[0])
 
 
 def value_error_view(context, request):
-    return JHTTPBadRequest("Bad or missing value '%s'" % context.message)
+    return JHTTPBadRequest("Bad or missing value '%s'" % context.args[0])
 
 
 def error_view(context, request):
-    return JHTTPBadRequest(context.message)
+    return JHTTPBadRequest(context.args[0])
 
 
 def includeme(config):
