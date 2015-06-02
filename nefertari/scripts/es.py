@@ -63,8 +63,15 @@ class ESCommand(object):
         if not self.options.config:
             return parser.print_help()
 
-        ES._mappings_setup = True
-        env = self.bootstrap[0](self.options.config)
+        # Prevent ES.setup_mappings running on bootstrap;
+        # Restore ES._mappings_setup after bootstrap is over
+        mappings_setup = getattr(ES, '_mappings_setup', False)
+        try:
+            ES._mappings_setup = True
+            env = self.bootstrap[0](self.options.config)
+        finally:
+            ES._mappings_setup = mappings_setup
+
         registry = env['registry']
         # Include 'nefertari.engine' to setup specific engine
         config = Configurator(settings=registry.settings)
@@ -107,7 +114,6 @@ class ESCommand(object):
             else:
                 self.log.info('Indexing missing `{}` documents'.format(
                     model_name))
-                es.index_missing_documents(
-                    documents)
+                es.index_missing_documents(documents)
 
         return 0
