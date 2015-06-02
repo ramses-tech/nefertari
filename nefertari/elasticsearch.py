@@ -216,9 +216,9 @@ class ES(object):
         creation calls to ES.
         """
         if getattr(ES, '_mappings_setup', False) and not force:
-            log.debug('ES mappings have been already set up. Run '
-                      '`setup_mappings` with `force=True` to perform mappings '
-                      'set up again.')
+            log.debug('ES mappings have been already set up for currently '
+                      'running application. Call `setup_mappings` with '
+                      '`force=True` to perform mappings set up again.')
             return
         log.info('Setting up ES mappings for all existing models')
         models = engine.get_document_classes()
