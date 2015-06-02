@@ -1,7 +1,9 @@
 import time
-from pyramid.settings import asbool
 import logging
 import json
+
+import six
+from pyramid.settings import asbool
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def get_tunneling(handler, registry):
             request.method = method
 
             if method in ['POST', 'PUT', 'PATCH']:
-                request.body = json.dumps(request.GET.mixed())
+                request.body = six.b(json.dumps(request.GET.mixed()))
                 request.content_type = 'application/json'
                 # request.POST.update(request.GET)
 
