@@ -7,6 +7,7 @@ from pyramid.paster import bootstrap
 from pyramid.config import Configurator
 
 from nefertari.utils import dictset, split_strip, to_dicts
+from nefertari.elasticsearch import ES
 from nefertari import engine
 
 
@@ -62,9 +63,9 @@ class ESCommand(object):
         if not self.options.config:
             return parser.print_help()
 
+        ES._mappings_setup = True
         env = self.bootstrap[0](self.options.config)
         registry = env['registry']
-
         # Include 'nefertari.engine' to setup specific engine
         config = Configurator(settings=registry.settings)
         config.include('nefertari.engine')
@@ -77,7 +78,6 @@ class ESCommand(object):
         self.settings = dictset(registry.settings)
 
     def run(self):
-        from nefertari.elasticsearch import ES
         ES.setup(self.settings)
         model_names = split_strip(self.options.models)
 
