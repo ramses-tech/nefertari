@@ -358,9 +358,9 @@ class ESAggregationMixin(object):
         _raw_terms = ' AND '.join(search_params)
 
         return ES(self._model_class.__name__).aggregate(
-            _raw_terms=_raw_terms,
-            _query_params=self._query_params,
             _aggs_params=aggs_params,
+            _raw_terms=_raw_terms,
+            **self._query_params
         )
 
 
