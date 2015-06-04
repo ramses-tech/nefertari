@@ -4,6 +4,8 @@ Making requests
 Query syntax
 ------------
 
+Query parameters can be used on either GET, PATCH, PUT or DELETE requests.
+
 ===============================             ===========
 url parameter                               description
 ===============================             ===========
@@ -23,13 +25,15 @@ Additional parameters are available when using an ElasticSearch-enabled collecti
 ===============================             ===========
 url parameter                               description
 ===============================             ===========
-``<field_name>=<keywords>``                 to filter a collection using full-text search on <field_name>, ElasticSearch operators [#]_ can be used, e.g. ``?title=foo AND bar``
+``<field_name>=<keywords>``                 to filter a collection using full-text search on <field_name>, ES operators [#]_ can be used, e.g. ``?title=foo AND bar``
 ``q=<keywords>``                            to filter a collection using full-text search on all fields
 ``_search_fields=<field_list>``             use with ``?q=<keywords>`` to restrict search to specific fields
+``_refresh_index=true``                     to refresh the ES index after performing the operation [#]_ set ``elasticsearch.enable_refresh_query = true`` in your .ini file to enable that feature
 ===============================             ===========
 
 .. [#] To update listfields and dictfields, you can use the following syntax: ``_m=PATCH&<listfield>=<comma_separated_list>&<dictfield>.<key>=<value>``
-.. [#] The full syntax of ElasticSearch querying is beyond the scope of this documentation. You can read more on the ElasticSearch Query String Query `documentation <http://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl-query-string-query.html>`_ to do things like fuzzy search: ``?name=fuzzy~`` or date range search: ``?date=[2015-01-01 TO *]``
+.. [#] The full syntax of ElasticSearch querying is beyond the scope of this documentation. You can read more on the `ElasticSearch Query String Query documentation <http://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl-query-string-query.html>`_ to do things like fuzzy search: ``?name=fuzzy~`` or date range search: ``?date=[2015-01-01 TO *]``
+.. [#] This parameter only works with POST, PATCH, PUT and DELETE methods. Read more on `ElasticSearch Bulk API documentation <https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#bulk-refresh>`_
 
 update_many()
 -------------

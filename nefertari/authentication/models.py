@@ -167,13 +167,17 @@ class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
     __tablename__ = 'nefertari_authuser'
 
     id = engine.IdField(primary_key=True)
+
     username = engine.StringField(
-        min_length=1, max_length=50, unique=True,
-        required=True, processors=[lower_strip])
+        min_length=1, max_length=50, unique=True, required=True,
+        before_validation=[lower_strip])
     email = engine.StringField(
-        unique=True, required=True, processors=[lower_strip])
+        unique=True, required=True,
+        before_validation=[lower_strip])
     password = engine.StringField(
-        min_length=3, required=True, processors=[encrypt_password])
+        min_length=3, required=True,
+        after_validation=[encrypt_password])
+
     groups = engine.ListField(
         item_type=engine.StringField,
         choices=['admin', 'user'], default=['user'])

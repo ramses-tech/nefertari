@@ -11,8 +11,9 @@ from nefertari.utils import dictset
 
 class TestESHttpConnection(object):
 
+    @patch('nefertari.elasticsearch.ESHttpConnection._catch_index_error')
     @patch('nefertari.elasticsearch.log')
-    def test_perform_request_debug(self, mock_log):
+    def test_perform_request_debug(self, mock_log, mock_catch):
         mock_log.level = logging.DEBUG
         conn = es.ESHttpConnection()
         conn.pool = Mock()
@@ -21,7 +22,45 @@ class TestESHttpConnection(object):
         mock_log.debug.assert_called_once_with(
             "('POST', 'http://localhost:9200')")
         conn.perform_request('POST', 'http://localhost:9200'*200)
+        assert mock_catch.called
         assert mock_log.debug.call_count == 2
+
+    def test_catch_index_error_no_data(self):
+        conn = es.ESHttpConnection()
+        try:
+            conn._catch_index_error((1, 2, None))
+        except:
+            raise Exception('Unexpected exeption')
+
+    def test_catch_index_error_no_data_loaded(self):
+        conn = es.ESHttpConnection()
+        try:
+            conn._catch_index_error((1, 2, '[]'))
+        except:
+            raise Exception('Unexpected exeption')
+
+    def test_catch_index_error_no_errors(self):
+        conn = es.ESHttpConnection()
+        try:
+            conn._catch_index_error((1, 2, '{"errors":false}'))
+        except:
+            raise Exception('Unexpected exeption')
+
+    def test_catch_index_error_not_index_error(self):
+        conn = es.ESHttpConnection()
+        try:
+            conn._catch_index_error((
+                1, 2,
+                '{"errors":true, "items": [{"foo": "bar"}]}'))
+        except:
+            raise Exception('Unexpected exeption')
+
+    def test_catch_index_error(self):
+        conn = es.ESHttpConnection()
+        with pytest.raises(JHTTPBadRequest):
+            conn._catch_index_error((
+                1, 2,
+                '{"errors":true, "items": [{"index": {"error": "FOO"}}]}'))
 
     def test_perform_request_exception(self):
         conn = es.ESHttpConnection()
@@ -104,8 +143,9 @@ class TestHelperFunctions(object):
 
     @patch('nefertari.elasticsearch.ES')
     def test_bulk_body(self, mock_es):
-        es._bulk_body('foo')
-        mock_es.api.bulk.assert_called_once_with(body='foo')
+        es._bulk_body('foo', refresh_index=True)
+        mock_es.api.bulk.assert_called_once_with(
+            body='foo', refresh=True)
 
 
 class TestES(object):
@@ -115,7 +155,7 @@ class TestES(object):
         obj = es.ES(source='Foo')
         assert obj.index_name == mock_set.index_name
         assert obj.doc_type == 'foo'
-        assert obj.chunk_size == 100
+        assert obj.chunk_size == mock_set.asint()
         obj = es.ES(source='Foo', index_name='a', chunk_size=2)
         assert obj.index_name == 'a'
         assert obj.doc_type == 'foo'
@@ -156,14 +196,14 @@ class TestES(object):
         operation = Mock()
         documents = [1, 2, 3, 4, 5]
         obj.process_chunks(documents, operation, chunk_size=100)
-        operation.assert_called_once_with([1, 2, 3, 4, 5])
+        operation.assert_called_once_with(body=[1, 2, 3, 4, 5])
 
     def test_process_chunks_multiple(self):
         obj = es.ES('Foo', 'foondex')
         operation = Mock()
         documents = [1, 2, 3, 4, 5]
         obj.process_chunks(documents, operation, chunk_size=3)
-        operation.assert_has_calls([call([1, 2, 3]), call([4, 5])])
+        operation.assert_has_calls([call(body=[1, 2, 3]), call(body=[4, 5])])
 
     def test_process_chunks_no_docs(self):
         obj = es.ES('Foo', 'foondex')
@@ -216,9 +256,10 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         assert obj._bulk('myaction', []) is None
 
+    @patch('nefertari.elasticsearch.partial')
     @patch('nefertari.elasticsearch.ES.prep_bulk_documents')
     @patch('nefertari.elasticsearch.ES.process_chunks')
-    def test_bulk(self, mock_proc, mock_prep):
+    def test_bulk(self, mock_proc, mock_prep, mock_part):
         obj = es.ES('Foo', 'foondex', chunk_size=1)
         docs = [
             [{'delete': {'action': 'delete', '_id': 'story1'}},
@@ -229,6 +270,7 @@ class TestES(object):
         mock_prep.return_value = docs
         obj._bulk('myaction', docs)
         mock_prep.assert_called_once_with('myaction', docs)
+        mock_part.assert_called_once_with(es._bulk_body, refresh_index=None)
         mock_proc.assert_called_once_with(
             documents=[
                 {'delete': {'action': 'delete', '_id': 'story1'}},
@@ -236,7 +278,7 @@ class TestES(object):
                  '_timestamp': 2},
                 {'_type': 'Story', 'id': 'story2', 'timestamp': 2},
             ],
-            operation=es._bulk_body,
+            operation=mock_part(),
             chunk_size=2
         )
 
@@ -253,21 +295,23 @@ class TestES(object):
     def test_index(self, mock_bulk):
         obj = es.ES('Foo', 'foondex')
         obj.index(['a'], chunk_size=4)
-        mock_bulk.assert_called_once_with('index', ['a'], 4)
+        mock_bulk.assert_called_once_with('index', ['a'], 4, None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     def test_delete(self, mock_bulk):
         obj = es.ES('Foo', 'foondex')
         obj.delete(ids=[1, 2])
         mock_bulk.assert_called_once_with(
-            'delete', [{'id': 1, '_type': 'foo'}, {'id': 2, '_type': 'foo'}])
+            'delete', [{'id': 1, '_type': 'foo'}, {'id': 2, '_type': 'foo'}],
+            refresh_index=None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     def test_delete_single_obj(self, mock_bulk):
         obj = es.ES('Foo', 'foondex')
         obj.delete(ids=1)
         mock_bulk.assert_called_once_with(
-            'delete', [{'id': 1, '_type': 'foo'}])
+            'delete', [{'id': 1, '_type': 'foo'}],
+            refresh_index=None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     @patch('nefertari.elasticsearch.ES.api.mget')
@@ -291,7 +335,8 @@ class TestES(object):
             body={'ids': [1, 2, 3]}
         )
         mock_bulk.assert_called_once_with(
-            'index', [{'id': 1, 'name': 'foo'}, {'id': 3, 'name': 'baz'}], 10)
+            'index', [{'id': 1, 'name': 'foo'}, {'id': 3, 'name': 'baz'}],
+            10, None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     @patch('nefertari.elasticsearch.ES.api.mget')
@@ -309,7 +354,7 @@ class TestES(object):
             body={'ids': [1]}
         )
         mock_bulk.assert_called_once_with(
-            'index', [{'id': 1, 'name': 'foo'}], 10)
+            'index', [{'id': 1, 'name': 'foo'}], 10, None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     @patch('nefertari.elasticsearch.ES.api.mget')
@@ -688,7 +733,7 @@ class TestES(object):
         db_obj.get_reference_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
         es.ES.index_refs(db_obj)
-        mock_ind.assert_called_once_with(docs)
+        mock_ind.assert_called_once_with(docs, refresh_index=None)
 
     @patch('nefertari.elasticsearch.ES.settings')
     @patch('nefertari.elasticsearch.ES.index')
