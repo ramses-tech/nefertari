@@ -8,10 +8,9 @@ from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
-from nefertari.utils import dictset
-from nefertari import wrappers
+from nefertari.utils import dictset, merge_dicts, str2dict
+from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
-from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -76,13 +75,11 @@ class BaseView(object):
         if not isinstance(params, dictset):
             params = dictset(params)
 
-        dotted = defaultdict(dict)
         dotted_items = {k: v for k, v in params.items() if '.' in k}
 
         if dotted_items:
-            for key, value in dotted_items.items():
-                field, subfield = key.split('.')
-                dotted[field].update({subfield: value})
+            dicts = [str2dict(key, val) for key, val in dotted_items.items()]
+            dotted = reduce(merge_dicts, dicts)
             params = params.subset(['-' + k for k in dotted_items.keys()])
             params.update(dict(dotted))
 
@@ -323,9 +320,10 @@ class ESAggregationMixin(object):
         """ Pop and return aggregation params from query string params.
 
         Aggregation params are expected to be prefixed/nested by
-        `self.aggs_key` and be split by `BaseView.convert_dotted`.
+        `self.aggs_key`.
         E.g. if `aggs_key` is `_aggs` aggregation params should look like
         `_aggs.min_price.min.field=price`.
+
         Above example will produce:
             {
                 "_aggs": {
@@ -334,9 +332,10 @@ class ESAggregationMixin(object):
             }
         """
         try:
+            self._query_params = BaseView.convert_dotted(self._query_params)
             return self._query_params.pop(self.aggs_key)
         except KeyError:
-            raise Exception('Missing aggregation params')
+            raise KeyError('Missing aggregation params')
 
     def stub_wrappers(self):
         """ Remove default 'index' before/after call wrappers and add only

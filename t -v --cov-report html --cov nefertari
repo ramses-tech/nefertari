@@ -1,0 +1,142 @@
+[1mdiff --git a/nefertari/utils/utils.py b/nefertari/utils/utils.py[m
+[1mindex 9e7d953..119fc7d 100644[m
+[1m--- a/nefertari/utils/utils.py[m
+[1m+++ b/nefertari/utils/utils.py[m
+[36m@@ -121,3 +121,23 @@[m [mdef issequence(arg):[m
+     return (not hasattr(arg, 'strip') and[m
+             hasattr(arg, '__getitem__') or[m
+             hasattr(arg, '__iter__'))[m
+[32m+[m
+[32m+[m
+[32m+[m[32mdef merge_dicts(a, b, path=None):[m
+[32m+[m[32m    """ Code snippet from http://stackoverflow.com/a/7205107 """[m
+[32m+[m
+[32m+[m[32m    if path is None:[m
+[32m+[m[32m        path = [][m
+[32m+[m
+[32m+[m[32m    for key in b:[m
+[32m+[m[32m        if key in a:[m
+[32m+[m[32m            if isinstance(a[key], dict) and isinstance(b[key], dict):[m
+[32m+[m[32m                merge_dicts(a[key], b[key], path + [str(key)])[m
+[32m+[m[32m            elif a[key] == b[key]:[m
+[32m+[m[32m                pass  # same leaf value[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                raise Exception([m
+[32m+[m[32m                    'Conflict at %s' % '.'.join(path + [str(key)]))[m
+[32m+[m[32m        else:[m
+[32m+[m[32m            a[key] = b[key][m
+[32m+[m[32m    return a[m
+[1mdiff --git a/nefertari/view.py b/nefertari/view.py[m
+[1mindex e509726..bffe223 100644[m
+[1m--- a/nefertari/view.py[m
+[1m+++ b/nefertari/view.py[m
+[36m@@ -8,10 +8,9 @@[m [mfrom pyramid.request import Request[m
+ [m
+ from nefertari.json_httpexceptions import ([m
+     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)[m
+[31m-from nefertari.utils import dictset[m
+[31m-from nefertari import wrappers[m
+[32m+[m[32mfrom nefertari.utils import dictset, merge_dicts[m
+[32m+[m[32mfrom nefertari import wrappers, engine[m
+ from nefertari.resource import ACTIONS[m
+[31m-from nefertari import engine[m
+ [m
+ log = logging.getLogger(__name__)[m
+ [m
+[36m@@ -76,13 +75,22 @@[m [mclass BaseView(object):[m
+         if not isinstance(params, dictset):[m
+             params = dictset(params)[m
+ [m
+[31m-        dotted = defaultdict(dict)[m
+         dotted_items = {k: v for k, v in params.items() if '.' in k}[m
+ [m
+[32m+[m[32m        def _str2dict(dotted_str, value):[m
+[32m+[m[32m            dict_ = {}[m
+[32m+[m[32m            parts = dotted_str.split('.')[m
+[32m+[m[32m            d, prev = dict_, None[m
+[32m+[m[32m            for part in parts:[m
+[32m+[m[32m                prev = d[m
+[32m+[m[32m                d = d.setdefault(part, {})[m
+[32m+[m[32m            else:[m
+[32m+[m[32m                prev[part] = value[m
+[32m+[m[32m            return dict_[m
+[32m+[m
+         if dotted_items:[m
+[31m-            for key, value in dotted_items.items():[m
+[31m-                field, subfield = key.split('.')[m
+[31m-                dotted[field].update({subfield: value})[m
+[32m+[m[32m            dicts = [_str2dict(key, val) for key, val in dotted_items.items()][m
+[32m+[m[32m            dotted = reduce(merge_dicts, dicts)[m
+             params = params.subset(['-' + k for k in dotted_items.keys()])[m
+             params.update(dict(dotted))[m
+ [m
+[36m@@ -323,9 +331,10 @@[m [mclass ESAggregationMixin(object):[m
+         """ Pop and return aggregation params from query string params.[m
+ [m
+         Aggregation params are expected to be prefixed/nested by[m
+[31m-        `self.aggs_key` and be split by `BaseView.convert_dotted`.[m
+[32m+[m[32m        `self.aggs_key`.[m
+         E.g. if `aggs_key` is `_aggs` aggregation params should look like[m
+         `_aggs.min_price.min.field=price`.[m
+[32m+[m
+         Above example will produce:[m
+             {[m
+                 "_aggs": {[m
+[36m@@ -334,9 +343,10 @@[m [mclass ESAggregationMixin(object):[m
+             }[m
+         """[m
+         try:[m
+[32m+[m[32m            self._query_params = BaseView.convert_dotted(self._query_params)[m
+             return self._query_params.pop(self.aggs_key)[m
+         except KeyError:[m
+[31m-            raise Exception('Missing aggregation params')[m
+[32m+[m[32m            raise KeyError('Missing aggregation params')[m
+ [m
+     def stub_wrappers(self):[m
+         """ Remove default 'index' before/after call wrappers and add only[m
+[1mdiff --git a/tests/test_utils/test_utils.py b/tests/test_utils/test_utils.py[m
+[1mindex cbc39e4..9d0b494 100644[m
+[1m--- a/tests/test_utils/test_utils.py[m
+[1m+++ b/tests/test_utils/test_utils.py[m
+[36m@@ -118,3 +118,15 @@[m [mclass TestUtils(object):[m
+         assert not utils.issequence('asd')[m
+         assert not utils.issequence(1)[m
+         assert not utils.issequence(2.0)[m
+[32m+[m
+[32m+[m[32m    def test_merge_dicts(self):[m
+[32m+[m[32m        dict1 = {'a': {'b': {'c': 1}}}[m
+[32m+[m[32m        dict2 = {'a': {'d': 2}, 'q': 3}[m
+[32m+[m[32m        merged = utils.merge_dicts(dict1, dict2)[m
+[32m+[m[32m        assert merged == {[m
+[32m+[m[32m            'a': {[m
+[32m+[m[32m                'b': {'c': 1},[m
+[32m+[m[32m                'd': 2,[m
+[32m+[m[32m            },[m
+[32m+[m[32m            'q': 3[m
+[32m+[m[32m        }[m
+[1mdiff --git a/tests/test_view.py b/tests/test_view.py[m
+[1mindex 4c6fe9b..523748d 100644[m
+[1m--- a/tests/test_view.py[m
+[1m+++ b/tests/test_view.py[m
+[36m@@ -116,10 +116,20 @@[m [mclass TestBaseView(object):[m
+     def test_convert_dotted(self):[m
+         converted = BaseView.convert_dotted({[m
+             'settings.foo': 'bar',[m
+[31m-            'option': 'value'[m
+[32m+[m[32m            'option': 'value',[m
+[32m+[m[32m            'one.two.three.four': 4,[m
+[32m+[m[32m            'one.two.six': 6,[m
+         })[m
+[32m+[m[32m        assert sorted(converted.keys()) == sorted([[m
+[32m+[m[32m            'settings', 'option', 'one'])[m
+         assert converted['settings'] == {'foo': 'bar'}[m
+         assert converted['option'] == 'value'[m
+[32m+[m[32m        assert converted['one'] == {[m
+[32m+[m[32m            'two': {[m
+[32m+[m[32m                'three': {'four': 4},[m
+[32m+[m[32m                'six': 6,[m
+[32m+[m[32m            },[m
+[32m+[m[32m        }[m
+         assert 'settings.foo' not in converted[m
+ [m
+     def test_convert_dotted_no_dotted(self):[m

@@ -116,10 +116,20 @@ class TestBaseView(object):
     def test_convert_dotted(self):
         converted = BaseView.convert_dotted({
             'settings.foo': 'bar',
-            'option': 'value'
+            'option': 'value',
+            'one.two.three.four': 4,
+            'one.two.six': 6,
         })
+        assert sorted(converted.keys()) == sorted([
+            'settings', 'option', 'one'])
         assert converted['settings'] == {'foo': 'bar'}
         assert converted['option'] == 'value'
+        assert converted['one'] == {
+            'two': {
+                'three': {'four': 4},
+                'six': 6,
+            },
+        }
         assert 'settings.foo' not in converted
 
     def test_convert_dotted_no_dotted(self):

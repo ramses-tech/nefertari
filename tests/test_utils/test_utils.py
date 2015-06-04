@@ -118,3 +118,25 @@ class TestUtils(object):
         assert not utils.issequence('asd')
         assert not utils.issequence(1)
         assert not utils.issequence(2.0)
+
+    def test_merge_dicts(self):
+        dict1 = {'a': {'b': {'c': 1}}}
+        dict2 = {'a': {'d': 2}, 'q': 3}
+        merged = utils.merge_dicts(dict1, dict2)
+        assert merged == {
+            'a': {
+                'b': {'c': 1},
+                'd': 2,
+            },
+            'q': 3
+        }
+
+    def test_str2dict(self):
+        assert utils.str2dict('foo.bar') == {'foo': {'bar': {}}}
+
+    def test_str2dict_value(self):
+        assert utils.str2dict('foo.bar', value=2) == {'foo': {'bar': 2}}
+
+    def test_str2dict_separator(self):
+        assert utils.str2dict('foo:bar', value=2, separator=':') == {
+            'foo': {'bar': 2}}
