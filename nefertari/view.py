@@ -309,6 +309,62 @@ class BaseView(object):
             self._json_params[name] = _get_object(ids)
 
 
+class ESAggregationMixin(object):
+    """ Mixin that provides methods to perform Elasticsearch aggregations.
+
+    Should be mixed with subclasses of `nefertari.view.BaseView`.
+
+    To use aggregation at collection route GET requests, simply return
+    `self.aggregate()`.
+    """
+    aggs_key = '_aggs'
+
+    def pop_aggs_params(self):
+        """ Pop and return aggregation params from query string params.
+
+        Aggregation params are expected to be prefixed/nested by
+        `self.aggs_key` and be split by `BaseView.convert_dotted`.
+        E.g. if `aggs_key` is `_aggs` aggregation params should look like
+        `_aggs.min_price.min.field=price`.
+        Above example will produce:
+            {
+                "_aggs": {
+                    "min_price": {"min": {"field" : "price"}}
+                }
+            }
+        """
+        try:
+            return self._query_params.pop(self.aggs_key)
+        except KeyError:
+            raise Exception('Missing aggregation params')
+
+    def stub_wrappers(self):
+        """ Remove default 'index' before/after call wrappers and add only
+        those needed for aggregation results output.
+        """
+        # TODO: Apply per-field access rights
+        self._after_calls['index'] = [
+            wrappers.add_etag(self.request),
+        ]
+
+    def aggregate(self):
+        """ Perform aggregation and return response. """
+        from nefertari.elasticsearch import ES
+        aggs_params = self.pop_aggs_params()
+        self.stub_wrappers()
+
+        search_params = []
+        if 'q' in self._query_params:
+            search_params.append(self._query_params.pop('q'))
+        _raw_terms = ' AND '.join(search_params)
+
+        return ES(self._model_class.__name__).aggregate(
+            _raw_terms=_raw_terms,
+            _query_params=self._query_params,
+            _aggs_params=aggs_params,
+        )
+
+
 def key_error_view(context, request):
     return JHTTPBadRequest("Bad or missing param '%s'" % context.message)
 

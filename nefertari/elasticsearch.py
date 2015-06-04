@@ -493,6 +493,33 @@ class ES(object):
         except IndexNotFoundException:
             return 0
 
+    def aggregate(self, **params):
+        __raise_on_empty = params.pop('__raise_on_empty', False)
+        _raw = params.pop('_raw', False)
+        _aggs_params = params.pop('_aggs_params', None)
+        if not _aggs_params:
+            raise Exception('Missing _aggs_params')
+
+        search_params = self.build_search_params(params)
+        agg_name = list(_aggs_params.keys())[0]
+        # search_params['search_type'] = 'count'
+        search_params['aggs'] = _aggs_params
+
+        try:
+            response = ES.api.search(**search_params)
+        except IndexNotFoundException:
+            if __raise_on_empty:
+                raise JHTTPNotFound(
+                    'Aggregation failed: Index does not exist')
+            return {}
+
+        if _raw:
+            return response
+
+        # TODO: Test
+        # TODO: Strip metadata
+        return response
+
     def get_collection(self, **params):
         __raise_on_empty = params.pop('__raise_on_empty', False)
 
