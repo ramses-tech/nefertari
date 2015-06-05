@@ -139,6 +139,9 @@ class BaseView(object):
         else:
             self.refresh_index = None
 
+        root_resource = getattr(self, 'root_resource', None)
+        self._auth_enabled = root_resource is not None and root_resource.auth
+
         self._run_init_actions()
 
     def _run_init_actions(self):
@@ -168,9 +171,7 @@ class BaseView(object):
         """ Set public limits if auth is enabled and user is not
         authenticated.
         """
-        root_resource = getattr(self, 'root_resource', None)
-        auth_enabled = root_resource is not None and root_resource.auth
-        if auth_enabled and not getattr(self.request, 'user', None):
+        if self._auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
     def convert_ids2objects(self, model_cls=None):
@@ -199,14 +200,11 @@ class BaseView(object):
         return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
-        root_resource = getattr(self, 'root_resource', None)
-        auth_enabled = root_resource and root_resource.auth
-
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
         ]
-        if auth_enabled:
+        if self._auth_enabled:
             self._after_calls['index'] += [
                 wrappers.apply_privacy(self.request),
             ]
@@ -218,7 +216,7 @@ class BaseView(object):
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
         ]
-        if auth_enabled:
+        if self._auth_enabled:
             self._after_calls['show'] += [
                 wrappers.apply_privacy(self.request),
             ]
@@ -319,6 +317,8 @@ class ESAggregationMixin(object):
             aggregations names are defined.
         :_aggs_in_json: Boolean indicating whether aggregation date is
             provided in request JSON.
+        :_auth_enabled: Boolean indicating whether authentication is enabled.
+            Is calculated in BaseView.
 
     Examples:
         If _aggs_key='_aggs', then query string params should look like:
@@ -328,6 +328,7 @@ class ESAggregationMixin(object):
     """
     _aggs_key = '_aggs'
     _aggs_in_json = False
+    _auth_enabled = None
 
     def pop_aggs_params(self):
         """ Pop and return aggregation params from query string params.
@@ -348,16 +349,51 @@ class ESAggregationMixin(object):
             raise KeyError('Missing aggregation params')
 
     def stub_wrappers(self):
-        """ Remove default 'index' before/after call wrappers and add only
+        """ Remove default 'index' after call wrappers and add only
         those needed for aggregation results output.
         """
-        # TODO: Apply per-field access rights
         self._after_calls['index'] = []
+
+    @classmethod
+    def get_aggs_fields(cls, params):
+        """ Recursively get values under the 'field' key.
+
+        Is used to get names of fields on which aggregations should be
+        performed.
+        """
+        fields = []
+        for key, val in params.items():
+            if isinstance(val, dict):
+                fields += cls.get_aggs_fields(val)
+            if key == 'field':
+                fields.append(val)
+        return fields
+
+    def check_aggs_privacy(self, aggs_params):
+        """ Check per-field privacy rules in aggregations.
+
+        Privacy is checked by making sure user has access to the fields
+        used in aggregations.
+        """
+        fields = self.get_aggs_fields(aggs_params)
+        fields_dict = dictset.fromkeys(fields)
+        fields_dict['_type'] = self._model_class.__name__
+
+        wrapper = wrappers.apply_privacy(self.request)
+        allowed_fields = set(wrapper(result=fields_dict).keys())
+        not_allowed_fields = set(fields) - set(allowed_fields)
+
+        if not_allowed_fields:
+            err = 'Not enough permissions to aggregate on fields: {}'.format(
+                ','.join(not_allowed_fields))
+            raise ValueError(err)
 
     def aggregate(self):
         """ Perform aggregation and return response. """
         from nefertari.elasticsearch import ES
         aggs_params = self.pop_aggs_params()
+        if self._auth_enabled:
+            self.check_aggs_privacy(aggs_params)
         self.stub_wrappers()
 
         search_params = []
