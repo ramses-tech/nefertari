@@ -555,11 +555,11 @@ class TestES(object):
         assert val == 0
         mock_count.assert_called_once_with(foo=1)
 
-    def test_aggregate_no_aggs(self):
+    def test_aggregate_no_aggregations(self):
         obj = es.ES('Foo', 'foondex')
         with pytest.raises(Exception) as ex:
             obj.aggregate(foo='bar')
-        assert 'Missing _aggs_params' in str(ex.value)
+        assert 'Missing _aggregations_params' in str(ex.value)
 
     @patch('nefertari.elasticsearch.ES.build_search_params')
     @patch('nefertari.elasticsearch.ES.api.search')
@@ -570,12 +570,12 @@ class TestES(object):
             'body': {'query': 'query1'}
         }
         obj = es.ES('Foo', 'foondex')
-        resp = obj.aggregate(_aggs_params={'zoo': 5}, param1=6)
+        resp = obj.aggregate(_aggregations_params={'zoo': 5}, param1=6)
         assert resp == {'foo': 1}
         mock_build.assert_called_once_with({'_limit': 0, 'param1': 6})
         mock_search.assert_called_once_with(
             search_type='count',
-            body={'aggs': {'zoo': 5}, 'query': 'query1'},
+            body={'aggregations': {'zoo': 5}, 'query': 'query1'},
         )
 
     @patch('nefertari.elasticsearch.ES.build_search_params')
@@ -588,7 +588,7 @@ class TestES(object):
         }
         obj = es.ES('Foo', 'foondex')
         with pytest.raises(JHTTPNotFound) as ex:
-            obj.aggregate(_aggs_params={'zoo': 5}, param1=6)
+            obj.aggregate(_aggregations_params={'zoo': 5}, param1=6)
         assert 'No aggregations returned from ES' in str(ex.value)
 
     @patch('nefertari.elasticsearch.ES.build_search_params')
@@ -601,7 +601,7 @@ class TestES(object):
         }
         obj = es.ES('Foo', 'foondex')
         with pytest.raises(JHTTPNotFound) as ex:
-            obj.aggregate(_aggs_params={'zoo': 5}, param1=6,
+            obj.aggregate(_aggregations_params={'zoo': 5}, param1=6,
                           __raise_on_empty=True)
         assert 'Aggregation failed: Index does not exist' in str(ex.value)
 

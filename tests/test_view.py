@@ -597,30 +597,41 @@ class TestViewHelpers(object):
 class TestESAggregationMixin(object):
 
     class DemoMixin(ESAggregationMixin):
-        _aggs_key = 'test_aggs'
-        _aggs_in_json = False
+        _aggregations_keys = ('test_aggregations',)
+        _aggregations_in_json = False
         _query_params = dictset()
         _json_params = dictset()
 
-    def test_pop_aggs_params_json(self):
+    def test_pop_aggregations_params_json(self):
         mixin = self.DemoMixin()
-        mixin._aggs_in_json = True
-        mixin._json_params = {'test_aggs': {'foo': 1}}
-        params = mixin.pop_aggs_params()
+        mixin._aggregations_in_json = True
+        mixin._json_params = {'test_aggregations': {'foo': 1}}
+        params = mixin.pop_aggregations_params()
         assert params == {'foo': 1}
         assert mixin._json_params == {}
 
-    def test_pop_aggs_params_query_string(self):
+    def test_pop_aggregations_params_query_string(self):
         mixin = self.DemoMixin()
-        mixin._query_params = {'test_aggs.foo': 1}
-        params = mixin.pop_aggs_params()
+        mixin._query_params = {'test_aggregations.foo': 1}
+        params = mixin.pop_aggregations_params()
         assert params == {'foo': 1}
         assert mixin._query_params == {}
 
-    def test_pop_aggs_params_mey_error(self):
+    def test_pop_aggregations_params_keys_order(self):
+        mixin = self.DemoMixin()
+        mixin._aggregations_keys = ('test_aggregations', 'foobar')
+        mixin._query_params = {
+            'test_aggregations.foo': 1,
+            'foobar': 2,
+        }
+        params = mixin.pop_aggregations_params()
+        assert params == {'foo': 1}
+        assert mixin._query_params == {'foobar': 2}
+
+    def test_pop_aggregations_params_mey_error(self):
         mixin = self.DemoMixin()
         with pytest.raises(KeyError) as ex:
-            mixin.pop_aggs_params()
+            mixin.pop_aggregations_params()
         assert 'Missing aggregation params' in str(ex.value)
 
     def test_stub_wrappers(self):
@@ -633,66 +644,66 @@ class TestESAggregationMixin(object):
     def test_aggregate(self, mock_es):
         mixin = self.DemoMixin()
         mixin._auth_enabled = True
-        mixin.check_aggs_privacy = Mock()
+        mixin.check_aggregations_privacy = Mock()
         mixin._model_class = Mock(__name__='FooBar')
         mixin.stub_wrappers = Mock()
-        mixin.pop_aggs_params = Mock(return_value={'foo': 1})
+        mixin.pop_aggregations_params = Mock(return_value={'foo': 1})
         mixin._query_params = {'q': '2', 'zoo': 3}
         mixin.aggregate()
         mixin.stub_wrappers.assert_called_once_with()
-        mixin.pop_aggs_params.assert_called_once_with()
-        mixin.check_aggs_privacy.assert_called_once_with({'foo': 1})
+        mixin.pop_aggregations_params.assert_called_once_with()
+        mixin.check_aggregations_privacy.assert_called_once_with({'foo': 1})
         mock_es.assert_called_once_with('FooBar')
         mock_es().aggregate.assert_called_once_with(
-            _aggs_params={'foo': 1},
+            _aggregations_params={'foo': 1},
             _raw_terms='2',
             zoo=3)
 
-    def test_get_aggs_fields(self):
+    def test_get_aggregations_fields(self):
         params = {
             'min': {'field': 'foo'},
             'histogram': {'field': 'bar', 'interval': 10},
-            'aggs': {
+            'aggregations': {
                 'my_agg': {
                     'max': {'field': 'baz'}
                 }
             }
         }
-        result = sorted(ESAggregationMixin.get_aggs_fields(params))
+        result = sorted(ESAggregationMixin.get_aggregations_fields(params))
         assert result == sorted(['foo', 'bar', 'baz'])
 
     @patch('nefertari.view.wrappers.apply_privacy')
-    def test_check_aggs_privacy_all_allowed(self, mock_privacy):
+    def test_check_aggregations_privacy_all_allowed(self, mock_privacy):
         mixin = self.DemoMixin()
         mixin.request = 1
-        mixin.get_aggs_fields = Mock(return_value=['foo', 'bar'])
+        mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
         mixin._model_class = Mock(__name__='Zoo')
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'foo': None, 'bar': None}
         try:
-            mixin.check_aggs_privacy({'zoo': 2})
+            mixin.check_aggregations_privacy({'zoo': 2})
         except ValueError:
             raise Exception('Unexpected error')
-        mixin.get_aggs_fields.assert_called_once_with({'zoo': 2})
+        mixin.get_aggregations_fields.assert_called_once_with({'zoo': 2})
         mock_privacy.assert_called_once_with(1)
         wrapper.assert_called_once_with(
             result={'_type': 'Zoo', 'foo': None, 'bar': None})
 
     @patch('nefertari.view.wrappers.apply_privacy')
-    def test_check_aggs_privacy_not_allowed(self, mock_privacy):
+    def test_check_aggregations_privacy_not_allowed(self, mock_privacy):
         mixin = self.DemoMixin()
         mixin.request = 1
-        mixin.get_aggs_fields = Mock(return_value=['foo', 'bar'])
+        mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
         mixin._model_class = Mock(__name__='Zoo')
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'bar': None}
         with pytest.raises(ValueError) as ex:
-            mixin.check_aggs_privacy({'zoo': 2})
+            mixin.check_aggregations_privacy({'zoo': 2})
         expected = 'Not enough permissions to aggregate on fields: foo'
         assert expected == str(ex.value)
-        mixin.get_aggs_fields.assert_called_once_with({'zoo': 2})
+        mixin.get_aggregations_fields.assert_called_once_with({'zoo': 2})
         mock_privacy.assert_called_once_with(1)
         wrapper.assert_called_once_with(
             result={'_type': 'Zoo', 'foo': None, 'bar': None})
