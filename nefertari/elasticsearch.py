@@ -505,9 +505,10 @@ class ES(object):
         search_params.pop('from_', None)
         search_params.pop('sort', None)
 
-        # search_params['search_type'] = 'count'
+        search_params['search_type'] = 'count'
         search_params['body']['aggs'] = _aggs_params
 
+        log.debug('Performing aggregation: {}'.format(_aggs_params))
         try:
             response = ES.api.search(**search_params)
         except IndexNotFoundException:

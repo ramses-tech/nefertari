@@ -4,7 +4,9 @@ import pytest
 from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
-    BaseView, error_view, key_error_view, value_error_view)
+    BaseView, error_view, key_error_view, value_error_view,
+    ESAggregationMixin)
+from nefertari.utils import dictset
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
 from nefertari.wrappers import wrap_me, ValidationError, ResourceNotFound
@@ -587,3 +589,55 @@ class TestViewHelpers(object):
             call(error_view, context=Exception)
         ]
         config.add_view.assert_has_calls(calls, any_order=True)
+
+
+class TestESAggregationMixin(object):
+
+    class DemoMixin(ESAggregationMixin):
+        _aggs_key = 'test_aggs'
+        _aggs_in_json = False
+        _query_params = dictset()
+        _json_params = dictset()
+
+    def test_pop_aggs_params_json(self):
+        mixin = self.DemoMixin()
+        mixin._aggs_in_json = True
+        mixin._json_params = {'test_aggs': {'foo': 1}}
+        params = mixin.pop_aggs_params()
+        assert params == {'foo': 1}
+        assert mixin._json_params == {}
+
+    def test_pop_aggs_params_query_string(self):
+        mixin = self.DemoMixin()
+        mixin._query_params = {'test_aggs.foo': 1}
+        params = mixin.pop_aggs_params()
+        assert params == {'foo': 1}
+        assert mixin._query_params == {}
+
+    def test_pop_aggs_params_mey_error(self):
+        mixin = self.DemoMixin()
+        with pytest.raises(KeyError) as ex:
+            mixin.pop_aggs_params()
+        assert 'Missing aggregation params' in str(ex.value)
+
+    def test_stub_wrappers(self):
+        mixin = self.DemoMixin()
+        mixin._after_calls = {'index': [1, 2, 3], 'show': [1, 2]}
+        mixin.stub_wrappers()
+        assert mixin._after_calls == {'show': [1, 2], 'index': []}
+
+    @patch('nefertari.elasticsearch.ES')
+    def test_aggregate(self, mock_es):
+        mixin = self.DemoMixin()
+        mixin._model_class = Mock(__name__='FooBar')
+        mixin.stub_wrappers = Mock()
+        mixin.pop_aggs_params = Mock(return_value={'foo': 1})
+        mixin._query_params = {'q': '2', 'zoo': 3}
+        mixin.aggregate()
+        mixin.stub_wrappers.assert_called_once_with()
+        mixin.pop_aggs_params.assert_called_once_with()
+        mock_es.assert_called_once_with('FooBar')
+        mock_es().aggregate.assert_called_once_with(
+            _aggs_params={'foo': 1},
+            _raw_terms='2',
+            zoo=3)

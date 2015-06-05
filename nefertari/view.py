@@ -311,29 +311,39 @@ class ESAggregationMixin(object):
 
     Should be mixed with subclasses of `nefertari.view.BaseView`.
 
-    To use aggregation at collection route GET requests, simply return
+    To use aggregation at collection route requests, simply return
     `self.aggregate()`.
+
+    Attributes:
+        :_aggs_key: String representing name of the root key under which
+            aggregations names are defined.
+        :_aggs_in_json: Boolean indicating whether aggregation date is
+            provided in request JSON.
+
+    Examples:
+        If _aggs_key='_aggs', then query string params should look like:
+            _aggs.min_price.min.field=price
+        If _aggs_in_json=True and _aggs_key='_aggs' JSON should look like:
+            {"_aggs": {"min_price": {"min": {"field" : "price"}}}}
     """
-    aggs_key = '_aggs'
+    _aggs_key = '_aggs'
+    _aggs_in_json = False
 
     def pop_aggs_params(self):
         """ Pop and return aggregation params from query string params.
 
-        Aggregation params are expected to be prefixed/nested by
-        `self.aggs_key`.
-        E.g. if `aggs_key` is `_aggs` aggregation params should look like
-        `_aggs.min_price.min.field=price`.
-
-        Above example will produce:
-            {
-                "_aggs": {
-                    "min_price": {"min": {"field" : "price"}}
-                }
-            }
+        Aggregation params are expected to be prefixed(nested under) by
+        `self._aggs_key`.
         """
-        try:
+        if self._aggs_in_json:
+            self._query_params.process_int_param('_limit', 20)
+            params = self._json_params
+        else:
             self._query_params = BaseView.convert_dotted(self._query_params)
-            return self._query_params.pop(self.aggs_key)
+            params = self._query_params
+
+        try:
+            return params.pop(self._aggs_key)
         except KeyError:
             raise KeyError('Missing aggregation params')
 
@@ -342,9 +352,7 @@ class ESAggregationMixin(object):
         those needed for aggregation results output.
         """
         # TODO: Apply per-field access rights
-        self._after_calls['index'] = [
-            wrappers.add_etag(self.request),
-        ]
+        self._after_calls['index'] = []
 
     def aggregate(self):
         """ Perform aggregation and return response. """
