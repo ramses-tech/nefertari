@@ -572,7 +572,7 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         resp = obj.aggregate(_aggs_params={'zoo': 5}, param1=6)
         assert resp == {'foo': 1}
-        mock_build.assert_called_once_with({'param1': 6})
+        mock_build.assert_called_once_with({'_limit': 0, 'param1': 6})
         mock_search.assert_called_once_with(
             search_type='count',
             body={'aggs': {'zoo': 5}, 'query': 'query1'},

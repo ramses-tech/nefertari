@@ -337,7 +337,6 @@ class ESAggregationMixin(object):
         `self._aggs_key`.
         """
         if self._aggs_in_json:
-            self._query_params.process_int_param('_limit', 20)
             params = self._json_params
         else:
             self._query_params = BaseView.convert_dotted(self._query_params)
