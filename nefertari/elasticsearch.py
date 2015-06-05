@@ -497,7 +497,7 @@ class ES(object):
         """ Perform aggreration
 
         Arguments:
-            :_aggs_params: Dict of aggregation params. Root key is an
+            :_aggregations_params: Dict of aggregation params. Root key is an
                 aggregation name. Required.
             :__raise_on_empty: Boolean indicating whether to raise exception
                 when IndexNotFoundException exception happens. Optional,
@@ -506,12 +506,12 @@ class ES(object):
                 'count'. You might want to provide this argument explicitly
                 when performing nested aggregations on buckets.
         """
-        _aggs_params = params.pop('_aggs_params', None)
+        _aggregations_params = params.pop('_aggregations_params', None)
         __raise_on_empty = params.pop('__raise_on_empty', False)
         _search_type = params.pop('_search_type', 'count')
 
-        if not _aggs_params:
-            raise Exception('Missing _aggs_params')
+        if not _aggregations_params:
+            raise Exception('Missing _aggregations_params')
 
         # Set limit so ES won't complain. It is ignored in the end
         params['_limit'] = 0
@@ -521,9 +521,9 @@ class ES(object):
         search_params.pop('sort', None)
 
         search_params['search_type'] = _search_type
-        search_params['body']['aggs'] = _aggs_params
+        search_params['body']['aggregations'] = _aggregations_params
 
-        log.debug('Performing aggregation: {}'.format(_aggs_params))
+        log.debug('Performing aggregation: {}'.format(_aggregations_params))
         try:
             response = ES.api.search(**search_params)
         except IndexNotFoundException:

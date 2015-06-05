@@ -313,38 +313,42 @@ class ESAggregationMixin(object):
     `self.aggregate()`.
 
     Attributes:
-        :_aggs_key: String representing name of the root key under which
-            aggregations names are defined.
-        :_aggs_in_json: Boolean indicating whether aggregation date is
+        :_aggregations_keys: Sequence of strings representing name(s) of the
+            root key under which aggregations names are defined. Order of keys
+            matters - first key found in request is popped and returned.
+        :_aggregations_in_json: Boolean indicating whether aggregation date is
             provided in request JSON.
         :_auth_enabled: Boolean indicating whether authentication is enabled.
             Is calculated in BaseView.
 
     Examples:
-        If _aggs_key='_aggs', then query string params should look like:
-            _aggs.min_price.min.field=price
-        If _aggs_in_json=True and _aggs_key='_aggs' JSON should look like:
-            {"_aggs": {"min_price": {"min": {"field" : "price"}}}}
+        If _aggregations_keys=('_aggregations',), then query string params
+        should look like:
+            _aggregations.min_price.min.field=price
+        If _aggregations_in_json=True and _aggregations_keys=('_aggregations',)
+        JSON should look like:
+            {"_aggregations": {"min_price": {"min": {"field" : "price"}}}}
     """
-    _aggs_key = '_aggs'
-    _aggs_in_json = False
+    _aggregations_keys = ('_aggregations', '_aggs')
+    _aggregations_in_json = False
     _auth_enabled = None
 
-    def pop_aggs_params(self):
+    def pop_aggregations_params(self):
         """ Pop and return aggregation params from query string params.
 
         Aggregation params are expected to be prefixed(nested under) by
-        `self._aggs_key`.
+        any of `self._aggregations_keys`.
         """
-        if self._aggs_in_json:
+        if self._aggregations_in_json:
             params = self._json_params
         else:
             self._query_params = BaseView.convert_dotted(self._query_params)
             params = self._query_params
 
-        try:
-            return params.pop(self._aggs_key)
-        except KeyError:
+        for key in self._aggregations_keys:
+            if key in params:
+                return params.pop(key)
+        else:
             raise KeyError('Missing aggregation params')
 
     def stub_wrappers(self):
@@ -354,7 +358,7 @@ class ESAggregationMixin(object):
         self._after_calls['index'] = []
 
     @classmethod
-    def get_aggs_fields(cls, params):
+    def get_aggregations_fields(cls, params):
         """ Recursively get values under the 'field' key.
 
         Is used to get names of fields on which aggregations should be
@@ -363,18 +367,18 @@ class ESAggregationMixin(object):
         fields = []
         for key, val in params.items():
             if isinstance(val, dict):
-                fields += cls.get_aggs_fields(val)
+                fields += cls.get_aggregations_fields(val)
             if key == 'field':
                 fields.append(val)
         return fields
 
-    def check_aggs_privacy(self, aggs_params):
+    def check_aggregations_privacy(self, aggregations_params):
         """ Check per-field privacy rules in aggregations.
 
         Privacy is checked by making sure user has access to the fields
         used in aggregations.
         """
-        fields = self.get_aggs_fields(aggs_params)
+        fields = self.get_aggregations_fields(aggregations_params)
         fields_dict = dictset.fromkeys(fields)
         fields_dict['_type'] = self._model_class.__name__
 
@@ -390,9 +394,9 @@ class ESAggregationMixin(object):
     def aggregate(self):
         """ Perform aggregation and return response. """
         from nefertari.elasticsearch import ES
-        aggs_params = self.pop_aggs_params()
+        aggregations_params = self.pop_aggregations_params()
         if self._auth_enabled:
-            self.check_aggs_privacy(aggs_params)
+            self.check_aggregations_privacy(aggregations_params)
         self.stub_wrappers()
 
         search_params = []
@@ -401,7 +405,7 @@ class ESAggregationMixin(object):
         _raw_terms = ' AND '.join(search_params)
 
         return ES(self._model_class.__name__).aggregate(
-            _aggs_params=aggs_params,
+            _aggregations_params=aggregations_params,
             _raw_terms=_raw_terms,
             **self._query_params
         )
