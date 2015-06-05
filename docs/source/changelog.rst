@@ -1,6 +1,9 @@
 Changelog
 =========
 
+* :release:`0.3.3 <2015-06-05>`
+* :bug:`-` Fixed bug with posting multiple new relations at the same time
+
 * :release:`0.3.2 <2015-06-03>`
 * :bug:`-` Fixed bug with Elasticsearch indexing of nested relationships
 * :bug:`-` Fixed race condition in Elasticsearch indexing
