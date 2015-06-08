@@ -493,6 +493,50 @@ class ES(object):
         except IndexNotFoundException:
             return 0
 
+    def aggregate(self, **params):
+        """ Perform aggreration
+
+        Arguments:
+            :_aggregations_params: Dict of aggregation params. Root key is an
+                aggregation name. Required.
+            :__raise_on_empty: Boolean indicating whether to raise exception
+                when IndexNotFoundException exception happens. Optional,
+                defaults to False.
+            :_search_type: Type of search to use. Optional, defaults to
+                'count'. You might want to provide this argument explicitly
+                when performing nested aggregations on buckets.
+        """
+        _aggregations_params = params.pop('_aggregations_params', None)
+        __raise_on_empty = params.pop('__raise_on_empty', False)
+        _search_type = params.pop('_search_type', 'count')
+
+        if not _aggregations_params:
+            raise Exception('Missing _aggregations_params')
+
+        # Set limit so ES won't complain. It is ignored in the end
+        params['_limit'] = 0
+        search_params = self.build_search_params(params)
+        search_params.pop('size', None)
+        search_params.pop('from_', None)
+        search_params.pop('sort', None)
+
+        search_params['search_type'] = _search_type
+        search_params['body']['aggregations'] = _aggregations_params
+
+        log.debug('Performing aggregation: {}'.format(_aggregations_params))
+        try:
+            response = ES.api.search(**search_params)
+        except IndexNotFoundException:
+            if __raise_on_empty:
+                raise JHTTPNotFound(
+                    'Aggregation failed: Index does not exist')
+            return {}
+
+        try:
+            return response['aggregations']
+        except KeyError:
+            raise JHTTPNotFound('No aggregations returned from ES')
+
     def get_collection(self, **params):
         __raise_on_empty = params.pop('__raise_on_empty', False)
 
