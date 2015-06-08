@@ -316,8 +316,6 @@ class ESAggregationMixin(object):
         :_aggregations_keys: Sequence of strings representing name(s) of the
             root key under which aggregations names are defined. Order of keys
             matters - first key found in request is popped and returned.
-        :_aggregations_in_json: Boolean indicating whether aggregation date is
-            provided in request JSON.
         :_auth_enabled: Boolean indicating whether authentication is enabled.
             Is calculated in BaseView.
 
@@ -325,12 +323,8 @@ class ESAggregationMixin(object):
         If _aggregations_keys=('_aggregations',), then query string params
         should look like:
             _aggregations.min_price.min.field=price
-        If _aggregations_in_json=True and _aggregations_keys=('_aggregations',)
-        JSON should look like:
-            {"_aggregations": {"min_price": {"min": {"field" : "price"}}}}
     """
     _aggregations_keys = ('_aggregations', '_aggs')
-    _aggregations_in_json = False
     _auth_enabled = None
 
     def pop_aggregations_params(self):
@@ -339,15 +333,11 @@ class ESAggregationMixin(object):
         Aggregation params are expected to be prefixed(nested under) by
         any of `self._aggregations_keys`.
         """
-        if self._aggregations_in_json:
-            params = self._json_params
-        else:
-            self._query_params = BaseView.convert_dotted(self._query_params)
-            params = self._query_params
+        self._query_params = BaseView.convert_dotted(self._query_params)
 
         for key in self._aggregations_keys:
-            if key in params:
-                return params.pop(key)
+            if key in self._query_params:
+                return self._query_params.pop(key)
         else:
             raise KeyError('Missing aggregation params')
 
@@ -394,6 +384,10 @@ class ESAggregationMixin(object):
     def aggregate(self):
         """ Perform aggregation and return response. """
         from nefertari.elasticsearch import ES
+        if not ES.settings.asbool('enable_aggregations'):
+            log.debug('Elasticsearch aggregations are disabled')
+            raise KeyError('Elasticsearch aggregations are disabled')
+
         aggregations_params = self.pop_aggregations_params()
         if self._auth_enabled:
             self.check_aggregations_privacy(aggregations_params)

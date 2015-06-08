@@ -598,17 +598,8 @@ class TestESAggregationMixin(object):
 
     class DemoMixin(ESAggregationMixin):
         _aggregations_keys = ('test_aggregations',)
-        _aggregations_in_json = False
         _query_params = dictset()
         _json_params = dictset()
-
-    def test_pop_aggregations_params_json(self):
-        mixin = self.DemoMixin()
-        mixin._aggregations_in_json = True
-        mixin._json_params = {'test_aggregations': {'foo': 1}}
-        params = mixin.pop_aggregations_params()
-        assert params == {'foo': 1}
-        assert mixin._json_params == {}
 
     def test_pop_aggregations_params_query_string(self):
         mixin = self.DemoMixin()
