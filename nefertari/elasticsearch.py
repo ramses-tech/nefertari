@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import json
 import logging
 from functools import partial
 
@@ -30,6 +31,23 @@ class IndexNotFoundException(Exception):
 
 
 class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
+    def _catch_index_error(self, response):
+        """ Catch and raise index errors which are not critical and thus
+        not raised by elasticsearch-py.
+        """
+        code, headers, raw_data = response
+        if not raw_data:
+            return
+        data = json.loads(raw_data)
+        if not data or not data.get('errors'):
+            return
+        try:
+            error_dict = data['items'][0]['index']
+            message = error_dict['error']
+        except (KeyError, IndexError):
+            return
+        raise exception_response(400, detail=message)
+
     def perform_request(self, *args, **kw):
         try:
             if log.level == logging.DEBUG:
@@ -37,8 +55,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 if len(msg) > 512:
                     msg = msg[:300] + '...TRUNCATED...' + msg[-212:]
                 log.debug(msg)
-
-            return super(ESHttpConnection, self).perform_request(*args, **kw)
+            resp = super(ESHttpConnection, self).perform_request(*args, **kw)
         except Exception as e:
             log.error(e.error)
             status_code = e.status_code
@@ -50,6 +67,9 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 status_code,
                 detail=six.b('Elasticsearch error'),
                 extra=dict(data=e))
+        else:
+            self._catch_index_error(resp)
+            return resp
 
 
 def includeme(config):
@@ -60,7 +80,9 @@ def includeme(config):
 
 def _bulk_body(body, refresh_index=None):
     kwargs = {'body': body}
-    if refresh_index is not None:
+    refresh_provided = refresh_index is not None
+    refresh_enabled = ES.settings.asbool('enable_refresh_query')
+    if refresh_provided and refresh_enabled:
         kwargs['refresh'] = refresh_index
     return ES.api.bulk(**kwargs)
 
@@ -169,6 +191,13 @@ class ES(object):
             raise Exception(
                 'Bad or missing settings for elasticsearch. %s' % e)
 
+    def __init__(self, source='', index_name=None, chunk_size=None):
+        self.doc_type = self.src2type(source)
+        self.index_name = index_name or ES.settings.index_name
+        if chunk_size is None:
+            chunk_size = ES.settings.asint('chunk_size')
+        self.chunk_size = chunk_size
+
     @classmethod
     def create_index(cls, index_name=None):
         index_name = index_name or ES.settings.index_name
@@ -178,7 +207,22 @@ class ES(object):
             ES.api.indices.create(index_name)
 
     @classmethod
-    def setup_mappings(cls):
+    def setup_mappings(cls, force=False):
+        """ Setup ES mappings for all existing models.
+
+        This method is meant to be run once at application lauch.
+        ES._mappings_setup flag is set to not run make mapping creation
+        calls on subsequent runs.
+
+        Use `force=True` to make subsequent calls perform mapping
+        creation calls to ES.
+        """
+        if getattr(ES, '_mappings_setup', False) and not force:
+            log.debug('ES mappings have been already set up for currently '
+                      'running application. Call `setup_mappings` with '
+                      '`force=True` to perform mappings set up again.')
+            return
+        log.info('Setting up ES mappings for all existing models')
         models = engine.get_document_classes()
         try:
             for model_name, model_cls in models.items():
@@ -187,13 +231,13 @@ class ES(object):
                     es.put_mapping(body=model_cls.get_es_mapping())
         except JHTTPBadRequest as ex:
             raise Exception(ex.json['extra']['data'])
+        ES._mappings_setup = True
 
-    def __init__(self, source='', index_name=None, chunk_size=None):
-        self.doc_type = self.src2type(source)
-        self.index_name = index_name or ES.settings.index_name
-        if chunk_size is None:
-            chunk_size = ES.settings.asint('chunk_size')
-        self.chunk_size = chunk_size
+    def delete_mapping(self):
+        ES.api.indices.delete_mapping(
+            index=self.index_name,
+            doc_type=self.doc_type,
+        )
 
     def put_mapping(self, body, **kwargs):
         ES.api.indices.put_mapping(
