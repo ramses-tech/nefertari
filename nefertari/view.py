@@ -385,7 +385,7 @@ class ESAggregationMixin(object):
         """ Perform aggregation and return response. """
         from nefertari.elasticsearch import ES
         if not ES.settings.asbool('enable_aggregations'):
-            log.debug('Elasticsearch aggregations are disabled')
+            log.warn('Elasticsearch aggregations are disabled')
             raise KeyError('Elasticsearch aggregations are disabled')
 
         aggregations_params = self.pop_aggregations_params()
