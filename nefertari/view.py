@@ -189,8 +189,8 @@ class BaseView(object):
         for field in self._json_params.keys():
             if not engine.is_relationship_field(field, model_cls):
                 continue
-            model_cls = engine.get_relationship_cls(field, model_cls)
-            self.id2obj(field, model_cls)
+            rel_model_cls = engine.get_relationship_cls(field, model_cls)
+            self.id2obj(field, rel_model_cls)
 
     def get_debug(self, package=None):
         if not package:
