@@ -556,15 +556,15 @@ class TestBaseView(object):
 
 class TestViewHelpers(object):
     def test_key_error_view(self):
-        resp = key_error_view(Mock(message='foo'), None)
+        resp = key_error_view(Mock(args=('foo',)), None)
         assert str(resp.message) == "Bad or missing param 'foo'"
 
     def test_value_error_view(self):
-        resp = value_error_view(Mock(message='foo'), None)
+        resp = value_error_view(Mock(args=('foo',)), None)
         assert str(resp.message) == "Bad or missing value 'foo'"
 
     def test_error_view(self):
-        resp = error_view(Mock(message='foo'), None)
+        resp = error_view(Mock(args=('foo',)), None)
         assert str(resp.message) == "foo"
 
     def test_includeme(self):
