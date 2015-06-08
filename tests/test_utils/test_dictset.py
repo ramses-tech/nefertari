@@ -248,7 +248,7 @@ class TestDictset(object):
         dset = dictset({'boo': 'a'})
         with pytest.raises(ValueError) as ex:
             dset.process_int_param('boo')
-        assert 'boo must be a decimal' == str(ex.value)
+        assert 'boo must be an integer' == str(ex.value)
 
     def test_process_int_param_default(self):
         dset = dictset({'boo': '1'})

@@ -10,10 +10,9 @@ from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
-from nefertari.utils import dictset
-from nefertari import wrappers
+from nefertari.utils import dictset, merge_dicts, str2dict
+from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
-from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -78,13 +77,11 @@ class BaseView(object):
         if not isinstance(params, dictset):
             params = dictset(params)
 
-        dotted = defaultdict(dict)
         dotted_items = {k: v for k, v in params.items() if '.' in k}
 
         if dotted_items:
-            for key, value in dotted_items.items():
-                field, subfield = key.split('.')
-                dotted[field].update({subfield: value})
+            dicts = [str2dict(key, val) for key, val in dotted_items.items()]
+            dotted = six.functools.reduce(merge_dicts, dicts)
             params = params.subset(['-' + k for k in dotted_items.keys()])
             params.update(dict(dotted))
 
@@ -144,6 +141,9 @@ class BaseView(object):
         else:
             self.refresh_index = None
 
+        root_resource = getattr(self, 'root_resource', None)
+        self._auth_enabled = root_resource is not None and root_resource.auth
+
         self._run_init_actions()
 
     def _run_init_actions(self):
@@ -173,9 +173,7 @@ class BaseView(object):
         """ Set public limits if auth is enabled and user is not
         authenticated.
         """
-        root_resource = getattr(self, 'root_resource', None)
-        auth_enabled = root_resource is not None and root_resource.auth
-        if auth_enabled and not getattr(self.request, 'user', None):
+        if self._auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
     def convert_ids2objects(self, model_cls=None):
@@ -204,14 +202,11 @@ class BaseView(object):
         return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
-        root_resource = getattr(self, 'root_resource', None)
-        auth_enabled = root_resource and root_resource.auth
-
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
         ]
-        if auth_enabled:
+        if self._auth_enabled:
             self._after_calls['index'] += [
                 wrappers.apply_privacy(self.request),
             ]
@@ -223,7 +218,7 @@ class BaseView(object):
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
         ]
-        if auth_enabled:
+        if self._auth_enabled:
             self._after_calls['show'] += [
                 wrappers.apply_privacy(self.request),
             ]
@@ -311,6 +306,107 @@ class BaseView(object):
             self._json_params[name] = [_get_object(_id) for _id in ids]
         else:
             self._json_params[name] = _get_object(ids)
+
+
+class ESAggregationMixin(object):
+    """ Mixin that provides methods to perform Elasticsearch aggregations.
+
+    Should be mixed with subclasses of `nefertari.view.BaseView`.
+
+    To use aggregation at collection route requests, simply return
+    `self.aggregate()`.
+
+    Attributes:
+        :_aggregations_keys: Sequence of strings representing name(s) of the
+            root key under which aggregations names are defined. Order of keys
+            matters - first key found in request is popped and returned.
+        :_auth_enabled: Boolean indicating whether authentication is enabled.
+            Is calculated in BaseView.
+
+    Examples:
+        If _aggregations_keys=('_aggregations',), then query string params
+        should look like:
+            _aggregations.min_price.min.field=price
+    """
+    _aggregations_keys = ('_aggregations', '_aggs')
+    _auth_enabled = None
+
+    def pop_aggregations_params(self):
+        """ Pop and return aggregation params from query string params.
+
+        Aggregation params are expected to be prefixed(nested under) by
+        any of `self._aggregations_keys`.
+        """
+        self._query_params = BaseView.convert_dotted(self._query_params)
+
+        for key in self._aggregations_keys:
+            if key in self._query_params:
+                return self._query_params.pop(key)
+        else:
+            raise KeyError('Missing aggregation params')
+
+    def stub_wrappers(self):
+        """ Remove default 'index' after call wrappers and add only
+        those needed for aggregation results output.
+        """
+        self._after_calls['index'] = []
+
+    @classmethod
+    def get_aggregations_fields(cls, params):
+        """ Recursively get values under the 'field' key.
+
+        Is used to get names of fields on which aggregations should be
+        performed.
+        """
+        fields = []
+        for key, val in params.items():
+            if isinstance(val, dict):
+                fields += cls.get_aggregations_fields(val)
+            if key == 'field':
+                fields.append(val)
+        return fields
+
+    def check_aggregations_privacy(self, aggregations_params):
+        """ Check per-field privacy rules in aggregations.
+
+        Privacy is checked by making sure user has access to the fields
+        used in aggregations.
+        """
+        fields = self.get_aggregations_fields(aggregations_params)
+        fields_dict = dictset.fromkeys(fields)
+        fields_dict['_type'] = self._model_class.__name__
+
+        wrapper = wrappers.apply_privacy(self.request)
+        allowed_fields = set(wrapper(result=fields_dict).keys())
+        not_allowed_fields = set(fields) - set(allowed_fields)
+
+        if not_allowed_fields:
+            err = 'Not enough permissions to aggregate on fields: {}'.format(
+                ','.join(not_allowed_fields))
+            raise ValueError(err)
+
+    def aggregate(self):
+        """ Perform aggregation and return response. """
+        from nefertari.elasticsearch import ES
+        if not ES.settings.asbool('enable_aggregations'):
+            log.warn('Elasticsearch aggregations are disabled')
+            raise KeyError('Elasticsearch aggregations are disabled')
+
+        aggregations_params = self.pop_aggregations_params()
+        if self._auth_enabled:
+            self.check_aggregations_privacy(aggregations_params)
+        self.stub_wrappers()
+
+        search_params = []
+        if 'q' in self._query_params:
+            search_params.append(self._query_params.pop('q'))
+        _raw_terms = ' AND '.join(search_params)
+
+        return ES(self._model_class.__name__).aggregate(
+            _aggregations_params=aggregations_params,
+            _raw_terms=_raw_terms,
+            **self._query_params
+        )
 
 
 def key_error_view(context, request):

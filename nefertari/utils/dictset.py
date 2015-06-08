@@ -175,7 +175,7 @@ class dictset(dict):
             try:
                 self[name] = int(self[name])
             except ValueError:
-                raise ValueError('%s must be a decimal' % name)
+                raise ValueError('%s must be an integer' % name)
 
         elif default is not None:
             self[name] = default

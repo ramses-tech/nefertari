@@ -153,7 +153,7 @@ class apply_privacy(object):
             return result
         data = result.get('data', result)
 
-        if data:
+        if data and isinstance(data, (dict, list)):
             self.is_admin = kwargs.get('is_admin')
             if self.is_admin is None:
                 user = getattr(self.request, 'user', None)

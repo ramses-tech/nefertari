@@ -205,6 +205,14 @@ class TestWrappers(unittest.TestCase):
         assert filtered == 'foo'
 
     @patch('nefertari.wrappers.engine')
+    def test_apply_privacy_nested_data_not_dict(self, mock_eng):
+        request = Mock(user=Mock())
+        assert wrappers.apply_privacy(request)(
+            result={'data': 'foo'}, is_admin=True) == {'data': 'foo'}
+        assert wrappers.apply_privacy(request)(
+            result={'data': 1}, is_admin=True) == {'data': 1}
+
+    @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_admin_calculated(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],

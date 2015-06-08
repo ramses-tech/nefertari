@@ -4,7 +4,9 @@ import pytest
 from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
-    BaseView, error_view, key_error_view, value_error_view)
+    BaseView, error_view, key_error_view, value_error_view,
+    ESAggregationMixin)
+from nefertari.utils import dictset
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
 from nefertari.wrappers import wrap_me, ValidationError, ResourceNotFound
@@ -116,10 +118,20 @@ class TestBaseView(object):
     def test_convert_dotted(self):
         converted = BaseView.convert_dotted({
             'settings.foo': 'bar',
-            'option': 'value'
+            'option': 'value',
+            'one.two.three.four': 4,
+            'one.two.six': 6,
         })
+        assert sorted(converted.keys()) == sorted([
+            'settings', 'option', 'one'])
         assert converted['settings'] == {'foo': 'bar'}
         assert converted['option'] == 'value'
+        assert converted['one'] == {
+            'two': {
+                'three': {'four': 4},
+                'six': 6,
+            },
+        }
         assert 'settings.foo' not in converted
 
     def test_convert_dotted_no_dotted(self):
@@ -222,23 +234,24 @@ class TestBaseView(object):
             'foo': 'bar', 'name': None, 'email': 1
         }
 
-    @patch('nefertari.view.wrappers')
     @patch('nefertari.view.BaseView._run_init_actions')
-    def test_set_public_limits_no_root(self, run, wrap):
+    def test_init_no_root(self, run):
         request = Mock(content_type='', method='', accept=[''])
-        view = BaseView(
+        kwargs = dict(
             context={}, request=request, _query_params={'foo': 'bar'})
+        view = BaseView(**kwargs)
         view.root_resource = None
-        view.set_public_limits()
-        assert not wrap.set_public_limits.called
+        view.__init__(**kwargs)
+        assert not view._auth_enabled
 
     @patch('nefertari.view.wrappers')
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_no_auth(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''])
-        view = BaseView(
+        kwargs = dict(
             context={}, request=request, _query_params={'foo': 'bar'})
-        view.root_resource = Mock(auth=False)
+        view = BaseView(**kwargs)
+        view._auth_enabled = False
         view.set_public_limits()
         assert not wrap.set_public_limits.called
 
@@ -246,9 +259,10 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_user_authenticated(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''], user='foo')
-        view = BaseView(
+        kwargs = dict(
             context={}, request=request, _query_params={'foo': 'bar'})
-        view.root_resource = Mock(auth=True)
+        view = BaseView(**kwargs)
+        view._auth_enabled = True
         view.set_public_limits()
         assert not wrap.set_public_limits.called
 
@@ -256,9 +270,10 @@ class TestBaseView(object):
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_set_public_limits_applied(self, run, wrap):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        view = BaseView(
+        kwargs = dict(
             context={}, request=request, _query_params={'foo': 'bar'})
-        view.root_resource = Mock(auth=True)
+        view = BaseView(**kwargs)
+        view._auth_enabled = True
         view.set_public_limits()
         wrap.set_public_limits.assert_called_once_with(view)
 
@@ -312,7 +327,7 @@ class TestBaseView(object):
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
             context={}, request=request, _query_params={'foo': 'bar'})
-        view.root_resource = Mock(auth=True)
+        view._auth_enabled = True
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
@@ -327,7 +342,7 @@ class TestBaseView(object):
         request = Mock(content_type='', method='', accept=[''], user=None)
         view = BaseView(
             context={}, request=request, _query_params={'foo': 'bar'})
-        view.root_resource = Mock(auth=None)
+        view._auth_enabled = False
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 3
         assert len(view._after_calls['show']) == 2
@@ -577,3 +592,109 @@ class TestViewHelpers(object):
             call(error_view, context=Exception)
         ]
         config.add_view.assert_has_calls(calls, any_order=True)
+
+
+class TestESAggregationMixin(object):
+
+    class DemoMixin(ESAggregationMixin):
+        _aggregations_keys = ('test_aggregations',)
+        _query_params = dictset()
+        _json_params = dictset()
+
+    def test_pop_aggregations_params_query_string(self):
+        mixin = self.DemoMixin()
+        mixin._query_params = {'test_aggregations.foo': 1}
+        params = mixin.pop_aggregations_params()
+        assert params == {'foo': 1}
+        assert mixin._query_params == {}
+
+    def test_pop_aggregations_params_keys_order(self):
+        mixin = self.DemoMixin()
+        mixin._aggregations_keys = ('test_aggregations', 'foobar')
+        mixin._query_params = {
+            'test_aggregations.foo': 1,
+            'foobar': 2,
+        }
+        params = mixin.pop_aggregations_params()
+        assert params == {'foo': 1}
+        assert mixin._query_params == {'foobar': 2}
+
+    def test_pop_aggregations_params_mey_error(self):
+        mixin = self.DemoMixin()
+        with pytest.raises(KeyError) as ex:
+            mixin.pop_aggregations_params()
+        assert 'Missing aggregation params' in str(ex.value)
+
+    def test_stub_wrappers(self):
+        mixin = self.DemoMixin()
+        mixin._after_calls = {'index': [1, 2, 3], 'show': [1, 2]}
+        mixin.stub_wrappers()
+        assert mixin._after_calls == {'show': [1, 2], 'index': []}
+
+    @patch('nefertari.elasticsearch.ES')
+    def test_aggregate(self, mock_es):
+        mixin = self.DemoMixin()
+        mixin._auth_enabled = True
+        mixin.check_aggregations_privacy = Mock()
+        mixin._model_class = Mock(__name__='FooBar')
+        mixin.stub_wrappers = Mock()
+        mixin.pop_aggregations_params = Mock(return_value={'foo': 1})
+        mixin._query_params = {'q': '2', 'zoo': 3}
+        mixin.aggregate()
+        mixin.stub_wrappers.assert_called_once_with()
+        mixin.pop_aggregations_params.assert_called_once_with()
+        mixin.check_aggregations_privacy.assert_called_once_with({'foo': 1})
+        mock_es.assert_called_once_with('FooBar')
+        mock_es().aggregate.assert_called_once_with(
+            _aggregations_params={'foo': 1},
+            _raw_terms='2',
+            zoo=3)
+
+    def test_get_aggregations_fields(self):
+        params = {
+            'min': {'field': 'foo'},
+            'histogram': {'field': 'bar', 'interval': 10},
+            'aggregations': {
+                'my_agg': {
+                    'max': {'field': 'baz'}
+                }
+            }
+        }
+        result = sorted(ESAggregationMixin.get_aggregations_fields(params))
+        assert result == sorted(['foo', 'bar', 'baz'])
+
+    @patch('nefertari.view.wrappers.apply_privacy')
+    def test_check_aggregations_privacy_all_allowed(self, mock_privacy):
+        mixin = self.DemoMixin()
+        mixin.request = 1
+        mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
+        mixin._model_class = Mock(__name__='Zoo')
+        wrapper = Mock()
+        mock_privacy.return_value = wrapper
+        wrapper.return_value = {'foo': None, 'bar': None}
+        try:
+            mixin.check_aggregations_privacy({'zoo': 2})
+        except ValueError:
+            raise Exception('Unexpected error')
+        mixin.get_aggregations_fields.assert_called_once_with({'zoo': 2})
+        mock_privacy.assert_called_once_with(1)
+        wrapper.assert_called_once_with(
+            result={'_type': 'Zoo', 'foo': None, 'bar': None})
+
+    @patch('nefertari.view.wrappers.apply_privacy')
+    def test_check_aggregations_privacy_not_allowed(self, mock_privacy):
+        mixin = self.DemoMixin()
+        mixin.request = 1
+        mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
+        mixin._model_class = Mock(__name__='Zoo')
+        wrapper = Mock()
+        mock_privacy.return_value = wrapper
+        wrapper.return_value = {'bar': None}
+        with pytest.raises(ValueError) as ex:
+            mixin.check_aggregations_privacy({'zoo': 2})
+        expected = 'Not enough permissions to aggregate on fields: foo'
+        assert expected == str(ex.value)
+        mixin.get_aggregations_fields.assert_called_once_with({'zoo': 2})
+        mock_privacy.assert_called_once_with(1)
+        wrapper.assert_called_once_with(
+            result={'_type': 'Zoo', 'foo': None, 'bar': None})
