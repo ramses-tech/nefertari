@@ -79,7 +79,6 @@ def includeme(config):
 
 
 def _bulk_body(documents_actions, refresh_index=None):
-    from elasticsearch import helpers
     kwargs = {
         'client': ES.api,
         'actions': documents_actions,
@@ -89,7 +88,7 @@ def _bulk_body(documents_actions, refresh_index=None):
     if refresh_provided and refresh_enabled:
         kwargs['refresh'] = refresh_index
 
-    executed_num, errors = helpers.bulk(**kwargs)
+    executed_num, errors = elasticsearch.helpers.bulk(**kwargs)
     log.info('Successfully executed {} Elasticsearch action(s)'.format(
         executed_num))
     if errors:

@@ -144,10 +144,12 @@ class TestHelperFunctions(object):
         assert docs._start == 0
 
     @patch('nefertari.elasticsearch.ES')
-    def test_bulk_body(self, mock_es):
+    @patch('nefertari.elasticsearch.elasticsearch')
+    def test_bulk_body(self, mock_es_lib, mock_es):
+        mock_es_lib.helpers.bulk.return_value = (1, [])
         es._bulk_body('foo', refresh_index=True)
-        mock_es.api.bulk.assert_called_once_with(
-            body='foo', refresh=True)
+        mock_es_lib.helpers.bulk.assert_called_once_with(
+            client=mock_es.api, refresh=True, actions='foo')
 
 
 class TestES(object):
@@ -198,14 +200,17 @@ class TestES(object):
         operation = Mock()
         documents = [1, 2, 3, 4, 5]
         obj.process_chunks(documents, operation, chunk_size=100)
-        operation.assert_called_once_with(body=[1, 2, 3, 4, 5])
+        operation.assert_called_once_with(documents_actions=[1, 2, 3, 4, 5])
 
     def test_process_chunks_multiple(self):
         obj = es.ES('Foo', 'foondex')
         operation = Mock()
         documents = [1, 2, 3, 4, 5]
         obj.process_chunks(documents, operation, chunk_size=3)
-        operation.assert_has_calls([call(body=[1, 2, 3]), call(body=[4, 5])])
+        operation.assert_has_calls([
+            call(documents_actions=[1, 2, 3]),
+            call(documents_actions=[4, 5]),
+        ])
 
     def test_process_chunks_no_docs(self):
         obj = es.ES('Foo', 'foondex')
@@ -227,15 +232,14 @@ class TestES(object):
         ]
         prepared = obj.prep_bulk_documents('myaction', docs)
         assert len(prepared) == 2
-        doc1meta, doc1 = prepared[0]
-        assert list(doc1meta.keys()) == ['myaction']
-        assert sorted(doc1meta['myaction'].keys()) == sorted([
-            'action', '_type', '_id', '_index'])
-        assert doc1 == {'_type': 'Story', 'id': 'story1'}
-        assert doc1meta['myaction']['action'] == 'myaction'
-        assert doc1meta['myaction']['_index'] == 'foondex'
-        assert doc1meta['myaction']['_type'] == 'story'
-        assert doc1meta['myaction']['_id'] == 'story1'
+        doc1 = prepared[0]
+        assert sorted(doc1.keys()) == sorted([
+            '_type', '_id', '_index', '_source', '_op_type'])
+        assert doc1['_source'] == {'_type': 'Story', 'id': 'story1'}
+        assert doc1['_op_type'] == 'myaction'
+        assert doc1['_index'] == 'foondex'
+        assert doc1['_type'] == 'story'
+        assert doc1['_id'] == 'story1'
 
     def test_prep_bulk_documents_no_type(self):
         obj = es.ES('Foo', 'foondex')
@@ -244,15 +248,14 @@ class TestES(object):
         ]
         prepared = obj.prep_bulk_documents('myaction', docs)
         assert len(prepared) == 1
-        doc2meta, doc2 = prepared[0]
-        assert list(doc2meta.keys()) == ['myaction']
-        assert sorted(doc2meta['myaction'].keys()) == sorted([
-            'action', '_type', '_id', '_index'])
-        assert doc2 == {'id': 'story2'}
-        assert doc2meta['myaction']['action'] == 'myaction'
-        assert doc2meta['myaction']['_index'] == 'foondex'
-        assert doc2meta['myaction']['_type'] == 'foo'
-        assert doc2meta['myaction']['_id'] == 'story2'
+        doc2 = prepared[0]
+        assert sorted(doc2.keys()) == sorted([
+            '_op_type', '_type', '_id', '_index', '_source'])
+        assert doc2['_source'] == {'id': 'story2'}
+        assert doc2['_op_type'] == 'myaction'
+        assert doc2['_index'] == 'foondex'
+        assert doc2['_type'] == 'foo'
+        assert doc2['_id'] == 'story2'
 
     def test_bulk_no_docs(self):
         obj = es.ES('Foo', 'foondex')
@@ -263,25 +266,28 @@ class TestES(object):
     @patch('nefertari.elasticsearch.ES.process_chunks')
     def test_bulk(self, mock_proc, mock_prep, mock_part):
         obj = es.ES('Foo', 'foondex', chunk_size=1)
-        docs = [
-            [{'delete': {'action': 'delete', '_id': 'story1'}},
-             {'_type': 'Story', 'id': 'story1', 'timestamp': 1}],
-            [{'index': {'action': 'index', '_id': 'story2'}},
-             {'_type': 'Story', 'id': 'story2', 'timestamp': 2}],
-        ]
+        docs = [{
+            '_op_type': 'index', '_id': 'story1',
+            '_source': {'_type': 'Story', 'id': 'story1', 'timestamp': 1}
+        }, {
+            '_op_type': 'index', '_id': 'story2',
+            '_source': {'_type': 'Story', 'id': 'story2', 'timestamp': 2}
+
+        }]
         mock_prep.return_value = docs
-        obj._bulk('myaction', docs)
-        mock_prep.assert_called_once_with('myaction', docs)
+        obj._bulk('index', docs)
+        mock_prep.assert_called_once_with('index', docs)
         mock_part.assert_called_once_with(es._bulk_body, refresh_index=None)
         mock_proc.assert_called_once_with(
-            documents=[
-                {'delete': {'action': 'delete', '_id': 'story1'}},
-                {'index': {'action': 'index', '_id': 'story2'},
-                 '_timestamp': 2},
-                {'_type': 'Story', 'id': 'story2', 'timestamp': 2},
-            ],
+            documents=[{
+                '_id': 'story1', '_op_type': 'index', '_timestamp': 1,
+                '_source': {'timestamp': 1, '_type': 'Story', 'id': 'story1'}
+            }, {
+                '_id': 'story2', '_op_type': 'index', '_timestamp': 2,
+                '_source': {'timestamp': 2, '_type': 'Story', 'id': 'story2'}
+            }],
             operation=mock_part(),
-            chunk_size=2
+            chunk_size=1
         )
 
     @patch('nefertari.elasticsearch.ES.prep_bulk_documents')
