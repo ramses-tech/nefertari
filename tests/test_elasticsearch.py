@@ -196,17 +196,17 @@ class TestES(object):
         assert not mock_es.Elasticsearch.called
 
     def test_process_chunks(self):
-        obj = es.ES('Foo', 'foondex')
+        obj = es.ES('Foo', 'foondex', chunk_size=100)
         operation = Mock()
         documents = [1, 2, 3, 4, 5]
-        obj.process_chunks(documents, operation, chunk_size=100)
+        obj.process_chunks(documents, operation)
         operation.assert_called_once_with(documents_actions=[1, 2, 3, 4, 5])
 
     def test_process_chunks_multiple(self):
-        obj = es.ES('Foo', 'foondex')
+        obj = es.ES('Foo', 'foondex', chunk_size=3)
         operation = Mock()
         documents = [1, 2, 3, 4, 5]
-        obj.process_chunks(documents, operation, chunk_size=3)
+        obj.process_chunks(documents, operation)
         operation.assert_has_calls([
             call(documents_actions=[1, 2, 3]),
             call(documents_actions=[4, 5]),
@@ -215,7 +215,7 @@ class TestES(object):
     def test_process_chunks_no_docs(self):
         obj = es.ES('Foo', 'foondex')
         operation = Mock()
-        obj.process_chunks([], operation, chunk_size=3)
+        obj.process_chunks([], operation)
         assert not operation.called
 
     def test_prep_bulk_documents_not_dict(self):
@@ -287,7 +287,6 @@ class TestES(object):
                 '_source': {'timestamp': 2, '_type': 'Story', 'id': 'story2'}
             }],
             operation=mock_part(),
-            chunk_size=1
         )
 
     @patch('nefertari.elasticsearch.ES.prep_bulk_documents')
@@ -295,15 +294,15 @@ class TestES(object):
     def test_bulk_no_prepared_docs(self, mock_proc, mock_prep):
         obj = es.ES('Foo', 'foondex', chunk_size=1)
         mock_prep.return_value = []
-        obj._bulk('myaction', ['a'], chunk_size=4)
+        obj._bulk('myaction', ['a'])
         mock_prep.assert_called_once_with('myaction', ['a'])
         assert not mock_proc.called
 
     @patch('nefertari.elasticsearch.ES._bulk')
     def test_index(self, mock_bulk):
-        obj = es.ES('Foo', 'foondex')
-        obj.index(['a'], chunk_size=4)
-        mock_bulk.assert_called_once_with('index', ['a'], 4, None)
+        obj = es.ES('Foo', 'foondex', chunk_size=4)
+        obj.index(['a'])
+        mock_bulk.assert_called_once_with('index', ['a'], None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     def test_delete(self, mock_bulk):
@@ -335,7 +334,7 @@ class TestES(object):
             {'_id': '2', 'name': 'bar', 'found': True},
             {'_id': '3', 'name': 'baz'},
         ]}
-        obj.index_missing_documents(documents, 10)
+        obj.index_missing_documents(documents)
         mock_mget.assert_called_once_with(
             index='foondex',
             doc_type='foo',
@@ -344,7 +343,7 @@ class TestES(object):
         )
         mock_bulk.assert_called_once_with(
             'index', [{'id': 1, 'name': 'foo'}, {'id': 3, 'name': 'baz'}],
-            10, None)
+            None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     @patch('nefertari.elasticsearch.ES.api.mget')
@@ -354,7 +353,7 @@ class TestES(object):
             {'id': 1, 'name': 'foo'},
         ]
         mock_mget.side_effect = es.IndexNotFoundException()
-        obj.index_missing_documents(documents, 10)
+        obj.index_missing_documents(documents)
         mock_mget.assert_called_once_with(
             index='foondex',
             doc_type='foo',
@@ -362,13 +361,13 @@ class TestES(object):
             body={'ids': [1]}
         )
         mock_bulk.assert_called_once_with(
-            'index', [{'id': 1, 'name': 'foo'}], 10, None)
+            'index', [{'id': 1, 'name': 'foo'}], None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     @patch('nefertari.elasticsearch.ES.api.mget')
     def test_index_missing_documents_no_docs_passed(self, mock_mget, mock_bulk):
         obj = es.ES('Foo', 'foondex')
-        assert obj.index_missing_documents([], 10) is None
+        assert obj.index_missing_documents([]) is None
         assert not mock_mget.called
         assert not mock_bulk.called
 
@@ -382,7 +381,7 @@ class TestES(object):
         mock_mget.return_value = {'docs': [
             {'_id': '1', 'name': 'foo', 'found': True},
         ]}
-        obj.index_missing_documents(documents, 10)
+        obj.index_missing_documents(documents)
         mock_mget.assert_called_once_with(
             index='foondex',
             doc_type='foo',

@@ -256,12 +256,12 @@ class ES(object):
             index=self.index_name,
             **kwargs)
 
-    def process_chunks(self, documents, operation, chunk_size=None):
-        """ Apply `operation` to chunks of `documents` of size `chunk_size`.
+    def process_chunks(self, documents, operation):
+        """ Apply `operation` to chunks of `documents` of size
+        `self.chunk_size`.
 
         """
-        if chunk_size is None:
-            chunk_size = self.chunk_size
+        chunk_size = self.chunk_size
         start = end = 0
         count = len(documents)
 
@@ -304,11 +304,7 @@ class ES(object):
 
         return docs_actions
 
-    def _bulk(self, action, documents, chunk_size=None,
-              refresh_index=None):
-        if chunk_size is None:
-            chunk_size = self.chunk_size
-
+    def _bulk(self, action, documents, refresh_index=None):
         if not documents:
             log.debug('Empty documents: %s' % self.doc_type)
             return
@@ -325,18 +321,15 @@ class ES(object):
             operation = partial(_bulk_body, refresh_index=refresh_index)
             self.process_chunks(
                 documents=documents_actions,
-                operation=operation,
-                chunk_size=chunk_size)
+                operation=operation)
         else:
             log.warning('Empty body')
 
-    def index(self, documents, chunk_size=None,
-              refresh_index=None):
+    def index(self, documents, refresh_index=None):
         """ Reindex all `document`s. """
-        self._bulk('index', documents, chunk_size, refresh_index)
+        self._bulk('index', documents, refresh_index)
 
-    def index_missing_documents(self, documents, chunk_size=None,
-                                refresh_index=None):
+    def index_missing_documents(self, documents, refresh_index=None):
         """ Index documents that are missing from ES index.
 
         Determines which documents are missing using ES `mget` call which
@@ -368,7 +361,7 @@ class ES(object):
                      'index `{}`'.format(self.doc_type, self.index_name))
             return
 
-        self._bulk('index', documents, chunk_size, refresh_index)
+        self._bulk('index', documents, refresh_index)
 
     def delete(self, ids, refresh_index=None):
         if not isinstance(ids, list):
