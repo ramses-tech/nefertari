@@ -1,6 +1,9 @@
 Changelog
 =========
 
+* :release:`0.3.4 <2015-06-09>`
+* :bug:`-` Fixed bug whereby _count would throw exception when authentication was enabled
+
 * :release:`0.3.3 <2015-06-05>`
 * :bug:`-` Fixed bug with posting multiple new relations at the same time
 
