@@ -144,11 +144,11 @@ class TestHelperFunctions(object):
         assert docs._start == 0
 
     @patch('nefertari.elasticsearch.ES')
-    @patch('nefertari.elasticsearch.elasticsearch')
-    def test_bulk_body(self, mock_es_lib, mock_es):
-        mock_es_lib.helpers.bulk.return_value = (1, [])
+    @patch('nefertari.elasticsearch.helpers')
+    def test_bulk_body(self, mock_helpers, mock_es):
+        mock_helpers.bulk.return_value = (1, [])
         es._bulk_body('foo', refresh_index=True)
-        mock_es_lib.helpers.bulk.assert_called_once_with(
+        mock_helpers.bulk.assert_called_once_with(
             client=mock_es.api, refresh=True, actions='foo')
 
 

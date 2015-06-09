@@ -4,6 +4,7 @@ import logging
 from functools import partial
 
 import elasticsearch
+from elasticsearch import helpers
 import six
 
 from nefertari.utils import (
@@ -88,7 +89,7 @@ def _bulk_body(documents_actions, refresh_index=None):
     if refresh_provided and refresh_enabled:
         kwargs['refresh'] = refresh_index
 
-    executed_num, errors = elasticsearch.helpers.bulk(**kwargs)
+    executed_num, errors = helpers.bulk(**kwargs)
     log.info('Successfully executed {} Elasticsearch action(s)'.format(
         executed_num))
     if errors:
