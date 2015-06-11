@@ -3,6 +3,7 @@ import logging
 from datetime import date, datetime
 
 from nefertari import wrappers
+from pyramid.httpexceptions import HTTPException
 
 log = logging.getLogger(__name__)
 
@@ -46,7 +47,6 @@ class JsonRendererFactory(object):
 
         # run after_calls on the value before jsonifying
         value = self.run_after_calls(value, system)
-
         view = system['view']
         enc_class = getattr(
             view, '_json_encoder', _JSONEncoder) or _JSONEncoder
@@ -62,12 +62,39 @@ class JsonRendererFactory(object):
         return value
 
 
-class NefertariJsonRendererFactory(JsonRendererFactory):
+class DefaultResponseRendererMixin(object):
+    def render_create(self, value, system):
+        from nefertari.json_httpexceptions import JHTTPCreated
+        request = system['request']
+        kw = {
+            'request': request,
+            'resource': value,
+        }
+        if hasattr(value, 'to_dict'):
+            kw['resource'] = value.to_dict()
+            resource = system['view']._resource
+            id_name = resource.id_name
+            obj_id = getattr(value, value.pk_field())
+            kw['location'] = request.route_url(
+                resource.uid, **{id_name: obj_id})
 
-    """Special json renderer which will apply
-    all after_calls(filters) to the result.
+        # TODO: Raising response rollbacks a transaction
+        raise JHTTPCreated(**kw)
+
+    def render_default_response(self, value, system):
+        if not isinstance(value, HTTPException):
+            method_name = 'render_{}'.format(system['request'].action)
+            method = getattr(self, method_name, None)
+            if method is not None:
+                value = method(value, system)
+        return value
+
+
+class NefertariJsonRendererFactory(DefaultResponseRendererMixin,
+                                   JsonRendererFactory):
+    """ Special json renderer which will apply all after_calls(filters)
+    to the result.
     """
-
     def run_after_calls(self, value, system):
         request = system.get('request')
         if request and hasattr(request, 'action'):
@@ -75,4 +102,4 @@ class NefertariJsonRendererFactory(JsonRendererFactory):
             for call in after_calls.get(request.action, []):
                 value = call(**dict(request=request, result=value))
 
-        return value
+        return self.render_default_response(value, system)
