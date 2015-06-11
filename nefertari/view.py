@@ -64,7 +64,7 @@ class BaseView(object):
     __view_mapper__ = ViewMapper
     _default_renderer = 'nefertari_json'
     _json_encoder = None
-    _model_class = None
+    Model = None
 
     @staticmethod
     def convert_dotted(params):
@@ -157,7 +157,7 @@ class BaseView(object):
         Only run for PUT requests.
         """
         if model_cls is None:
-            model_cls = self._model_class
+            model_cls = self.Model
         if not model_cls:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
@@ -177,11 +177,11 @@ class BaseView(object):
     def convert_ids2objects(self, model_cls=None):
         """ Convert object IDs from `self._json_params` to objects if needed.
 
-        Only IDs that belong to relationship field of `self._model_class`
+        Only IDs that belong to relationship field of `self.Model`
         are converted.
         """
         if model_cls is None:
-            model_cls = self._model_class
+            model_cls = self.Model
         if not model_cls:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
@@ -370,7 +370,7 @@ class ESAggregationMixin(object):
         """
         fields = self.get_aggregations_fields(aggregations_params)
         fields_dict = dictset.fromkeys(fields)
-        fields_dict['_type'] = self._model_class.__name__
+        fields_dict['_type'] = self.Model.__name__
 
         wrapper = wrappers.apply_privacy(self.request)
         allowed_fields = set(wrapper(result=fields_dict).keys())
@@ -398,7 +398,7 @@ class ESAggregationMixin(object):
             search_params.append(self._query_params.pop('q'))
         _raw_terms = ' AND '.join(search_params)
 
-        return ES(self._model_class.__name__).aggregate(
+        return ES(self.Model.__name__).aggregate(
             _aggregations_params=aggregations_params,
             _raw_terms=_raw_terms,
             **self._query_params

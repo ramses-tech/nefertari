@@ -225,8 +225,8 @@ class TestBaseView(object):
         view = BaseView(
             context={}, request=request,
             _query_params={'foo': 'bar'})
-        view._model_class = Mock()
-        view._model_class.get_null_values.return_value = {
+        view.Model = Mock()
+        view.Model.get_null_values.return_value = {
             'name': None, 'email': 1, 'foo': None}
         view._json_params = {'foo': 'bar'}
         view.fill_null_values()
@@ -285,7 +285,7 @@ class TestBaseView(object):
         view = BaseView(
             context={}, request=request, _query_params={'foo1': 'bar'},
             _json_params={'foo': 'bar'})
-        view._model_class = 'Model1'
+        view.Model = 'Model1'
         eng.is_relationship_field.return_value = False
         view.convert_ids2objects()
         eng.is_relationship_field.assert_called_once_with('foo', 'Model1')
@@ -299,7 +299,7 @@ class TestBaseView(object):
         view = BaseView(
             context={}, request=request, _query_params={'foo1': 'bar'},
             _json_params={'foo': 'bar'})
-        view._model_class = 'Model1'
+        view.Model = 'Model1'
         eng.is_relationship_field.return_value = True
         view.convert_ids2objects()
         eng.get_relationship_cls.assert_called_once_with('foo', 'Model1')
@@ -636,7 +636,7 @@ class TestESAggregationMixin(object):
         mixin = self.DemoMixin()
         mixin._auth_enabled = True
         mixin.check_aggregations_privacy = Mock()
-        mixin._model_class = Mock(__name__='FooBar')
+        mixin.Model = Mock(__name__='FooBar')
         mixin.stub_wrappers = Mock()
         mixin.pop_aggregations_params = Mock(return_value={'foo': 1})
         mixin._query_params = {'q': '2', 'zoo': 3}
@@ -668,7 +668,7 @@ class TestESAggregationMixin(object):
         mixin = self.DemoMixin()
         mixin.request = 1
         mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
-        mixin._model_class = Mock(__name__='Zoo')
+        mixin.Model = Mock(__name__='Zoo')
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'foo': None, 'bar': None}
@@ -686,7 +686,7 @@ class TestESAggregationMixin(object):
         mixin = self.DemoMixin()
         mixin.request = 1
         mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
-        mixin._model_class = Mock(__name__='Zoo')
+        mixin.Model = Mock(__name__='Zoo')
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'bar': None}
