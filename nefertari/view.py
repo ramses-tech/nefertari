@@ -303,9 +303,12 @@ class BaseView(object):
         if not ids:
             return
         if isinstance(ids, list):
-            self._json_params[name] = [_get_object(_id) for _id in ids]
+            self._json_params[name] = []
+            for _id in ids:
+                obj = _id if _id is None else _get_object(_id)
+                self._json_params[name].append(obj)
         else:
-            self._json_params[name] = _get_object(ids)
+            self._json_params[name] = ids if ids is None else _get_object(ids)
 
 
 class ESAggregationMixin(object):

@@ -539,6 +539,22 @@ class TestBaseView(object):
         model.get.assert_called_once_with(idname='1')
 
     @patch('nefertari.view.BaseView._run_init_actions')
+    def test_id2obj_value_none(self, run):
+        model = Mock()
+        model.pk_field.return_value = 'idname'
+        model.get.return_value = 'foo'
+        request = Mock(content_type='', method='', accept=[''], user=None)
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['users'] = [None, '1']
+        view._json_params['story'] = None
+        view.id2obj(name='users', model=model)
+        view.id2obj(name='story', model=model)
+        assert view._json_params['users'] == [None, 'foo']
+        assert view._json_params['story'] is None
+
+    @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_already_object(self, run):
         id_ = Mock()
         model = Mock()
