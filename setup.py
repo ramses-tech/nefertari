@@ -21,7 +21,7 @@ install_requires = [
 setup(
     name='nefertari',
     version=VERSION,
-    description='nefertari',
+    description='REST API framework for Pyramid',
     long_description=README,
     classifiers=[
         "Programming Language :: Python",
