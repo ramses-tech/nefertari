@@ -1,7 +1,8 @@
 from pyramid.security import remember, forget
 
 from nefertari.json_httpexceptions import (
-    JHTTPFound, JHTTPConflict, JHTTPUnauthorized, JHTTPNotFound, JHTTPOk)
+    JHTTPFound, JHTTPConflict, JHTTPUnauthorized, JHTTPNotFound, JHTTPOk,
+    JHTTPBadRequest)
 from nefertari.view import BaseView
 from .models import AuthUser
 
@@ -75,6 +76,8 @@ class TokenAuthenticationView(BaseView):
         header.
         """
         user, created = self._model_class.create_account(self._json_params)
+        if user.api_key is None:
+            raise JHTTPBadRequest('Failed to generate ApiKey for user')
 
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
