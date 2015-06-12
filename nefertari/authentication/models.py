@@ -47,7 +47,7 @@ class AuthModelDefaultMixin(object):
         try:
             user = cls.get_resource(username=username)
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
             forget(request)
         else:
             if user:
@@ -63,7 +63,7 @@ class AuthModelDefaultMixin(object):
         try:
             user = cls.get_resource(username=username)
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
             forget(request)
             return
         else:
@@ -86,7 +86,7 @@ class AuthModelDefaultMixin(object):
         try:
             user = cls.get_resource(**{key: login})
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
 
         if user:
             password = params.get('password', None)
@@ -102,7 +102,7 @@ class AuthModelDefaultMixin(object):
         try:
             user = cls.get_resource(**{cls.pk_field(): userid})
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
             forget(request)
         else:
             if user:
@@ -154,7 +154,7 @@ def lower_strip(instance, new_value):
 def encrypt_password(instance, new_value):
     """ Crypt :new_value: if it's not crypted yet. """
     if new_value and not crypt.match(new_value):
-        new_value = unicode(crypt.encode(new_value))
+        new_value = str(crypt.encode(new_value))
     return new_value
 
 

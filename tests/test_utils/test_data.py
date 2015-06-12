@@ -43,30 +43,27 @@ class TestDataUtils(object):
         assert data == {'_type': 'DataProxy', 'foo': [{'foo1': 'bar1'}]}
 
     def test_dict2obj_regular_value(self):
-        obj = dutils.dict2obj({'foo': 'bar', 'baz': 1})
+        obj = dutils.dict2obj({'_type': 'Foo', 'foo': 'bar', 'baz': 1})
         assert isinstance(obj, dutils.DataProxy)
         assert obj.foo == 'bar'
         assert obj.baz == 1
 
     def test_dict2obj_dict_value(self):
-        obj = dutils.dict2obj({'foo': {'baz': 1}})
+        obj = dutils.dict2obj({'_type': 'Foo', 'foo': {'baz': 1}})
         assert isinstance(obj, dutils.DataProxy)
         assert isinstance(obj.foo, dutils.DataProxy)
         assert obj.foo.baz == 1
 
     def test_dict2obj_list_value(self):
-        obj = dutils.dict2obj({'foo': [{'baz': 1}]})
+        obj = dutils.dict2obj({'_type': 'Foo', 'foo': [{'baz': 1}]})
         assert isinstance(obj, dutils.DataProxy)
         assert isinstance(obj.foo, list)
         assert len(obj.foo) == 1
         assert isinstance(obj.foo[0], dutils.DataProxy)
         assert obj.foo[0].baz == 1
 
-    def test_dict2obj_no_data(self):
-        assert dutils.dict2obj({}) == {}
-
     def test_to_objs(self):
-        collection = dutils.to_objs([{'foo': 'bar'}])
+        collection = dutils.to_objs([{'foo': 'bar', '_type': 'Foo'}])
         assert len(collection) == 1
         assert isinstance(collection[0], dutils.DataProxy)
         assert collection[0].foo == 'bar'

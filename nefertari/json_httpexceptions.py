@@ -2,6 +2,8 @@ import logging
 import sys
 import traceback
 from datetime import datetime
+
+import six
 from pyramid import httpexceptions as http_exc
 
 from nefertari.wrappers import apply_privacy
@@ -43,8 +45,7 @@ def create_json_response(obj, request=None, log_it=False, show_stack=False,
         body['id'] = obj.location.split('/')[-1]
 
     body.update(extra)
-
-    obj.body = json_dumps(body, encoder=encoder)
+    obj.body = six.b(json_dumps(body, encoder=encoder))
     show_stack = log_it or show_stack
     status = obj.status_int
 
@@ -77,7 +78,7 @@ class JBase(object):
 thismodule = sys.modules[__name__]
 
 
-http_exceptions = http_exc.status_map.values() + [
+http_exceptions = list(http_exc.status_map.values()) + [
     http_exc.HTTPBadRequest,
     http_exc.HTTPInternalServerError,
 ]
@@ -103,7 +104,8 @@ class JHTTPCreated(http_exc.HTTPCreated):
         if resource and 'location' in kwargs:
             resource['self'] = kwargs['location']
 
-        auth = request and request.registry._root_resources.values()[0].auth
+        auth = (request and
+                list(request.registry._root_resources.values())[0].auth)
         if resource and auth:
             wrapper = apply_privacy(request=request)
             resource = wrapper(result=resource)

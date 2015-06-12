@@ -1,9 +1,10 @@
-import urllib
+import logging
 from hashlib import md5
 
-import logging
-
+import six
+from six.moves import urllib
 from nefertari import engine
+
 
 log = logging.getLogger(__name__)
 
@@ -14,13 +15,6 @@ class ValidationError(Exception):
 
 class ResourceNotFound(Exception):
     pass
-
-
-def issequence(arg):
-    """Return True if `arg` acts as a list and does not look like a string."""
-    return (not hasattr(arg, 'strip') and
-            hasattr(arg, '__getitem__') or
-            hasattr(arg, '__iter__'))
 
 
 # Decorators
@@ -81,6 +75,7 @@ class obj2dict(object):
 
     def __call__(self, **kwargs):
         '''converts objects in `result` into dicts'''
+        from nefertari.utils import issequence
         result = kwargs['result']
         if isinstance(result, dict):
             return result
@@ -152,6 +147,7 @@ class apply_privacy(object):
         return data.subset(fields)
 
     def __call__(self, **kwargs):
+        from nefertari.utils import issequence
         result = kwargs['result']
         if not isinstance(result, dict):
             return result
@@ -230,7 +226,7 @@ class add_meta(object):
                 try:
                     each.setdefault('self', "%s/%s" % (
                         self.request.path_url,
-                        urllib.quote(str(each['id']))))
+                        urllib.parse.quote(str(each['id']))))
                 except TypeError:
                     pass
         finally:
@@ -285,7 +281,8 @@ class add_etag(object):
 
         finally:
             if etag_src:
-                self.request.response.etag = md5(etag_src).hexdigest()
+                etag = md5(six.b(etag_src)).hexdigest()
+                self.request.response.etag = etag
             return result
 
 

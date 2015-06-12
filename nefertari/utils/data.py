@@ -1,4 +1,6 @@
+import six
 from nefertari.utils.dictset import dictset
+from nefertari.utils.utils import issequence
 
 
 class DataProxy(object):
@@ -32,10 +34,11 @@ def dict2obj(data):
     if not data:
         return data
 
-    top = type(str(data.get('_type')), (DataProxy,), {})(data)
+    _type = str(data.get('_type'))
+    top = type(_type, (DataProxy,), {})(data)
 
     for key, val in top._data.items():
-        key = key.encode('ascii', 'ignore')
+        key = str(key)
         if isinstance(val, dict):
             setattr(top, key, dict2obj(val))
         elif isinstance(val, list):
@@ -79,13 +82,13 @@ def obj2dict(obj, classkey=None):
         for k in obj.keys():
             obj[k] = obj2dict(obj[k], classkey)
         return obj
-    elif hasattr(obj, "__iter__"):
+    elif issequence(obj):
         return [obj2dict(v, classkey) for v in obj]
     elif hasattr(obj, "__dict__"):
         data = dictset([
             (key, obj2dict(value, classkey))
-            for key, value in obj.__dict__.iteritems()
-            if not callable(value) and not key.startswith('_')
+            for key, value in obj.__dict__.items()
+            if not six.callable(value) and not key.startswith('_')
         ])
         if classkey is not None and hasattr(obj, "__class__"):
             data[classkey] = obj.__class__.__name__

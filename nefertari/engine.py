@@ -18,15 +18,15 @@ Notes
 
 Db setup should be performed after loading models, as some engines require
 model schemas to be defined before creating the database. If your database
-does not have the above requirement, it's up to you to decide when to set up 
+does not have the above requirement, it's up to you to decide when to set up
 the db.
 
-The specified engine module is also `config.include`d here, thus running the 
+The specified engine module is also `config.include`d here, thus running the
 engine's `icludeme` function and allowing setting up required state,
 performing some actions, etc.
 
 The engine specified may be either a module or a package.
-In case you build a custom engine, variables you expect to use from it 
+In case you build a custom engine, variables you expect to use from it
 should be importable from the package itself.
 E.g. ``from your.package import BaseDocument``
 
@@ -44,6 +44,6 @@ def includeme(config):
     engine_path = config.registry.settings['nefertari.engine']
     config.include(engine_path)
     engine_module = resolve(engine_path)
-    engine_globals = {k: v for k, v in engine_module.__dict__.iteritems()
+    engine_globals = {k: v for k, v in engine_module.__dict__.items()
                       if _valid_global(k)}
     globals().update(engine_globals)
