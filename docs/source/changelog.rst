@@ -1,10 +1,11 @@
 Changelog
 =========
 
-* :release:`0.4.0 <2015-06-12>`
+* :release:`0.4.0 <2015-06-14>`
 * :support:`-` Added python3 support
 * :feature:`-` Added ES aggregations
 * :feature:`-` Reworked ES bulk queries to use elasticsearch.helpers.bulk
+* :feature:`-` Added ability to empty listfields by setting them to "" or null
 
 * :release:`0.3.4 <2015-06-09>`
 * :bug:`-` Fixed bug whereby _count would throw exception when authentication was enabled

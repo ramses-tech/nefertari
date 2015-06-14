@@ -35,8 +35,42 @@ url parameter                                       description
 ========================================            ===========
 
 
-update_many()
--------------
+Updating listfields
+-------------------
+
+Items in listfields can be removed using "-" prefix.
+
+PATCH `/api/<collection>/<id>
+
+.. code-block:: json
+
+    {
+        "<list_field_name>": [-<item>]
+    }
+
+Items can be both added and removed at the same time.
+
+PATCH `/api/<collection>/<id>
+
+.. code-block:: json
+
+    {
+        "<list_field_name>": [<item_to_add>,-<item_to_remove>]
+    }
+
+Listfields can be emptied by setting their value to "" or null.
+
+PATCH `/api/<collection>/<id>
+
+.. code-block:: json
+
+    {
+        "<list_field_name>": ""
+    }
+
+
+Updating collections
+--------------------
 
 If update_many() is defined in your view, you will be able to update a single field across an entire collection or a filtered collection. E.g.
 
@@ -45,20 +79,19 @@ PATCH `/api/<collection>?q=<keywords>`
 .. code-block:: json
 
     {
-        "<field_name>":"<new_value>"
+        "<field_name>": "<new_value>"
     }
 
 
-delete_many()
--------------
+Deleting collections
+--------------------
 
 Similarly, if delete_many() is defined, you will be able to delete whole collections or filtered collections. E.g.
 
 DELETE `/api/<collection>?_missing_=<field_name>`
 
 
-.. [#] To update listfields and dictfields, you can use the following syntax: ``_m=PATCH&<listfield>=<comma_separated_list>&<dictfield>.<key>=<value>``
+.. [#] To update listfields and dictfields, you can use the following syntax: ``_m=PATCH&<listfield>.<value>&<dictfield>.<key>=<value>``
 .. [#] The full syntax of ElasticSearch querying is beyond the scope of this documentation. You can read more on the `ElasticSearch Query String Query documentation <http://www.elastic.co/guide/en/elasticsearch/reference/1.x/query-dsl-query-string-query.html>`_ to do things like fuzzy search: ``?name=fuzzy~`` or date range search: ``?date=[2015-01-01 TO *]``
 .. [#] Set ``elasticsearch.enable_refresh_query = true`` in your .ini file to enable this feature. This parameter only works with POST, PATCH, PUT and DELETE methods. Read more on `ElasticSearch Bulk API documentation <https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#bulk-refresh>`_.
 .. [#] Set ``elasticsearch.enable_aggregations = true`` in your .ini file to enable this feature. You can also use the short name `_aggs`. Read more on `ElasticSearch Aggregations <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html>`_.
-
