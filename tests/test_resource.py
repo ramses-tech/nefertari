@@ -1,4 +1,6 @@
 import unittest
+
+import six
 import mock
 from webtest import TestApp
 
@@ -182,7 +184,7 @@ class TestResourceRecognition(Test):
         self.member_name = 'message'
 
     def test_get_collection(self):
-        self.assertEqual(self.app.get('/messages').body, 'index')
+        self.assertEqual(self.app.get('/messages').body, six.b('index'))
 
     def test_get_collection_json(self):
         from nefertari.resource import add_resource_routes
@@ -193,7 +195,7 @@ class TestResourceRecognition(Test):
             'messages',
             renderer='json'
         )
-        self.assertEqual(self.app.get('/messages').body, '"index"')
+        self.assertEqual(self.app.get('/messages').body, six.b('"index"'))
 
     def test_get_collection_nefertari_json(self):
         from nefertari.resource import add_resource_routes
@@ -204,7 +206,7 @@ class TestResourceRecognition(Test):
             'messages',
             renderer='nefertari_json'
         )
-        self.assertEqual(self.app.get('/messages').body, '"index"')
+        self.assertEqual(self.app.get('/messages').body, six.b('"index"'))
 
     def test_get_collection_no_renderer(self):
         from nefertari.resource import add_resource_routes
@@ -213,23 +215,23 @@ class TestResourceRecognition(Test):
 
     def test_post_collection(self):
         result = self.app.post('/messages').body
-        self.assertEqual(result, 'create')
+        self.assertEqual(result, six.b('create'))
 
     def test_get_member(self):
         result = self.app.get('/messages/1').body
-        self.assertEqual(result, 'show')
+        self.assertEqual(result, six.b('show'))
 
     def test_put_member(self):
         result = self.app.put('/messages/1').body
-        self.assertEqual(result, 'replace')
+        self.assertEqual(result, six.b('replace'))
 
     def test_patch_member(self):
         result = self.app.patch('/messages/1').body
-        self.assertEqual(result, 'update')
+        self.assertEqual(result, six.b('update'))
 
     def test_delete_member(self):
         result = self.app.delete('/messages/1').body
-        self.assertEqual(result, 'delete')
+        self.assertEqual(result, six.b('delete'))
 
 
 class TestResource(Test):
@@ -306,25 +308,26 @@ class TestResource(Test):
                        grandpa_id=1, id=2)
         )
 
-        self.assertEqual(app.put('/grandpas').body, '"update_many"')
+        self.assertEqual(app.put('/grandpas').body, six.b('"update_many"'))
 
-        self.assertEqual(app.delete('/grandpas/1').body, '"delete"')
+        self.assertEqual(app.delete('/grandpas/1').body, six.b('"delete"'))
 
-        self.assertEqual(app.put('/thing').body, '"replace"')
+        self.assertEqual(app.put('/thing').body, six.b('"replace"'))
 
-        self.assertEqual(app.patch('/thing').body, '"update"')
+        self.assertEqual(app.patch('/thing').body, six.b('"update"'))
 
-        self.assertEqual(app.delete('/thing').body, '"delete"')
+        self.assertEqual(app.delete('/thing').body, six.b('"delete"'))
 
-        self.assertEqual(app.put('/grandpas/1/wife').body, '"replace"')
+        self.assertEqual(app.put('/grandpas/1/wife').body, six.b('"replace"'))
 
-        self.assertEqual(app.patch('/grandpas/1/wife').body, '"update"')
+        self.assertEqual(app.patch('/grandpas/1/wife').body, six.b('"update"'))
 
-        self.assertEqual(app.delete('/grandpas/1/wife').body, '"delete"')
+        self.assertEqual(app.delete('/grandpas/1/wife').body, six.b('"delete"'))
 
-        self.assertEqual('"show"', app.get('/grandpas/1').body)
-        self.assertEqual('"show"', app.get('/grandpas/1/wife').body)
-        self.assertEqual('"show"', app.get('/grandpas/1/wife/children/1').body)
+        self.assertEqual(six.b('"show"'), app.get('/grandpas/1').body)
+        self.assertEqual(six.b('"show"'), app.get('/grandpas/1/wife').body)
+        self.assertEqual(
+            six.b('"show"'), app.get('/grandpas/1/wife/children/1').body)
 
     def test_renderer_override(self, *args):
         # resource.renderer and view._default_renderer are only used
@@ -342,39 +345,39 @@ class TestResource(Test):
         app = TestApp(config.make_wsgi_app())
 
         # no headers, user renderer==string.returns string
-        self.assertEqual('"index"', app.get('/things').body)
+        self.assertEqual(six.b('"index"'), app.get('/things').body)
 
         # header is sting, renderer is string. returns string
-        self.assertEqual('index', app.get('/things',
+        self.assertEqual(six.b('index'), app.get('/things',
                          headers={'ACCEPT': 'text/plain'}).body)
 
         # header is json, renderer is string. returns json
-        self.assertEqual('"index"', app.get('/things',
+        self.assertEqual(six.b('"index"'), app.get('/things',
                          headers={'ACCEPT': 'application/json'}).body)
 
         # no header. returns json
-        self.assertEqual('"index"', app.get('/2things').body)
+        self.assertEqual(six.b('"index"'), app.get('/2things').body)
 
         # header==json, renderer==json, returns json
-        self.assertEqual('"index"', app.get('/2things',
+        self.assertEqual(six.b('"index"'), app.get('/2things',
                          headers={'ACCEPT': 'application/json'}).body)
 
         # header==text, renderer==json, returns string
-        self.assertEqual("index", app.get('/2things',
+        self.assertEqual(six.b("index"), app.get('/2things',
                          headers={'ACCEPT': 'text/plain'}).body)
 
         # no header, no renderer. uses default_renderer, returns
         # View._default_renderer==nefertari_json
-        self.assertEqual('"index"', app.get('/3things').body)
+        self.assertEqual(six.b('"index"'), app.get('/3things').body)
 
-        self.assertEqual('"index"', app.get('/3things',
+        self.assertEqual(six.b('"index"'), app.get('/3things',
                          headers={'ACCEPT': 'application/json'}).body)
 
-        self.assertEqual('index', app.get('/3things',
+        self.assertEqual(six.b('index'), app.get('/3things',
                          headers={'ACCEPT': 'text/plain'}).body)
 
         # bad accept.defaults to json
-        self.assertEqual('"index"', app.get('/3things',
+        self.assertEqual(six.b('"index"'), app.get('/3things',
                          headers={'ACCEPT': 'text/blablabla'}).body)
 
     def test_nonBaseView_default_renderer(self, *a):
@@ -385,7 +388,7 @@ class TestResource(Test):
         config.begin()
         app = TestApp(config.make_wsgi_app())
 
-        self.assertEqual('"index"', app.get('/ythings').body)
+        self.assertEqual(six.b('"index"'), app.get('/ythings').body)
 
     def test_nested_resources(self, *a):
         config = _create_config()

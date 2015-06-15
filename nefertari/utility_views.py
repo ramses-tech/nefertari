@@ -4,8 +4,10 @@ from pyramid.view import view_config
 @view_config(name='options_view', request_method='OPTIONS',
              route_name='options')
 class OptionsView(object):
-    all_methods = set(['GET', 'HEAD', 'POST', 'OPTIONS', 'PUT', 'DELETE',
-                       'PATCH', 'TRACE'])
+    all_methods = sorted([
+        'GET', 'HEAD', 'POST', 'OPTIONS',
+        'PUT', 'DELETE', 'PATCH', 'TRACE',
+    ])
 
     def __init__(self, request):
         self.request = request

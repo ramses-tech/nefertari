@@ -1,4 +1,6 @@
 from datetime import datetime
+
+import six
 from pyramid.settings import asbool
 
 from nefertari.utils.utils import process_fields, split_strip
@@ -43,7 +45,7 @@ class dictset(dict):
     def aslist(self, name, remove_empty=True, default=[], _set=False):
         _lst = split_strip(self.get(name, default) or default)
         if remove_empty:
-            _lst = filter(bool, _lst)
+            _lst = list(filter(bool, _lst))
 
         if _set:
             self[name] = _lst
@@ -114,7 +116,7 @@ class dictset(dict):
             _type = lambda t: t
 
         _csv = self.get(name, '')
-        if _csv and isinstance(_csv, basestring):
+        if _csv and isinstance(_csv, six.string_types):
             self[name] = [_type(each) for each in split_strip(_csv)]
 
         if name not in self and setdefault is not None:
@@ -183,7 +185,10 @@ class dictset(dict):
         return self.asdict(name, _type, _set=not pop)
 
     def pop_by_values(self, val):
+        keys_to_pop = []
         for k, v in self.items():
             if v == val:
-                self.pop(k)
+                keys_to_pop.append(k)
+        for key in keys_to_pop:
+            self.pop(key)
         return self

@@ -3,6 +3,7 @@
 import unittest
 
 import pytest
+import six
 from mock import Mock, patch
 from pyramid.testing import DummyRequest
 
@@ -19,19 +20,6 @@ class TestWrappers(unittest.TestCase):
         'id': 1,
         'other_field': 123
     })
-
-    def test_issequence(self):
-        class A(object):
-            def __init__(self, *args):
-                for arg in args:
-                    setattr(self, arg, lambda x: x)
-
-        assert not wrappers.issequence(A('strip'))
-        assert not wrappers.issequence(A('foo'))
-        assert wrappers.issequence(A('__getitem__'))
-        assert wrappers.issequence(A('__iter__'))
-        assert wrappers.issequence(A('__iter__', 'foo'))
-        assert wrappers.issequence(A('__getitem__', 'foo'))
 
     def test_wrap_me_init(self):
         wrap = wrappers.wrap_me(before='foo', after=['bar'])
@@ -114,7 +102,7 @@ class TestWrappers(unittest.TestCase):
 
     @patch('nefertari.wrappers.urllib')
     def test_add_meta_type_error(self, mock_lib):
-        mock_lib.quote.side_effect = TypeError
+        mock_lib.parse.quote.side_effect = TypeError
         result = {'data': [{'id': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         result = wrappers.add_meta(request=request)(result=result)
@@ -371,7 +359,7 @@ class TestWrappers(unittest.TestCase):
             {'id': 1, '_version': 1},
             {'id': 2, '_version': 1},
         ]})
-        assert isinstance(wrapper.request.response.etag, basestring)
+        assert isinstance(wrapper.request.response.etag, six.string_types)
         assert wrapper.request.response.etag == expected1
 
         # New object added
@@ -380,7 +368,7 @@ class TestWrappers(unittest.TestCase):
             {'id': 2, '_version': 1},
             {'id': 3, '_version': 1},
         ]})
-        assert isinstance(wrapper.request.response.etag, basestring)
+        assert isinstance(wrapper.request.response.etag, six.string_types)
         assert wrapper.request.response.etag != expected1
 
         # Existing object's version changed
@@ -388,7 +376,7 @@ class TestWrappers(unittest.TestCase):
             {'id': 1, '_version': 1},
             {'id': 2, '_version': 2},
         ]})
-        assert isinstance(wrapper.request.response.etag, basestring)
+        assert isinstance(wrapper.request.response.etag, six.string_types)
         assert wrapper.request.response.etag != expected1
 
     def test_set_total(self):
@@ -429,12 +417,11 @@ class TestWrappers(unittest.TestCase):
             'index', mock_set(), pos=0)
         assert '_limit' not in view._query_params
 
-    @patch('nefertari.wrappers.set_total')
-    def test_set_public_limits_value_err(self, mock_set):
+    def test_set_public_limits_value_err(self):
         from nefertari.json_httpexceptions import JHTTPBadRequest
         request = Mock()
         request.registry.settings = {}
         view = Mock(request=request, _query_params={})
-        mock_set.side_effect = ValueError
+        view.add_after_call.side_effect = ValueError
         with pytest.raises(JHTTPBadRequest):
             wrappers.set_public_limits(view)

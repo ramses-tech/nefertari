@@ -4,6 +4,8 @@ import logging
 from functools import partial
 
 import elasticsearch
+from elasticsearch import helpers
+import six
 
 from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
@@ -64,7 +66,7 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 status_code = 400
             raise exception_response(
                 status_code,
-                detail='elasticsearch error.',
+                detail=six.b('Elasticsearch error'),
                 extra=dict(data=e))
         else:
             self._catch_index_error(resp)
@@ -77,13 +79,22 @@ def includeme(config):
     ES.create_index()
 
 
-def _bulk_body(body, refresh_index=None):
-    kwargs = {'body': body}
+def _bulk_body(documents_actions, refresh_index=None):
+    kwargs = {
+        'client': ES.api,
+        'actions': documents_actions,
+    }
     refresh_provided = refresh_index is not None
     refresh_enabled = ES.settings.asbool('enable_refresh_query')
     if refresh_provided and refresh_enabled:
         kwargs['refresh'] = refresh_index
-    return ES.api.bulk(**kwargs)
+
+    executed_num, errors = helpers.bulk(**kwargs)
+    log.info('Successfully executed {} Elasticsearch action(s)'.format(
+        executed_num))
+    if errors:
+        raise Exception('Errors happened when executing Elasticsearch '
+                        'actions'.format('; '.join(errors)))
 
 
 def process_fields_param(fields):
@@ -98,7 +109,7 @@ def process_fields_param(fields):
     """
     if not fields:
         return fields
-    if isinstance(fields, basestring):
+    if isinstance(fields, six.string_types):
         fields = split_strip(fields)
     if '_type' not in fields:
         fields.append('_type')
@@ -141,7 +152,8 @@ def build_qs(params, _raw_terms='', operator='AND'):
         else:
             terms.append('%s:%s' % (k, v))
 
-    _terms = (' %s ' % operator).join(filter(bool, terms)) + _raw_terms
+    terms = sorted([term for term in terms if term])
+    _terms = (' %s ' % operator).join(terms) + _raw_terms
 
     return _terms
 
@@ -244,12 +256,12 @@ class ES(object):
             index=self.index_name,
             **kwargs)
 
-    def process_chunks(self, documents, operation, chunk_size=None):
-        """ Apply `operation` to chunks of `documents` of size `chunk_size`.
+    def process_chunks(self, documents, operation):
+        """ Apply `operation` to chunks of `documents` of size
+        `self.chunk_size`.
 
         """
-        if chunk_size is None:
-            chunk_size = self.chunk_size
+        chunk_size = self.chunk_size
         start = end = 0
         count = len(documents)
 
@@ -259,7 +271,7 @@ class ES(object):
             end += chunk_size
 
             bulk = documents[start:end]
-            operation(body=bulk)
+            operation(documents_actions=bulk)
 
             start += chunk_size
             count -= chunk_size
@@ -268,7 +280,7 @@ class ES(object):
         if not isinstance(documents, list):
             documents = [documents]
 
-        _docs = []
+        docs_actions = []
         for doc in documents:
             if not isinstance(doc, dict):
                 raise ValueError(
@@ -280,58 +292,44 @@ class ES(object):
             else:
                 _doc_type = self.doc_type
 
-            meta = {
-                action: {
-                    'action': action,
-                    '_index': self.index_name,
-                    '_type': _doc_type,
-                    '_id': doc['id']
-                }
+            doc_action = {
+                '_op_type': action,
+                '_index': self.index_name,
+                '_type': _doc_type,
+                '_id': doc['id'],
+                '_source': doc,
             }
 
-            _docs.append([meta, doc])
+            docs_actions.append(doc_action)
 
-        return _docs
+        return docs_actions
 
-    def _bulk(self, action, documents, chunk_size=None,
-              refresh_index=None):
-        if chunk_size is None:
-            chunk_size = self.chunk_size
-
+    def _bulk(self, action, documents, refresh_index=None):
         if not documents:
-            log.debug('empty documents: %s' % self.doc_type)
+            log.debug('Empty documents: %s' % self.doc_type)
             return
 
-        documents = self.prep_bulk_documents(action, documents)
+        documents_actions = self.prep_bulk_documents(action, documents)
 
-        body = []
-        for meta, doc in documents:
-            action = meta.keys()[0]
-            if action == 'delete':
-                body += [meta]
-            elif action == 'index':
-                if 'timestamp' in doc:
-                    meta['_timestamp'] = doc['timestamp']
-                body += [meta, doc]
+        if action == 'index':
+            for doc in documents_actions:
+                doc_data = doc.get('_source', {})
+                if 'timestamp' in doc_data:
+                    doc['_timestamp'] = doc_data['timestamp']
 
-        if body:
-            # Use chunk_size*2, because `body` is a sequence of
-            # meta, document, meta, ...
+        if documents_actions:
             operation = partial(_bulk_body, refresh_index=refresh_index)
             self.process_chunks(
-                documents=body,
-                operation=operation,
-                chunk_size=chunk_size*2)
+                documents=documents_actions,
+                operation=operation)
         else:
             log.warning('Empty body')
 
-    def index(self, documents, chunk_size=None,
-              refresh_index=None):
+    def index(self, documents, refresh_index=None):
         """ Reindex all `document`s. """
-        self._bulk('index', documents, chunk_size, refresh_index)
+        self._bulk('index', documents, refresh_index)
 
-    def index_missing_documents(self, documents, chunk_size=None,
-                                refresh_index=None):
+    def index_missing_documents(self, documents, refresh_index=None):
         """ Index documents that are missing from ES index.
 
         Determines which documents are missing using ES `mget` call which
@@ -363,7 +361,7 @@ class ES(object):
                      'index `{}`'.format(self.doc_type, self.index_name))
             return
 
-        self._bulk('index', documents, chunk_size, refresh_index)
+        self._bulk('index', documents, refresh_index)
 
     def delete(self, ids, refresh_index=None):
         if not isinstance(ids, list):

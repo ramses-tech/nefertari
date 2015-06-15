@@ -1,10 +1,10 @@
 import json
 import logging
-import urllib
 import simplejson
 from collections import defaultdict
 
 import six
+from six.moves import urllib
 from pyramid.settings import asbool
 from pyramid.request import Request
 
@@ -46,11 +46,11 @@ class ViewMapper(object):
                 for call in view_obj._before_calls.get(action_name, []):
                     call(request=request)
 
-            except wrappers.ValidationError, e:
+            except wrappers.ValidationError as e:
                 log.error('validation error: %s', e)
                 raise JHTTPBadRequest(e.args)
 
-            except wrappers.ResourceNotFound, e:
+            except wrappers.ResourceNotFound as e:
                 log.error('resource not found: %s', e)
                 raise JHTTPNotFound()
 
@@ -81,7 +81,7 @@ class BaseView(object):
 
         if dotted_items:
             dicts = [str2dict(key, val) for key, val in dotted_items.items()]
-            dotted = reduce(merge_dicts, dicts)
+            dotted = six.functools.reduce(merge_dicts, dicts)
             params = params.subset(['-' + k for k in dotted_items.keys()])
             params.update(dict(dotted))
 
@@ -251,7 +251,7 @@ class BaseView(object):
 
     def add_before_or_after_call(self, action, _callable, pos=None,
                                  before=True):
-        if not callable(_callable):
+        if not six.callable(_callable):
             raise ValueError('%s is not a callable' % _callable)
 
         if before:
@@ -275,7 +275,7 @@ class BaseView(object):
                             method=method)
 
         if method == 'GET' and params:
-            req.body = urllib.urlencode(params)
+            req.body = urllib.parse.urlencode(params)
 
         if method == 'POST':
             req.body = json.dumps(params)
@@ -305,10 +305,15 @@ class BaseView(object):
                 return obj
 
         ids = self._json_params[name]
+        if not ids:
+            return
         if isinstance(ids, list):
-            self._json_params[name] = [_get_object(_id) for _id in ids]
+            self._json_params[name] = []
+            for _id in ids:
+                obj = _id if _id is None else _get_object(_id)
+                self._json_params[name].append(obj)
         else:
-            self._json_params[name] = _get_object(ids)
+            self._json_params[name] = ids if ids is None else _get_object(ids)
 
 
 class ESAggregator(object):
@@ -422,15 +427,15 @@ class ESAggregator(object):
 
 
 def key_error_view(context, request):
-    return JHTTPBadRequest("Bad or missing param '%s'" % context.message)
+    return JHTTPBadRequest("Bad or missing param '%s'" % context.args[0])
 
 
 def value_error_view(context, request):
-    return JHTTPBadRequest("Bad or missing value '%s'" % context.message)
+    return JHTTPBadRequest("Bad or missing value '%s'" % context.args[0])
 
 
 def error_view(context, request):
-    return JHTTPBadRequest(context.message)
+    return JHTTPBadRequest(context.args[0])
 
 
 def includeme(config):

@@ -93,7 +93,7 @@ class TestBaseView(object):
                 BaseView.__init__(self, context, request)
 
             def show(self, id):
-                return u'John Doe'
+                return 'John Doe'
 
             def convert_ids2objects(self, *args, **kwargs):
                 pass
@@ -102,7 +102,7 @@ class TestBaseView(object):
         request.matched_route.pattern = '/users'
         view = UsersView(request.context, request)
 
-        assert u'John Doe' == view.show(1)
+        assert 'John Doe' == view.show(1)
 
         with pytest.raises(JHTTPMethodNotAllowed):
             view.index()
@@ -185,7 +185,7 @@ class TestBaseView(object):
         request.params.mixed.return_value = {'param2.foo': 'val2'}
         view = BaseView(context={'foo': 'bar'}, request=request)
         assert request.override_renderer == 'string'
-        assert view._params.keys() == ['param2']
+        assert list(view._params.keys()) == ['param2']
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_init_json_error(self, run):
@@ -201,7 +201,7 @@ class TestBaseView(object):
         request.params.mixed.return_value = {'param2.foo': 'val2'}
         view = BaseView(context={'foo': 'bar'}, request=request)
         assert request.override_renderer == 'nefertari_json'
-        assert view._params.keys() == ['param2']
+        assert list(view._params.keys()) == ['param2']
 
     @patch('nefertari.view.BaseView.setup_default_wrappers')
     @patch('nefertari.view.BaseView.convert_ids2objects')
@@ -454,7 +454,7 @@ class TestBaseView(object):
             'http://', cookies=['1'], content_type='application/json',
             method='GET')
         view.request.invoke_subrequest.assert_called_once_with(req.blank())
-        ulib.urlencode.assert_called_once_with({'par': 'val'})
+        ulib.parse.urlencode.assert_called_once_with({'par': 'val'})
 
     @patch('nefertari.view.json')
     @patch('nefertari.view.Request')
@@ -539,6 +539,22 @@ class TestBaseView(object):
         model.get.assert_called_once_with(idname='1')
 
     @patch('nefertari.view.BaseView._run_init_actions')
+    def test_id2obj_value_none(self, run):
+        model = Mock()
+        model.pk_field.return_value = 'idname'
+        model.get.return_value = 'foo'
+        request = Mock(content_type='', method='', accept=[''], user=None)
+        view = BaseView(
+            context={}, request=request, _json_params={'foo': 'bar'},
+            _query_params={'foo1': 'bar1'})
+        view._json_params['users'] = [None, '1']
+        view._json_params['story'] = None
+        view.id2obj(name='users', model=model)
+        view.id2obj(name='story', model=model)
+        assert view._json_params['users'] == [None, 'foo']
+        assert view._json_params['story'] is None
+
+    @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_already_object(self, run):
         id_ = Mock()
         model = Mock()
@@ -571,15 +587,15 @@ class TestBaseView(object):
 
 class TestViewHelpers(object):
     def test_key_error_view(self):
-        resp = key_error_view(Mock(message='foo'), None)
+        resp = key_error_view(Mock(args=('foo',)), None)
         assert str(resp.message) == "Bad or missing param 'foo'"
 
     def test_value_error_view(self):
-        resp = value_error_view(Mock(message='foo'), None)
+        resp = value_error_view(Mock(args=('foo',)), None)
         assert str(resp.message) == "Bad or missing value 'foo'"
 
     def test_error_view(self):
-        resp = error_view(Mock(message='foo'), None)
+        resp = error_view(Mock(args=('foo',)), None)
         assert str(resp.message) == "foo"
 
     def test_includeme(self):

@@ -15,15 +15,20 @@ install_requires = [
     'blinker',
     'zope.dottedname',
     'cryptacular',
+    'six',
 ]
 
 setup(
     name='nefertari',
     version=VERSION,
-    description='nefertari',
+    description='REST API framework for Pyramid',
     long_description=README,
     classifiers=[
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",

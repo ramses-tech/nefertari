@@ -280,7 +280,7 @@ class Resource(object):
 
         name_segs = [a.member_name for a in new_resource.ancestors]
         name_segs.insert(1, prefix)
-        name_segs = filter(bool, name_segs)
+        name_segs = [seg for seg in name_segs if seg]
         if name_segs:
             kwargs['name_prefix'] = '_'.join(name_segs) + ':'
 
@@ -304,7 +304,7 @@ class Resource(object):
         # add all route names for this resource as keys in the dict,
         # so its easy to find it in the view.
         self.resource_map.update(dict.fromkeys(
-            new_resource.action_route_map.values(),
+            list(new_resource.action_route_map.values()),
             new_resource))
 
         parent.children.append(new_resource)
