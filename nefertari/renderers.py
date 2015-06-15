@@ -3,7 +3,7 @@ import logging
 from datetime import date, datetime
 
 from nefertari import wrappers
-from pyramid.httpexceptions import HTTPException
+from nefertari.json_httpexceptions import JHTTPOk, JHTTPCreated
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class JsonRendererFactory(object):
         settings (the deployment settings dictionary). """
         pass
 
-    def _set_content_type(self, value, system):
+    def _set_content_type(self, system):
         request = system.get('request')
         if request:
             response = request.response
@@ -52,7 +52,7 @@ class JsonRendererFactory(object):
         dictionary containing available system values
         (e.g. view, context, and request).
         """
-        self._set_content_type(value, system)
+        self._set_content_type(system)
         # run after_calls on the value before jsonifying
         value = self.run_after_calls(value, system)
         return self._render_response(value, system)
@@ -68,19 +68,18 @@ class JsonRendererFactory(object):
 
 
 class DefaultResponseRendererMixin(object):
-    def _get_common_kwargs(self, value, system):
+    def _get_common_kwargs(self, system):
         request = system['request']
         enc_class = getattr(
             system['view'], '_json_encoder', _JSONEncoder) or _JSONEncoder
         return {
             'request': request,
-            'resource': value,
             'encoder': enc_class,
         }
 
-    def render_create(self, value, system):
-        from nefertari.json_httpexceptions import JHTTPCreated
-        kw = self._get_common_kwargs(value, system)
+    def render_create(self, value, system, common_kw):
+        kw = common_kw.copy()
+        kw['resource'] = value
         if hasattr(value, 'to_dict'):
             kw['resource'] = value.to_dict()
             resource = system['view']._resource
@@ -88,15 +87,37 @@ class DefaultResponseRendererMixin(object):
             obj_id = getattr(value, value.pk_field())
             kw['location'] = system['request'].route_url(
                 resource.uid, **{id_name: obj_id})
-
-        # TODO: Raising response rollbacks a transaction
         return JHTTPCreated(**kw)
+
+    def render_update(self, value, system, common_kw):
+        kw = common_kw.copy()
+        if hasattr(value, 'to_dict'):
+            resource = system['view']._resource
+            id_name = resource.id_name
+            obj_id = getattr(value, value.pk_field())
+            kw['location'] = system['request'].route_url(
+                resource.uid, **{id_name: obj_id})
+        return JHTTPOk(**kw)
+
+    def render_delete(self, value, system, common_kw):
+        return JHTTPOk("Deleted", common_kw.copy())
+
+    def render_delete_many(self, value, system, common_kw):
+        msg = "Deleted {} {}(s) objects".format(
+            value, system['view'].Model.__name__)
+        return JHTTPOk(msg, common_kw.copy())
+
+    def render_update_many(self, value, system, common_kw):
+        msg = "Updated {} {}(s) objects".format(
+            value, system['view'].Model.__name__)
+        return JHTTPOk(msg, common_kw.copy())
 
     def _render_response(self, value, system):
         method_name = 'render_{}'.format(system['request'].action)
         method = getattr(self, method_name, None)
         if method is not None:
-            return method(value, system).body
+            common_kw = self._get_common_kwargs(system)
+            return method(value, system, common_kw).body
         return super(DefaultResponseRendererMixin, self)._render_response(
             value, system)
 
