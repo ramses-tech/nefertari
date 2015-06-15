@@ -143,6 +143,7 @@ class BaseView(object):
         self._auth_enabled = root_resource is not None and root_resource.auth
 
         self._run_init_actions()
+        self._setup_aggregation()
 
     def _run_init_actions(self):
         self.setup_default_wrappers()
@@ -150,6 +151,11 @@ class BaseView(object):
         self.set_public_limits()
         if self.request.method == 'PUT':
             self.fill_null_values()
+
+    def _setup_aggregation(self):
+        from nefertari.elasticsearch import ES
+        aggregations_enabled = ES.settings.asbool('enable_aggregations')
+        # TODO
 
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: None}.
@@ -222,10 +228,6 @@ class BaseView(object):
             ]
 
         self._after_calls['delete_many'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
-        self._after_calls['update_many'] = [
             wrappers.add_confirmation_url(self.request)
         ]
 
