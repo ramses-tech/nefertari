@@ -3,6 +3,7 @@ from hashlib import md5
 
 import logging
 
+import six
 from nefertari import engine
 
 log = logging.getLogger(__name__)
@@ -249,6 +250,9 @@ class add_confirmation_url(object):
     def __call__(self, **kwargs):
         result = kwargs['result']
         q_or_a = '&' if self.request.params else '?'
+
+        if isinstance(result, six.integer_types):
+            return result
 
         return dict(
             method=self.request.method,

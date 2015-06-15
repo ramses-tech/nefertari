@@ -221,10 +221,6 @@ class BaseView(object):
                 wrappers.apply_privacy(self.request),
             ]
 
-        self._after_calls['delete'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
         self._after_calls['delete_many'] = [
             wrappers.add_confirmation_url(self.request)
         ]
