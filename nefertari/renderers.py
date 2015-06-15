@@ -30,14 +30,7 @@ class JsonRendererFactory(object):
         settings (the deployment settings dictionary). """
         pass
 
-    def __call__(self, value, system):
-        """ Call the renderer implementation with the value
-        and the system value passed in as arguments and return
-        the result (a string or unicode object). The value is
-        the return value of a view.  The system value is a
-        dictionary containing available system values
-        (e.g. view, context, and request). """
-
+    def _set_content_type(self, value, system):
         request = system.get('request')
         if request:
             response = request.response
@@ -45,12 +38,24 @@ class JsonRendererFactory(object):
             if ct == response.default_content_type:
                 response.content_type = 'application/json'
 
-        # run after_calls on the value before jsonifying
-        value = self.run_after_calls(value, system)
+    def _render_response(self, value, system):
         view = system['view']
         enc_class = getattr(
             view, '_json_encoder', _JSONEncoder) or _JSONEncoder
         return json.dumps(value, cls=enc_class)
+
+    def __call__(self, value, system):
+        """ Call the renderer implementation with the value
+        and the system value passed in as arguments and return
+        the result (a string or unicode object). The value is
+        the return value of a view.  The system value is a
+        dictionary containing available system values
+        (e.g. view, context, and request).
+        """
+        self._set_content_type(value, system)
+        # run after_calls on the value before jsonifying
+        value = self.run_after_calls(value, system)
+        return self._render_response(value, system)
 
     def run_after_calls(self, value, system):
         request = system.get('request')
@@ -63,31 +68,37 @@ class JsonRendererFactory(object):
 
 
 class DefaultResponseRendererMixin(object):
-    def render_create(self, value, system):
-        from nefertari.json_httpexceptions import JHTTPCreated
+    def _get_common_kwargs(self, value, system):
         request = system['request']
-        kw = {
+        enc_class = getattr(
+            system['view'], '_json_encoder', _JSONEncoder) or _JSONEncoder
+        return {
             'request': request,
             'resource': value,
+            'encoder': enc_class,
         }
+
+    def render_create(self, value, system):
+        from nefertari.json_httpexceptions import JHTTPCreated
+        kw = self._get_common_kwargs(value, system)
         if hasattr(value, 'to_dict'):
             kw['resource'] = value.to_dict()
             resource = system['view']._resource
             id_name = resource.id_name
             obj_id = getattr(value, value.pk_field())
-            kw['location'] = request.route_url(
+            kw['location'] = system['request'].route_url(
                 resource.uid, **{id_name: obj_id})
 
         # TODO: Raising response rollbacks a transaction
-        raise JHTTPCreated(**kw)
+        return JHTTPCreated(**kw)
 
-    def render_default_response(self, value, system):
-        if not isinstance(value, HTTPException):
-            method_name = 'render_{}'.format(system['request'].action)
-            method = getattr(self, method_name, None)
-            if method is not None:
-                value = method(value, system)
-        return value
+    def _render_response(self, value, system):
+        method_name = 'render_{}'.format(system['request'].action)
+        method = getattr(self, method_name, None)
+        if method is not None:
+            return method(value, system).body
+        return super(DefaultResponseRendererMixin, self)._render_response(
+            value, system)
 
 
 class NefertariJsonRendererFactory(DefaultResponseRendererMixin,
@@ -101,5 +112,4 @@ class NefertariJsonRendererFactory(DefaultResponseRendererMixin,
             after_calls = getattr(request, 'filters', {})
             for call in after_calls.get(request.action, []):
                 value = call(**dict(request=request, result=value))
-
-        return self.render_default_response(value, system)
+        return value
