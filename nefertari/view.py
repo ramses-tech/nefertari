@@ -3,6 +3,8 @@ import logging
 import urllib
 import simplejson
 from collections import defaultdict
+
+import six
 from pyramid.settings import asbool
 from pyramid.request import Request
 
@@ -155,7 +157,14 @@ class BaseView(object):
     def _setup_aggregation(self):
         from nefertari.elasticsearch import ES
         aggregations_enabled = ES.settings.asbool('enable_aggregations')
-        # TODO
+        if not aggregations_enabled:
+            log.debug('Elasticsearch aggregations are not enabled')
+            return
+
+        index_defined = hasattr(self.__class__, 'index')
+        if index_defined:
+            self.index = ESAggregator(self).wrap(self.index)
+            # TODO: Do this in metaclass?
 
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: None}.
@@ -302,7 +311,7 @@ class BaseView(object):
             self._json_params[name] = _get_object(ids)
 
 
-class ESAggregationMixin(object):
+class ESAggregator(object):
     """ Mixin that provides methods to perform Elasticsearch aggregations.
 
     Should be mixed with subclasses of `nefertari.view.BaseView`.
@@ -313,9 +322,8 @@ class ESAggregationMixin(object):
     Attributes:
         :_aggregations_keys: Sequence of strings representing name(s) of the
             root key under which aggregations names are defined. Order of keys
-            matters - first key found in request is popped and returned.
-        :_auth_enabled: Boolean indicating whether authentication is enabled.
-            Is calculated in BaseView.
+            matters - first key found in request is popped and returned. May be
+            overriden by defining it on view.
 
     Examples:
         If _aggregations_keys=('_aggregations',), then query string params
@@ -323,7 +331,21 @@ class ESAggregationMixin(object):
             _aggregations.min_price.min.field=price
     """
     _aggregations_keys = ('_aggregations', '_aggs')
-    _auth_enabled = None
+
+    def __init__(self, view):
+        self.view = view
+        view_aggregations_keys = getattr(view, '_aggregations_keys', None)
+        if view_aggregations_keys:
+            self._aggregations_keys = view_aggregations_keys
+
+    def wrap(self, func):
+        six.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return self.aggregate(*args, **kwargs)
+            except KeyError:
+                return func(*args, **kwargs)
+        return wrapper
 
     def pop_aggregations_params(self):
         """ Pop and return aggregation params from query string params.
@@ -331,7 +353,7 @@ class ESAggregationMixin(object):
         Aggregation params are expected to be prefixed(nested under) by
         any of `self._aggregations_keys`.
         """
-        self._query_params = BaseView.convert_dotted(self._query_params)
+        self._query_params = BaseView.convert_dotted(self.view._query_params)
 
         for key in self._aggregations_keys:
             if key in self._query_params:
@@ -343,7 +365,7 @@ class ESAggregationMixin(object):
         """ Remove default 'index' after call wrappers and add only
         those needed for aggregation results output.
         """
-        self._after_calls['index'] = []
+        self.view._after_calls['index'] = []
 
     @classmethod
     def get_aggregations_fields(cls, params):
@@ -368,9 +390,9 @@ class ESAggregationMixin(object):
         """
         fields = self.get_aggregations_fields(aggregations_params)
         fields_dict = dictset.fromkeys(fields)
-        fields_dict['_type'] = self.Model.__name__
+        fields_dict['_type'] = self.view.Model.__name__
 
-        wrapper = wrappers.apply_privacy(self.request)
+        wrapper = wrappers.apply_privacy(self.view.request)
         allowed_fields = set(wrapper(result=fields_dict).keys())
         not_allowed_fields = set(fields) - set(allowed_fields)
 
@@ -382,12 +404,8 @@ class ESAggregationMixin(object):
     def aggregate(self):
         """ Perform aggregation and return response. """
         from nefertari.elasticsearch import ES
-        if not ES.settings.asbool('enable_aggregations'):
-            log.warn('Elasticsearch aggregations are disabled')
-            raise KeyError('Elasticsearch aggregations are disabled')
-
         aggregations_params = self.pop_aggregations_params()
-        if self._auth_enabled:
+        if self.view._auth_enabled:
             self.check_aggregations_privacy(aggregations_params)
         self.stub_wrappers()
 
@@ -396,7 +414,7 @@ class ESAggregationMixin(object):
             search_params.append(self._query_params.pop('q'))
         _raw_terms = ' AND '.join(search_params)
 
-        return ES(self.Model.__name__).aggregate(
+        return ES(self.view.Model.__name__).aggregate(
             _aggregations_params=aggregations_params,
             _raw_terms=_raw_terms,
             **self._query_params
