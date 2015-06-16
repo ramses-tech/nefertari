@@ -4,7 +4,6 @@ from nefertari.json_httpexceptions import (
     JHTTPFound, JHTTPConflict, JHTTPUnauthorized, JHTTPNotFound, JHTTPOk,
     JHTTPBadRequest)
 from nefertari.view import BaseView
-from .models import AuthUser
 
 
 class TicketAuthenticationView(BaseView):
@@ -12,12 +11,8 @@ class TicketAuthenticationView(BaseView):
         `login` (POST): Login the user with 'login' and 'password'
         `logout`: Logout user
     """
-    _model_class = AuthUser
-
     def register(self):
-        """ Register new user by POSTing all required data.
-
-        """
+        """ Register new user by POSTing all required data. """
         user, created = self._model_class.create_account(
             self._json_params)
 
@@ -67,8 +62,6 @@ class TokenAuthenticationView(BaseView):
     `nefertari.authentication.policies.ApiKeyAuthenticationPolicy`
     token-based auth. Implements methods:
     """
-    _model_class = AuthUser
-
     def register(self):
         """ Register a new user by POSTing all required data.
 
