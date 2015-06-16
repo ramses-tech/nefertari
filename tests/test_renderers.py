@@ -183,7 +183,7 @@ class TestDefaultResponseRendererMixin(object):
         system['request'].route_url.assert_called_once_with(
             'user:stories', story_id=1)
         mock_resp.assert_called_once_with(
-            a='b', location=system['request'].route_url())
+            "Updated", a='b', location=system['request'].route_url())
 
     def test_render_replace(self):
         mixin = renderers.DefaultResponseRendererMixin()

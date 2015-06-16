@@ -104,7 +104,7 @@ class DefaultResponseRendererMixin(object):
             obj_id = getattr(value, value.pk_field())
             kw['location'] = system['request'].route_url(
                 resource.uid, **{id_name: obj_id})
-        return JHTTPOk(**kw)
+        return JHTTPOk("Updated", **kw)
 
     def render_replace(self, *args, **kwargs):
         """ Render response for view `replace` method (item PUT) """
