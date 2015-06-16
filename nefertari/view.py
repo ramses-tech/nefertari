@@ -164,7 +164,6 @@ class BaseView(object):
         index_defined = hasattr(self.__class__, 'index')
         if index_defined:
             self.index = ESAggregator(self).wrap(self.index)
-            # TODO: Do this in metaclass?
 
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: None}.
@@ -317,12 +316,13 @@ class BaseView(object):
 
 
 class ESAggregator(object):
-    """ Mixin that provides methods to perform Elasticsearch aggregations.
+    """ Provides methods to perform Elasticsearch aggregations.
 
-    Should be mixed with subclasses of `nefertari.view.BaseView`.
-
-    To use aggregation at collection route requests, simply return
-    `self.aggregate()`.
+    Example of using ESAggregator:
+        >> # Create an instance with view
+        >> aggregator = ESAggregator(view)
+        >> # Replace view.index with wrapped version
+        >> view.index = aggregator.wrap(view.index)
 
     Attributes:
         :_aggregations_keys: Sequence of strings representing name(s) of the
@@ -344,6 +344,10 @@ class ESAggregator(object):
             self._aggregations_keys = view_aggregations_keys
 
     def wrap(self, func):
+        """ Wrap :func: to perform aggregation on :func: call.
+
+        Should be called with view instance methods.
+        """
         six.wraps(func)
         def wrapper(*args, **kwargs):
             try:

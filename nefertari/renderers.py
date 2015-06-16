@@ -31,6 +31,7 @@ class JsonRendererFactory(object):
         pass
 
     def _set_content_type(self, system):
+        """ Set response content type """
         request = system.get('request')
         if request:
             response = request.response
@@ -39,6 +40,7 @@ class JsonRendererFactory(object):
                 response.content_type = 'application/json'
 
     def _render_response(self, value, system):
+        """ Render a response """
         view = system['view']
         enc_class = getattr(
             view, '_json_encoder', _JSONEncoder) or _JSONEncoder
@@ -68,16 +70,20 @@ class JsonRendererFactory(object):
 
 
 class DefaultResponseRendererMixin(object):
+    """ Renderer mixin that generates responses for all create/update/delete
+    view methods.
+    """
     def _get_common_kwargs(self, system):
-        request = system['request']
+        """ Get kwargs common for all methods. """
         enc_class = getattr(
             system['view'], '_json_encoder', _JSONEncoder) or _JSONEncoder
         return {
-            'request': request,
+            'request': system['request'],
             'encoder': enc_class,
         }
 
     def render_create(self, value, system, common_kw):
+        """ Render response for view `create` method (collection POST) """
         kw = common_kw.copy()
         kw['resource'] = value
         if hasattr(value, 'to_dict'):
@@ -90,6 +96,7 @@ class DefaultResponseRendererMixin(object):
         return JHTTPCreated(**kw)
 
     def render_update(self, value, system, common_kw):
+        """ Render response for view `update` method (item PATCH) """
         kw = common_kw.copy()
         if hasattr(value, 'to_dict'):
             resource = system['view']._resource
@@ -99,29 +106,46 @@ class DefaultResponseRendererMixin(object):
                 resource.uid, **{id_name: obj_id})
         return JHTTPOk(**kw)
 
+    def render_replace(self, *args, **kwargs):
+        """ Render response for view `replace` method (item PUT) """
+        return self.render_update(*args, **kwargs)
+
     def render_delete(self, value, system, common_kw):
-        return JHTTPOk("Deleted", common_kw.copy())
+        """ Render response for view `delete` method (item DELETE) """
+        return JHTTPOk("Deleted", **common_kw.copy())
 
     def render_delete_many(self, value, system, common_kw):
+        """ Render response for view `delete_many` method (collection DELETE)
+        """
         if isinstance(value, dict):
             return JHTTPOk(extra=value)
         msg = "Deleted {} {}(s) objects".format(
             value, system['view'].Model.__name__)
-        return JHTTPOk(msg, common_kw.copy())
+        return JHTTPOk(msg, **common_kw.copy())
 
     def render_update_many(self, value, system, common_kw):
+        """ Render response for view `update_many` method
+        (collection PUT/PATCH)
+        """
         msg = "Updated {} {}(s) objects".format(
             value, system['view'].Model.__name__)
-        return JHTTPOk(msg, common_kw.copy())
+        return JHTTPOk(msg, **common_kw.copy())
 
     def _render_response(self, value, system):
-        method_name = 'render_{}'.format(system['request'].action)
+        """ Handle response rendering.
+
+        Calls mixin methods according to request.action value.
+        """
+        super_call = super(DefaultResponseRendererMixin, self)._render_response
+        try:
+            method_name = 'render_{}'.format(system['request'].action)
+        except (KeyError, AttributeError):
+            return super_call(value, system)
         method = getattr(self, method_name, None)
         if method is not None:
             common_kw = self._get_common_kwargs(system)
             return method(value, system, common_kw).body
-        return super(DefaultResponseRendererMixin, self)._render_response(
-            value, system)
+        return super_call(value, system)
 
 
 class NefertariJsonRendererFactory(DefaultResponseRendererMixin,

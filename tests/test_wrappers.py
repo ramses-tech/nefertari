@@ -316,7 +316,7 @@ class TestWrappers(unittest.TestCase):
             params={'foo': 'bar'},
             method='GET'
         )
-        result = wrappers.add_confirmation_url(request)(result=3)
+        result = wrappers.add_confirmation_url(request)(result={})
         assert result['method'] == 'GET'
         assert result['count'] == 12321
         assert result['confirmation_url'] == (
@@ -330,7 +330,7 @@ class TestWrappers(unittest.TestCase):
             params=None,
             method='GET'
         )
-        result = wrappers.add_confirmation_url(request)(result=3)
+        result = wrappers.add_confirmation_url(request)(result={})
         assert result['method'] == 'GET'
         assert result['count'] == 12321
         assert result['confirmation_url'] == (
