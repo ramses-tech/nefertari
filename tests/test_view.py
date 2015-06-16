@@ -237,6 +237,7 @@ class TestBaseView(object):
         request = Mock(content_type='', method='', accept=[''])
         view = BaseView(context={}, request=request,
                         _query_params={'foo': 'bar'})
+        assert view.index == view.not_allowed_action
         view._setup_aggregation()
         with pytest.raises(JHTTPMethodNotAllowed):
             view.index()
@@ -767,5 +768,5 @@ class TestESAggregator(object):
         aggregator.aggregate = Mock(side_effect=KeyError)
         func = aggregator.wrap(view.index)
         func(1, 2)
-        aggregator.aggregate.assert_called_once_with(1, 2)
+        aggregator.aggregate.assert_called_once_with()
         view.index.assert_called_once_with(1, 2)

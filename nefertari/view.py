@@ -145,7 +145,8 @@ class BaseView(object):
         self._auth_enabled = root_resource is not None and root_resource.auth
 
         self._run_init_actions()
-        self._setup_aggregation()
+        if self.request.method == 'GET':
+            self._setup_aggregation()
 
     def _run_init_actions(self):
         self.setup_default_wrappers()
@@ -162,7 +163,8 @@ class BaseView(object):
             log.debug('Elasticsearch aggregations are not enabled')
             return
 
-        index_defined = hasattr(self.__class__, 'index')
+        index = getattr(self, 'index', None)
+        index_defined = index and index != self.not_allowed_action
         if index_defined:
             self.index = ESAggregator(self).wrap(self.index)
 
@@ -352,7 +354,7 @@ class ESAggregator(object):
         six.wraps(func)
         def wrapper(*args, **kwargs):
             try:
-                return self.aggregate(*args, **kwargs)
+                return self.aggregate()
             except KeyError:
                 return func(*args, **kwargs)
         return wrapper
