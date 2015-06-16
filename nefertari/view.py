@@ -156,7 +156,8 @@ class BaseView(object):
 
     def _setup_aggregation(self):
         from nefertari.elasticsearch import ES
-        aggregations_enabled = ES.settings.asbool('enable_aggregations')
+        aggregations_enabled = (
+            ES.settings and ES.settings.asbool('enable_aggregations'))
         if not aggregations_enabled:
             log.debug('Elasticsearch aggregations are not enabled')
             return
