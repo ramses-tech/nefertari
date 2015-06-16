@@ -156,6 +156,12 @@ class BaseView(object):
             self.fill_null_values()
 
     def _setup_aggregation(self):
+        """ Wrap `self.index` method with ESAggregator.
+
+        This makes `self.index` to first try to run aggregation and only
+        on fail original method is run. Method is wrapped only if it is
+        defined and `elasticsearch.enable_aggregations` setting is true.
+        """
         from nefertari.elasticsearch import ES
         aggregations_enabled = (
             ES.settings and ES.settings.asbool('enable_aggregations'))
