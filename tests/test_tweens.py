@@ -1,4 +1,5 @@
 import six
+import pytest
 from mock import Mock, patch
 
 from nefertari import tweens
@@ -150,14 +151,30 @@ class TestTweens(object):
         assert response.headerlist == [
             ('Access-Control-Allow-Origin', '127.0.0.1:8080')]
 
-    def test_cors_allow_origins_star(self):
+    def test_cors_allow_origins_star_credentials_true(self):
         registry = Mock(settings={
             'cors.allow_origins': '*',
             'cors.allow_credentials': True,
         })
         handler = lambda x: Mock(headerlist=[])
-        cors = tweens.cors(handler, registry)
-        assert cors is None
+        with pytest.raises(Exception) as ex:
+            tweens.cors(handler, registry)
+        expected = ('Not allowed Access-Control-Allow-Credentials '
+                    'to set to TRUE if origin is *')
+        assert str(ex.value) == expected
+
+    def test_cors_allow_origins_star_credentials_false(self):
+        registry = Mock(settings={
+            'cors.allow_origins': '*',
+            'cors.allow_credentials': None,
+        })
+        handler = lambda x: Mock(headerlist=[])
+        request = Mock(
+            headers={},
+            host_url='127.1.2.3:1234')
+        response = tweens.cors(handler, registry)(request)
+        assert response.headerlist == [
+            ('Access-Control-Allow-Origin', '127.1.2.3:1234')]
 
     def test_cache_control_header_not_set(self):
         handler = lambda x: Mock(headerlist=[('Cache-Control', '')])
