@@ -42,7 +42,7 @@ class OptionsViewMixin(object):
 
         if 'Access-Control-Request-Method' in request.headers:
             response.headers['Access-Control-Allow-Methods'] = \
-                ', '.join(methods)
+                ', '.join(sorted(methods))
 
         if 'Access-Control-Request-Headers' in request.headers:
             response.headers['Access-Control-Allow-Headers'] = \
