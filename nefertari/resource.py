@@ -236,10 +236,16 @@ class Resource(object):
         if uid in self.resource_map:
             raise ValueError('%s already exists in resource map' % uid)
 
+        # Use id_name of parent for singular views to make url generation
+        # easier
+        id_name = kwargs.get('id_name', '')
+        if not id_name and parent:
+            id_name = parent.id_name
+
         new_resource = Resource(self.config, member_name=member_name,
                                 collection_name=collection_name,
                                 parent=parent, uid=uid,
-                                id_name=kwargs.get('id_name', ''),
+                                id_name=id_name,
                                 prefix=prefix)
 
         view = maybe_dotted(

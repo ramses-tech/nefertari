@@ -246,6 +246,9 @@ class add_confirmation_url(object):
         result = kwargs['result']
         q_or_a = '&' if self.request.params else '?'
 
+        if isinstance(result, six.integer_types):
+            return result
+
         return dict(
             method=self.request.method,
             count=engine.BaseDocument.count(result),
