@@ -112,5 +112,5 @@ class AuthenticatedReadACL(BaseACL):
     def context_acl(self, obj):
         return [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, 'show'),
+            (Allow, Authenticated, ['show', 'item_options']),
         ]

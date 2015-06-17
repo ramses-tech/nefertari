@@ -38,7 +38,7 @@ class OptionsViewMixin(object):
         request = self.request
         response = request.response
 
-        response.headers['Allow'] = ', '.join(methods)
+        response.headers['Allow'] = ', '.join(sorted(methods))
 
         if 'Access-Control-Request-Method' in request.headers:
             response.headers['Access-Control-Allow-Methods'] = \

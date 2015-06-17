@@ -102,6 +102,7 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
         add_route_and_view(
             config, 'index', name_prefix + collection_name, path,
             'GET')
+
         add_route_and_view(
             config, 'collection_options', name_prefix + collection_name, path,
             'OPTIONS')
@@ -109,6 +110,7 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
     add_route_and_view(
         config, 'show', name_prefix + member_name, path + id_name,
         'GET', traverse=_traverse)
+
     add_route_and_view(
         config, 'item_options', name_prefix + member_name, path + id_name,
         'OPTIONS', traverse=_traverse)
