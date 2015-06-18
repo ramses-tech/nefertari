@@ -12,13 +12,13 @@ class TicketAuthenticationView(BaseView):
         `login` (POST): Login the user with 'login' and 'password'
         `logout`: Logout user
     """
-    _model_class = AuthUser
+    Model = AuthUser
 
     def register(self):
         """ Register new user by POSTing all required data.
 
         """
-        user, created = self._model_class.create_account(
+        user, created = self.Model.create_account(
             self._json_params)
 
         if not created:
@@ -36,7 +36,7 @@ class TicketAuthenticationView(BaseView):
             next = ''  # never use the login form itself as next
 
         unauthorized_url = self._query_params.get('unauthorized', None)
-        success, user = self._model_class.authenticate_by_password(
+        success, user = self.Model.authenticate_by_password(
             self._json_params)
 
         if success:
@@ -67,7 +67,7 @@ class TokenAuthenticationView(BaseView):
     `nefertari.authentication.policies.ApiKeyAuthenticationPolicy`
     token-based auth. Implements methods:
     """
-    _model_class = AuthUser
+    Model = AuthUser
 
     def register(self):
         """ Register a new user by POSTing all required data.
@@ -75,7 +75,7 @@ class TokenAuthenticationView(BaseView):
         User's `Authorization` header value is returned in `WWW-Authenticate`
         header.
         """
-        user, created = self._model_class.create_account(self._json_params)
+        user, created = self.Model.create_account(self._json_params)
         if user.api_key is None:
             raise JHTTPBadRequest('Failed to generate ApiKey for user')
 
@@ -92,7 +92,7 @@ class TokenAuthenticationView(BaseView):
         header.
         """
         self._json_params.update(params)
-        success, self.user = self._model_class.authenticate_by_password(
+        success, self.user = self.Model.authenticate_by_password(
             self._json_params)
 
         if success:

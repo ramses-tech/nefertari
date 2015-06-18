@@ -67,7 +67,7 @@ class BaseView(OptionsViewMixin):
     __view_mapper__ = ViewMapper
     _default_renderer = 'nefertari_json'
     _json_encoder = None
-    _model_class = None
+    Model = None
 
     @staticmethod
     def convert_dotted(params):
@@ -146,6 +146,8 @@ class BaseView(OptionsViewMixin):
         self._auth_enabled = root_resource is not None and root_resource.auth
 
         self._run_init_actions()
+        if self.request.method == 'GET':
+            self._setup_aggregation()
 
     def _run_init_actions(self):
         self.setup_default_wrappers()
@@ -154,13 +156,32 @@ class BaseView(OptionsViewMixin):
         if self.request.method == 'PUT':
             self.fill_null_values()
 
+    def _setup_aggregation(self):
+        """ Wrap `self.index` method with ESAggregator.
+
+        This makes `self.index` to first try to run aggregation and only
+        on fail original method is run. Method is wrapped only if it is
+        defined and `elasticsearch.enable_aggregations` setting is true.
+        """
+        from nefertari.elasticsearch import ES
+        aggregations_enabled = (
+            ES.settings and ES.settings.asbool('enable_aggregations'))
+        if not aggregations_enabled:
+            log.debug('Elasticsearch aggregations are not enabled')
+            return
+
+        index = getattr(self, 'index', None)
+        index_defined = index and index != self.not_allowed_action
+        if index_defined:
+            self.index = ESAggregator(self).wrap(self.index)
+
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: None}.
 
         Only run for PUT requests.
         """
         if model_cls is None:
-            model_cls = self._model_class
+            model_cls = self.Model
         if not model_cls:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
@@ -180,11 +201,11 @@ class BaseView(OptionsViewMixin):
     def convert_ids2objects(self, model_cls=None):
         """ Convert object IDs from `self._json_params` to objects if needed.
 
-        Only IDs that belong to relationship field of `self._model_class`
+        Only IDs that belong to relationship field of `self.Model`
         are converted.
         """
         if model_cls is None:
-            model_cls = self._model_class
+            model_cls = self.Model
         if not model_cls:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
@@ -224,15 +245,7 @@ class BaseView(OptionsViewMixin):
                 wrappers.apply_privacy(self.request),
             ]
 
-        self._after_calls['delete'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
         self._after_calls['delete_many'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
-        self._after_calls['update_many'] = [
             wrappers.add_confirmation_url(self.request)
         ]
 
@@ -312,20 +325,20 @@ class BaseView(OptionsViewMixin):
             self._json_params[name] = ids if ids is None else _get_object(ids)
 
 
-class ESAggregationMixin(object):
-    """ Mixin that provides methods to perform Elasticsearch aggregations.
+class ESAggregator(object):
+    """ Provides methods to perform Elasticsearch aggregations.
 
-    Should be mixed with subclasses of `nefertari.view.BaseView`.
-
-    To use aggregation at collection route requests, simply return
-    `self.aggregate()`.
+    Example of using ESAggregator:
+        >> # Create an instance with view
+        >> aggregator = ESAggregator(view)
+        >> # Replace view.index with wrapped version
+        >> view.index = aggregator.wrap(view.index)
 
     Attributes:
         :_aggregations_keys: Sequence of strings representing name(s) of the
             root key under which aggregations names are defined. Order of keys
-            matters - first key found in request is popped and returned.
-        :_auth_enabled: Boolean indicating whether authentication is enabled.
-            Is calculated in BaseView.
+            matters - first key found in request is popped and returned. May be
+            overriden by defining it on view.
 
     Examples:
         If _aggregations_keys=('_aggregations',), then query string params
@@ -333,7 +346,25 @@ class ESAggregationMixin(object):
             _aggregations.min_price.min.field=price
     """
     _aggregations_keys = ('_aggregations', '_aggs')
-    _auth_enabled = None
+
+    def __init__(self, view):
+        self.view = view
+        view_aggregations_keys = getattr(view, '_aggregations_keys', None)
+        if view_aggregations_keys:
+            self._aggregations_keys = view_aggregations_keys
+
+    def wrap(self, func):
+        """ Wrap :func: to perform aggregation on :func: call.
+
+        Should be called with view instance methods.
+        """
+        six.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return self.aggregate()
+            except KeyError:
+                return func(*args, **kwargs)
+        return wrapper
 
     def pop_aggregations_params(self):
         """ Pop and return aggregation params from query string params.
@@ -341,7 +372,7 @@ class ESAggregationMixin(object):
         Aggregation params are expected to be prefixed(nested under) by
         any of `self._aggregations_keys`.
         """
-        self._query_params = BaseView.convert_dotted(self._query_params)
+        self._query_params = BaseView.convert_dotted(self.view._query_params)
 
         for key in self._aggregations_keys:
             if key in self._query_params:
@@ -353,7 +384,7 @@ class ESAggregationMixin(object):
         """ Remove default 'index' after call wrappers and add only
         those needed for aggregation results output.
         """
-        self._after_calls['index'] = []
+        self.view._after_calls['index'] = []
 
     @classmethod
     def get_aggregations_fields(cls, params):
@@ -378,9 +409,9 @@ class ESAggregationMixin(object):
         """
         fields = self.get_aggregations_fields(aggregations_params)
         fields_dict = dictset.fromkeys(fields)
-        fields_dict['_type'] = self._model_class.__name__
+        fields_dict['_type'] = self.view.Model.__name__
 
-        wrapper = wrappers.apply_privacy(self.request)
+        wrapper = wrappers.apply_privacy(self.view.request)
         allowed_fields = set(wrapper(result=fields_dict).keys())
         not_allowed_fields = set(fields) - set(allowed_fields)
 
@@ -392,12 +423,8 @@ class ESAggregationMixin(object):
     def aggregate(self):
         """ Perform aggregation and return response. """
         from nefertari.elasticsearch import ES
-        if not ES.settings.asbool('enable_aggregations'):
-            log.warn('Elasticsearch aggregations are disabled')
-            raise KeyError('Elasticsearch aggregations are disabled')
-
         aggregations_params = self.pop_aggregations_params()
-        if self._auth_enabled:
+        if self.view._auth_enabled:
             self.check_aggregations_privacy(aggregations_params)
         self.stub_wrappers()
 
@@ -406,7 +433,7 @@ class ESAggregationMixin(object):
             search_params.append(self._query_params.pop('q'))
         _raw_terms = ' AND '.join(search_params)
 
-        return ES(self._model_class.__name__).aggregate(
+        return ES(self.view.Model.__name__).aggregate(
             _aggregations_params=aggregations_params,
             _raw_terms=_raw_terms,
             **self._query_params

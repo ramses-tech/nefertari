@@ -5,7 +5,7 @@ from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
     BaseView, error_view, key_error_view, value_error_view,
-    ESAggregationMixin)
+    ESAggregator)
 from nefertari.utils import dictset
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
@@ -219,14 +219,50 @@ class TestBaseView(object):
         conv.assert_called_once_with()
         setpub.assert_called_once_with()
 
+    @patch('nefertari.elasticsearch.ES')
+    @patch('nefertari.view.ESAggregator')
+    def test_setup_aggregation_es_disabled(self, aggregator, mock_es):
+        mock_es.settings = dictset(enable_aggregations=False)
+        request = Mock(content_type='', method='', accept=[''])
+        view = BaseView(context={}, request=request,
+                        _query_params={'foo': 'bar'})
+        view.index = 1
+        view._setup_aggregation()
+        assert view.index == 1
+
+    @patch('nefertari.elasticsearch.ES')
+    @patch('nefertari.view.ESAggregator')
+    def test_setup_aggregation_index_not_defined(self, aggregator, mock_es):
+        mock_es.settings = dictset(enable_aggregations=True)
+        request = Mock(content_type='', method='', accept=[''])
+        view = BaseView(context={}, request=request,
+                        _query_params={'foo': 'bar'})
+        assert view.index == view.not_allowed_action
+        view._setup_aggregation()
+        with pytest.raises(JHTTPMethodNotAllowed):
+            view.index()
+
+    @patch('nefertari.elasticsearch.ES')
+    @patch('nefertari.view.ESAggregator')
+    def test_setup_aggregation(self, aggregator, mock_es):
+        mock_es.settings = dictset(enable_aggregations=True)
+        request = Mock(content_type='', method='', accept=[''])
+        view = BaseView(context={}, request=request,
+                        _query_params={'foo': 'bar'})
+        type(view).index = 1
+        view._setup_aggregation()
+        aggregator.assert_called_once_with(view)
+        aggregator().wrap.assert_called_once_with(1)
+        assert view.index == aggregator().wrap()
+
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_fill_null_values(self, run):
         request = Mock(content_type='', method='', accept=[''])
         view = BaseView(
             context={}, request=request,
             _query_params={'foo': 'bar'})
-        view._model_class = Mock()
-        view._model_class.get_null_values.return_value = {
+        view.Model = Mock()
+        view.Model.get_null_values.return_value = {
             'name': None, 'email': 1, 'foo': None}
         view._json_params = {'foo': 'bar'}
         view.fill_null_values()
@@ -285,7 +321,7 @@ class TestBaseView(object):
         view = BaseView(
             context={}, request=request, _query_params={'foo1': 'bar'},
             _json_params={'foo': 'bar'})
-        view._model_class = 'Model1'
+        view.Model = 'Model1'
         eng.is_relationship_field.return_value = False
         view.convert_ids2objects()
         eng.is_relationship_field.assert_called_once_with('foo', 'Model1')
@@ -299,7 +335,7 @@ class TestBaseView(object):
         view = BaseView(
             context={}, request=request, _query_params={'foo1': 'bar'},
             _json_params={'foo': 'bar'})
-        view._model_class = 'Model1'
+        view.Model = 'Model1'
         eng.is_relationship_field.return_value = True
         view.convert_ids2objects()
         eng.get_relationship_cls.assert_called_once_with('foo', 'Model1')
@@ -331,9 +367,7 @@ class TestBaseView(object):
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete']) == 1
         assert len(view._after_calls['delete_many']) == 1
-        assert len(view._after_calls['update_many']) == 1
         assert wrap.apply_privacy.call_count == 2
 
     @patch('nefertari.view.wrappers')
@@ -346,9 +380,7 @@ class TestBaseView(object):
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 3
         assert len(view._after_calls['show']) == 2
-        assert len(view._after_calls['delete']) == 1
         assert len(view._after_calls['delete_many']) == 1
-        assert len(view._after_calls['update_many']) == 1
         assert not wrap.apply_privacy.called
 
     def test_defalt_wrappers_and_wrap_me(self):
@@ -377,9 +409,7 @@ class TestBaseView(object):
 
         assert len(view._after_calls['index']) == 3
         assert len(view._after_calls['show']) == 2
-        assert len(view._after_calls['delete']) == 1
         assert len(view._after_calls['delete_many']) == 1
-        assert len(view._after_calls['update_many']) == 1
 
         assert view.index._before_calls == [before_call]
         assert view.index._after_calls == [after_call]
@@ -610,56 +640,62 @@ class TestViewHelpers(object):
         config.add_view.assert_has_calls(calls, any_order=True)
 
 
-class TestESAggregationMixin(object):
+class TestESAggregator(object):
 
-    class DemoMixin(ESAggregationMixin):
+    class DemoView(object):
         _aggregations_keys = ('test_aggregations',)
         _query_params = dictset()
         _json_params = dictset()
 
     def test_pop_aggregations_params_query_string(self):
-        mixin = self.DemoMixin()
-        mixin._query_params = {'test_aggregations.foo': 1}
-        params = mixin.pop_aggregations_params()
+        view = self.DemoView()
+        view._query_params = {'test_aggregations.foo': 1, 'bar': 2}
+        aggregator = ESAggregator(view)
+        params = aggregator.pop_aggregations_params()
         assert params == {'foo': 1}
-        assert mixin._query_params == {}
+        assert aggregator._query_params == {'bar': 2}
 
     def test_pop_aggregations_params_keys_order(self):
-        mixin = self.DemoMixin()
-        mixin._aggregations_keys = ('test_aggregations', 'foobar')
-        mixin._query_params = {
+        view = self.DemoView()
+        view._query_params = {
             'test_aggregations.foo': 1,
             'foobar': 2,
         }
-        params = mixin.pop_aggregations_params()
+        aggregator = ESAggregator(view)
+        aggregator._aggregations_keys = ('test_aggregations', 'foobar')
+        params = aggregator.pop_aggregations_params()
         assert params == {'foo': 1}
-        assert mixin._query_params == {'foobar': 2}
+        assert aggregator._query_params == {'foobar': 2}
 
     def test_pop_aggregations_params_mey_error(self):
-        mixin = self.DemoMixin()
+        view = self.DemoView()
+        aggregator = ESAggregator(view)
         with pytest.raises(KeyError) as ex:
-            mixin.pop_aggregations_params()
+            aggregator.pop_aggregations_params()
         assert 'Missing aggregation params' in str(ex.value)
 
     def test_stub_wrappers(self):
-        mixin = self.DemoMixin()
-        mixin._after_calls = {'index': [1, 2, 3], 'show': [1, 2]}
-        mixin.stub_wrappers()
-        assert mixin._after_calls == {'show': [1, 2], 'index': []}
+        view = self.DemoView()
+        view._after_calls = {'index': [1, 2, 3], 'show': [1, 2]}
+        aggregator = ESAggregator(view)
+        aggregator.stub_wrappers()
+        assert aggregator.view._after_calls == {'show': [1, 2], 'index': []}
 
     @patch('nefertari.elasticsearch.ES')
     def test_aggregate(self, mock_es):
-        mixin = self.DemoMixin()
-        mixin._auth_enabled = True
-        mixin.check_aggregations_privacy = Mock()
-        mixin._model_class = Mock(__name__='FooBar')
-        mixin.stub_wrappers = Mock()
-        mixin.pop_aggregations_params = Mock(return_value={'foo': 1})
-        mixin._query_params = {'q': '2', 'zoo': 3}
-        mixin.aggregate()
-        mixin.stub_wrappers.assert_called_once_with()
-        mixin.pop_aggregations_params.assert_called_once_with()
-        mixin.check_aggregations_privacy.assert_called_once_with({'foo': 1})
+        view = self.DemoView()
+        view._auth_enabled = True
+        view.Model = Mock(__name__='FooBar')
+        aggregator = ESAggregator(view)
+        aggregator.check_aggregations_privacy = Mock()
+        aggregator.stub_wrappers = Mock()
+        aggregator.pop_aggregations_params = Mock(return_value={'foo': 1})
+        aggregator._query_params = {'q': '2', 'zoo': 3}
+        aggregator.aggregate()
+        aggregator.stub_wrappers.assert_called_once_with()
+        aggregator.pop_aggregations_params.assert_called_once_with()
+        aggregator.check_aggregations_privacy.assert_called_once_with(
+            {'foo': 1})
         mock_es.assert_called_once_with('FooBar')
         mock_es().aggregate.assert_called_once_with(
             _aggregations_params={'foo': 1},
@@ -676,41 +712,61 @@ class TestESAggregationMixin(object):
                 }
             }
         }
-        result = sorted(ESAggregationMixin.get_aggregations_fields(params))
+        result = sorted(ESAggregator.get_aggregations_fields(params))
         assert result == sorted(['foo', 'bar', 'baz'])
 
     @patch('nefertari.view.wrappers.apply_privacy')
     def test_check_aggregations_privacy_all_allowed(self, mock_privacy):
-        mixin = self.DemoMixin()
-        mixin.request = 1
-        mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
-        mixin._model_class = Mock(__name__='Zoo')
+        view = self.DemoView()
+        view.request = 1
+        view.Model = Mock(__name__='Zoo')
+        aggregator = ESAggregator(view)
+        aggregator.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'foo': None, 'bar': None}
         try:
-            mixin.check_aggregations_privacy({'zoo': 2})
+            aggregator.check_aggregations_privacy({'zoo': 2})
         except ValueError:
             raise Exception('Unexpected error')
-        mixin.get_aggregations_fields.assert_called_once_with({'zoo': 2})
+        aggregator.get_aggregations_fields.assert_called_once_with({'zoo': 2})
         mock_privacy.assert_called_once_with(1)
         wrapper.assert_called_once_with(
             result={'_type': 'Zoo', 'foo': None, 'bar': None})
 
     @patch('nefertari.view.wrappers.apply_privacy')
     def test_check_aggregations_privacy_not_allowed(self, mock_privacy):
-        mixin = self.DemoMixin()
-        mixin.request = 1
-        mixin.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
-        mixin._model_class = Mock(__name__='Zoo')
+        view = self.DemoView()
+        view.request = 1
+        view.Model = Mock(__name__='Zoo')
+        aggregator = ESAggregator(view)
+        aggregator.get_aggregations_fields = Mock(return_value=['foo', 'bar'])
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'bar': None}
         with pytest.raises(ValueError) as ex:
-            mixin.check_aggregations_privacy({'zoo': 2})
+            aggregator.check_aggregations_privacy({'zoo': 2})
         expected = 'Not enough permissions to aggregate on fields: foo'
         assert expected == str(ex.value)
-        mixin.get_aggregations_fields.assert_called_once_with({'zoo': 2})
+        aggregator.get_aggregations_fields.assert_called_once_with({'zoo': 2})
         mock_privacy.assert_called_once_with(1)
         wrapper.assert_called_once_with(
             result={'_type': 'Zoo', 'foo': None, 'bar': None})
+
+    def view_aggregations_keys_used(self):
+        view = self.DemoView()
+        view._aggregations_keys = ('foo',)
+        assert ESAggregator(view)._aggregations_keys == ('foo',)
+        view._aggregations_keys = None
+        assert ESAggregator(view)._aggregations_keys == (
+            '_aggregations', '_aggs')
+
+    def test_wrap(self):
+        view = self.DemoView()
+        view.index = Mock()
+        aggregator = ESAggregator(view)
+        aggregator.aggregate = Mock(side_effect=KeyError)
+        func = aggregator.wrap(view.index)
+        func(1, 2)
+        aggregator.aggregate.assert_called_once_with()
+        view.index.assert_called_once_with(1, 2)
