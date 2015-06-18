@@ -46,5 +46,7 @@ setup(
     [console_scripts]
         nefertari.index = nefertari.scripts.es:main
         nefertari.post2api = nefertari.scripts.post2api:main
+    [pyramid.scaffold]
+        nefertari_starter=nefertari.scaffolds:NefertariStarterTemplate
     """,
 )

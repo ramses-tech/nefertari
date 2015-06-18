@@ -1,0 +1,13 @@
+import sys
+
+__all__ = ('User',)
+
+this = sys.modules[__name__]
+
+
+def includeme(config):
+    pass
+
+
+from {{package}}.models.story import Story
+from {{package}}.models.user import User
