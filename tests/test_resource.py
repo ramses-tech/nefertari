@@ -231,9 +231,21 @@ class TestResourceRecognition(Test):
         result = self.app.post('/messages').body
         self.assertEqual(result, six.b('create'))
 
+    def test_head_collection(self):
+        response = self.app.head('/messages')
+        self.assertEqual(response.body, six.b(''))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers)
+
     def test_get_member(self):
         result = self.app.get('/messages/1').body
         self.assertEqual(result, six.b('show'))
+
+    def test_head_member(self):
+        response = self.app.head('/messages/1')
+        self.assertEqual(response.body, six.b(''))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers)
 
     def test_put_member(self):
         result = self.app.put('/messages/1').body
@@ -323,20 +335,24 @@ class TestResource(Test):
         )
 
         self.assertEqual(app.put('/grandpas').body, six.b('update_many'))
+        self.assertEqual(app.head('/grandpas').body, six.b(''))
+        self.assertEqual(app.options('/grandpas').body, six.b(''))
 
         self.assertEqual(app.delete('/grandpas/1').body, six.b('delete'))
+        self.assertEqual(app.head('/grandpas/1').body, six.b(''))
+        self.assertEqual(app.options('/grandpas/1').body, six.b(''))
 
         self.assertEqual(app.put('/thing').body, six.b('replace'))
-
         self.assertEqual(app.patch('/thing').body, six.b('update'))
-
         self.assertEqual(app.delete('/thing').body, six.b('delete'))
+        self.assertEqual(app.head('/thing').body, six.b(''))
+        self.assertEqual(app.options('/thing').body, six.b(''))
 
         self.assertEqual(app.put('/grandpas/1/wife').body, six.b('replace'))
-
         self.assertEqual(app.patch('/grandpas/1/wife').body, six.b('update'))
-
         self.assertEqual(app.delete('/grandpas/1/wife').body, six.b('delete'))
+        self.assertEqual(app.head('/grandpas/1/wife').body, six.b(''))
+        self.assertEqual(app.options('/grandpas/1/wife').body, six.b(''))
 
         self.assertEqual(six.b('show'), app.get('/grandpas/1').body)
         self.assertEqual(six.b('show'), app.get('/grandpas/1/wife').body)

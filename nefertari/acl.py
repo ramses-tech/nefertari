@@ -86,12 +86,15 @@ class GuestACL(BaseACL):
     """
     def __init__(self, request):
         super(GuestACL, self).__init__(request)
-        self.acl = (Allow, Everyone, ['index', 'show'])
+        self.acl = (
+            Allow, Everyone, ['index', 'show', 'collection_options',
+                              'item_options'])
 
     def context_acl(self, obj):
         return [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['index', 'show']),
+            (Allow, Everyone, ['index', 'show', 'collection_options',
+                               'item_options']),
         ]
 
 
@@ -104,10 +107,10 @@ class AuthenticatedReadACL(BaseACL):
 
     def __init__(self, request):
         super(AuthenticatedReadACL, self).__init__(request)
-        self.acl = (Allow, Authenticated, 'index')
+        self.acl = (Allow, Authenticated, ['index', 'collection_options'])
 
     def context_acl(self, obj):
         return [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, 'show'),
+            (Allow, Authenticated, ['show', 'item_options']),
         ]

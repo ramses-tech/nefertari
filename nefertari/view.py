@@ -13,6 +13,7 @@ from nefertari.json_httpexceptions import (
 from nefertari.utils import dictset, merge_dicts, str2dict
 from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
+from nefertari.utility_views import OptionsViewMixin
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +60,7 @@ class ViewMapper(object):
         return view_mapper_wrapper
 
 
-class BaseView(object):
+class BaseView(OptionsViewMixin):
     """Base class for nefertari views.
     """
 

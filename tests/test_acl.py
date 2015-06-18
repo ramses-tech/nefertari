@@ -66,28 +66,30 @@ class TestACLsUnit(object):
         acl_obj = acl.GuestACL(request='foo')
         assert acl_obj.acl == [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['index', 'show'])
+            (Allow, Everyone, ['index', 'show', 'collection_options',
+                               'item_options'])
         ]
 
     def test_guestacl_context_acl(self):
         acl_obj = acl.GuestACL(request='foo')
         assert acl_obj.context_acl('asdasd') == [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['index', 'show']),
+            (Allow, Everyone, ['index', 'show', 'collection_options',
+                               'item_options']),
         ]
 
     def test_authenticatedreadacl_acl(self):
         acl_obj = acl.AuthenticatedReadACL(request='foo')
         assert acl_obj.acl == [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, 'index')
+            (Allow, Authenticated, ['index', 'collection_options'])
         ]
 
     def test_authenticatedreadacl_context_acl(self):
         acl_obj = acl.AuthenticatedReadACL(request='foo')
         assert acl_obj.context_acl('asdasd') == [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, 'show'),
+            (Allow, Authenticated, ['show', 'item_options']),
         ]
 
 

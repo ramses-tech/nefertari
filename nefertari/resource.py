@@ -5,7 +5,8 @@ log = logging.getLogger(__name__)
 
 
 ACTIONS = ['index', 'show', 'create', 'update',
-           'delete', 'update_many', 'delete_many']
+           'delete', 'update_many', 'delete_many',
+           'replace']
 DEFAULT_ID_NAME = 'id'
 
 
@@ -84,7 +85,8 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
         if route_name not in added_routes:
             config.add_route(
                 route_name, path, factory=_factory,
-                request_method=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+                request_method=['GET', 'POST', 'PUT', 'PATCH', 'DELETE',
+                                'OPTIONS'],
                 **route_kwargs)
             added_routes[route_name] = path
 
@@ -101,9 +103,17 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
             config, 'index', name_prefix + collection_name, path,
             'GET')
 
+        add_route_and_view(
+            config, 'collection_options', name_prefix + collection_name, path,
+            'OPTIONS')
+
     add_route_and_view(
         config, 'show', name_prefix + member_name, path + id_name,
         'GET', traverse=_traverse)
+
+    add_route_and_view(
+        config, 'item_options', name_prefix + member_name, path + id_name,
+        'OPTIONS', traverse=_traverse)
 
     add_route_and_view(
         config, 'replace', name_prefix + member_name, path + id_name,
