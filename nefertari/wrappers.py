@@ -261,6 +261,10 @@ class add_etag(object):
 
     Etag is generated md5-encoding '_version' + 'id' of each object
     in a sequence of objects returned.
+
+    This wrapper should be applied before `apply_privacy` if later is
+    used or before any wrapper that may remove `_version` and `id` keys
+    from output.
     """
     def __init__(self, request):
         self.request = request

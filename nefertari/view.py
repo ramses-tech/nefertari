@@ -223,17 +223,23 @@ class BaseView(object):
         return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
+        """ Setup defaulf wrappers.
+
+        It's important for `add_etag` wrapper be applied before
+        `apply_privacy` as later may remove response data that
+        is used to generate etag
+        """
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+        ]
+        self._after_calls['index'] += [
+            wrappers.add_etag(self.request),
         ]
         if self._auth_enabled:
             self._after_calls['index'] += [
                 wrappers.apply_privacy(self.request),
             ]
-        self._after_calls['index'] += [
-            wrappers.add_etag(self.request),
-        ]
 
         self._after_calls['show'] = [
             wrappers.wrap_in_dict(self.request),
