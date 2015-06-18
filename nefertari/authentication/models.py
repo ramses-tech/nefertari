@@ -158,29 +158,37 @@ def encrypt_password(instance, new_value):
     return new_value
 
 
-class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
-    """ Class that is meant to be User class in Auth system.
+def get_authuser_model():
+    """ Define and return AuthModel model class.
 
-    Implements basic operations to support Pyramid Ticket-based and custom
-    ApiKey token-based authentication.
+    Wrapped in function to avoid unnecessary DB tables creation.
     """
-    __tablename__ = 'nefertari_authuser'
 
-    id = engine.IdField(primary_key=True)
+    class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
+        """ Class that is meant to be User class in Auth system.
 
-    username = engine.StringField(
-        min_length=1, max_length=50, unique=True, required=True,
-        before_validation=[lower_strip])
-    email = engine.StringField(
-        unique=True, required=True,
-        before_validation=[lower_strip])
-    password = engine.StringField(
-        min_length=3, required=True,
-        after_validation=[encrypt_password])
+        Implements basic operations to support Pyramid Ticket-based and custom
+        ApiKey token-based authentication.
+        """
+        __tablename__ = 'nefertari_authuser'
 
-    groups = engine.ListField(
-        item_type=engine.StringField,
-        choices=['admin', 'user'], default=['user'])
+        id = engine.IdField(primary_key=True)
+
+        username = engine.StringField(
+            min_length=1, max_length=50, unique=True, required=True,
+            before_validation=[lower_strip])
+        email = engine.StringField(
+            unique=True, required=True,
+            before_validation=[lower_strip])
+        password = engine.StringField(
+            min_length=3, required=True,
+            after_validation=[encrypt_password])
+
+        groups = engine.ListField(
+            item_type=engine.StringField,
+            choices=['admin', 'user'], default=['user'])
+
+    return AuthUser
 
 
 def create_apikey_token():
