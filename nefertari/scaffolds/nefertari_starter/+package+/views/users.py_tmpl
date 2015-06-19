@@ -44,8 +44,8 @@ class UsersView(BaseView):
 
     def delete(self, **kwargs):
         kwargs = self.resolve_kwargs(kwargs)
-        story = self.Model.get_resource(**kwargs)
-        story.delete(refresh_index=self.refresh_index)
+        res = self.Model.get_resource(**kwargs)
+        res.delete(refresh_index=self.refresh_index)
 
 
 class UserAttributesView(BaseView):

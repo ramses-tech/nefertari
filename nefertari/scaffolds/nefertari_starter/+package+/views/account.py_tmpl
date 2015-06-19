@@ -12,4 +12,4 @@ class TicketAuthenticationView(NefTicketAuthenticationView):
     * Checking user 'status' is not 'blocked', 'inactive' on login
     * Calling user.on_login()
     """
-    _model_class = User
+    Model = User

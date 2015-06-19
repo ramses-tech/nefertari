@@ -11,7 +11,7 @@ sqlalchemy.url = postgresql://%(host)s:5432/{{package}}
 host = localhost
 base_url = http://%(host)s:6543
 
-auth = true
+auth = false
 debug = true
 public_max_limit = 100
 
@@ -21,6 +21,7 @@ request_timing.slow_request_threshold = 2
 auth_tkt_secret = {{random_string}}
 system.user = system
 system.password = 123456
+system.email = user@domain.com
 
 #  MongoDB settings
 mongodb.host = localhost

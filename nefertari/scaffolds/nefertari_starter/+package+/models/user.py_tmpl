@@ -38,13 +38,8 @@ class User(AuthModelDefaultMixin, BaseDocument):
     )
     __tablename__ = 'users'
 
-    _auth_fields = ['id', 'username', 'stories']
+    _auth_fields = ['id', 'username']
     _public_fields = ['username']
-
-    stories = eng.Relationship(
-        document='Story', ondelete='NULLIFY',
-        backref_name='owner', backref_ondelete='NULLIFY',
-        foreign_keys='Story.owner_id')
 
     id = eng.IdField()
 
@@ -54,6 +49,9 @@ class User(AuthModelDefaultMixin, BaseDocument):
     password = eng.StringField(
         min_length=3, required=True,
         after_validation=[encrypt_password])
+    email = eng.StringField(
+        unique=True, required=True,
+        before_validation=[lower_strip])
 
     groups = eng.ListField(
         item_type=eng.StringField,

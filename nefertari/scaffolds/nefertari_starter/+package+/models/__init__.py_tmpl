@@ -9,5 +9,4 @@ def includeme(config):
     pass
 
 
-from {{package}}.models.story import Story
 from {{package}}.models.user import User

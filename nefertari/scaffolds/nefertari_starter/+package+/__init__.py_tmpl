@@ -60,20 +60,6 @@ def bootstrap(config):
             '{{package}}.models.User.get_unauth_user',
             'user', reify=True)
 
-    def _route_url(request, route_name, *args, **kw):
-        if config.route_prefix:
-            route_name = '%s_%s' % (config.route_prefix, route_name)
-        return request.route_url(route_name, *args, **kw)
-
-    config.add_request_method(_route_url)
-
-    def _route_path(request, route_name, *args, **kw):
-        if config.route_prefix:
-            route_name = '%s_%s' % (config.route_prefix, route_name)
-        return request.route_path(route_name, *args, **kw)
-
-    config.add_request_method(_route_path)
-
 
 def main(global_config, **settings):
     Settings.update(settings)
@@ -137,7 +123,7 @@ def includeme(config):
 
 
 def create_resources(config):
-    from {{package}}.models import User, Story
+    from {{package}}.models import User
     root = config.get_root_resource()
 
     user = root.add(
@@ -150,11 +136,6 @@ def create_resources(config):
              factory="{{package}}.acl.UserACL")
 
     root.add('s_one', 's', factory='nefertari.acl.GuestACL')
-
-    root.add(
-        'story', 'stories',
-        id_name='story_' + Story.pk_field(),
-        factory="{{package}}.acl.StoryACL")
 
 
 def initialize():
