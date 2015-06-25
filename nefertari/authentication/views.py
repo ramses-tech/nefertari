@@ -13,7 +13,7 @@ class TicketAuthenticationView(BaseView):
     """
     def register(self):
         """ Register new user by POSTing all required data. """
-        user, created = self._model_class.create_account(
+        user, created = self.Model.create_account(
             self._json_params)
 
         if not created:
