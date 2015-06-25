@@ -255,6 +255,20 @@ class TestBaseView(object):
         aggregator().wrap.assert_called_once_with(1)
         assert view.index == aggregator().wrap()
 
+    @patch('nefertari.elasticsearch.ES')
+    def test_get_collection_es(self, mock_es):
+        request = Mock(content_type='', method='', accept=[''])
+        view = BaseView(
+            context={}, request=request,
+            _query_params={'foo': 'bar'})
+        view.Model = Mock(__name__='MyModel')
+        view._query_params['q'] = 'movies'
+        result = view.get_collection_es()
+        mock_es.assert_called_once_with('MyModel')
+        mock_es().get_collection.assert_called_once_with(
+            _raw_terms='movies', foo='bar')
+        assert result == mock_es().get_collection()
+
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_fill_null_values(self, run):
         request = Mock(content_type='', method='', accept=[''])
