@@ -144,7 +144,9 @@ class DefaultResponseRendererMixin(object):
         method = getattr(self, method_name, None)
         if method is not None:
             common_kw = self._get_common_kwargs(system)
-            return method(value, system, common_kw).body
+            response = method(value, system, common_kw)
+            system['request'].response = response
+            return
         return super_call(value, system)
 
 
