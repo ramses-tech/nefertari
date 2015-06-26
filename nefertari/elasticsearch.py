@@ -24,6 +24,7 @@ RESERVED = [
     '_sort',
     '_raw_terms',
     '_search_fields',
+    '_refresh_index',
 ]
 
 
