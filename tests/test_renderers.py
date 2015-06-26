@@ -178,13 +178,15 @@ class TestDefaultResponseRendererMixin(object):
         system['view']._resource.id_name = 'story_id'
         system['view']._resource.uid = 'user:stories'
         value = mock.Mock(id=1)
+        value.to_dict.return_value = {'foo': 'bar'}
         value.pk_field.return_value = 'id'
         mixin = renderers.DefaultResponseRendererMixin()
         mixin.render_update(value, system, {'a': 'b'})
         system['request'].route_url.assert_called_once_with(
             'user:stories', story_id=1)
         mock_resp.assert_called_once_with(
-            "Updated", a='b', location=system['request'].route_url())
+            "Updated", a='b', resource={'foo': 'bar'},
+            location=system['request'].route_url())
 
     def test_render_replace(self):
         mixin = renderers.DefaultResponseRendererMixin()

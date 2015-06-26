@@ -82,8 +82,11 @@ class DefaultResponseRendererMixin(object):
             'encoder': enc_class,
         }
 
-    def render_create(self, value, system, common_kw):
-        """ Render response for view `create` method (collection POST) """
+    def _get_create_update_kwargs(self, value, system, common_kw):
+        """ Get kwargs common to create/update/replace view handlers.
+
+        Kwargs include: 'resource', 'location'
+        """
         kw = common_kw.copy()
         kw['resource'] = value
         if hasattr(value, 'to_dict'):
@@ -93,17 +96,16 @@ class DefaultResponseRendererMixin(object):
             obj_id = getattr(value, value.pk_field())
             kw['location'] = system['request'].route_url(
                 resource.uid, **{id_name: obj_id})
+        return kw
+
+    def render_create(self, value, system, common_kw):
+        """ Render response for view `create` method (collection POST) """
+        kw = self._get_create_update_kwargs(value, system, common_kw)
         return JHTTPCreated(**kw)
 
     def render_update(self, value, system, common_kw):
         """ Render response for view `update` method (item PATCH) """
-        kw = common_kw.copy()
-        if hasattr(value, 'to_dict'):
-            resource = system['view']._resource
-            id_name = resource.id_name
-            obj_id = getattr(value, value.pk_field())
-            kw['location'] = system['request'].route_url(
-                resource.uid, **{id_name: obj_id})
+        kw = self._get_create_update_kwargs(value, system, common_kw)
         return JHTTPOk("Updated", **kw)
 
     def render_replace(self, *args, **kwargs):
