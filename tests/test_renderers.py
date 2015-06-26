@@ -6,7 +6,6 @@ from decimal import Decimal
 import json
 import unittest
 
-import six
 import mock
 
 from nefertari import renderers
@@ -240,7 +239,8 @@ class TestDefaultResponseRendererMixin(object):
         system = self._system_mocks()
         system['request'].action = 'delete'
         mixin = renderers.NefertariJsonRendererFactory(None)
-        resp = mixin._render_response({'foo': 'bar'}, system)
+        mixin._render_response({'foo': 'bar'}, system)
+        resp = system['request'].response.body
         resp = json.loads(resp.decode('utf-8'))
         assert sorted(resp.keys()) == sorted([
             'request_url', 'timestamp', 'title', 'status_code', 'explanation',

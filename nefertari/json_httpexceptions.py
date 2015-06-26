@@ -112,4 +112,4 @@ class JHTTPCreated(http_exc.HTTPCreated):
 
         create_json_response(
             self, data=resource,
-            encoder=encoder)
+            encoder=encoder, request=request)
