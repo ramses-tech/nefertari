@@ -147,7 +147,7 @@ class TestHelperFunctions(object):
     @patch('nefertari.elasticsearch.helpers')
     def test_bulk_body(self, mock_helpers, mock_es):
         mock_helpers.bulk.return_value = (1, [])
-        es._bulk_body('foo', refresh_index=True)
+        es._bulk_body('foo', {'_refresh_index': True})
         mock_helpers.bulk.assert_called_once_with(
             client=mock_es.api, refresh=True, actions='foo')
 
@@ -277,7 +277,8 @@ class TestES(object):
         mock_prep.return_value = docs
         obj._bulk('index', docs)
         mock_prep.assert_called_once_with('index', docs)
-        mock_part.assert_called_once_with(es._bulk_body, refresh_index=None)
+        mock_part.assert_called_once_with(
+            es._bulk_body, request_params=None)
         mock_proc.assert_called_once_with(
             documents=[{
                 '_id': 'story1', '_op_type': 'index', '_timestamp': 1,
@@ -310,7 +311,7 @@ class TestES(object):
         obj.delete(ids=[1, 2])
         mock_bulk.assert_called_once_with(
             'delete', [{'id': 1, '_type': 'foo'}, {'id': 2, '_type': 'foo'}],
-            refresh_index=None)
+            request_params=None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     def test_delete_single_obj(self, mock_bulk):
@@ -318,7 +319,7 @@ class TestES(object):
         obj.delete(ids=1)
         mock_bulk.assert_called_once_with(
             'delete', [{'id': 1, '_type': 'foo'}],
-            refresh_index=None)
+            request_params=None)
 
     @patch('nefertari.elasticsearch.ES._bulk')
     @patch('nefertari.elasticsearch.ES.api.mget')
@@ -795,7 +796,7 @@ class TestES(object):
         db_obj.get_reference_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
         es.ES.index_refs(db_obj)
-        mock_ind.assert_called_once_with(docs, refresh_index=None)
+        mock_ind.assert_called_once_with(docs, request_params=None)
 
     @patch('nefertari.elasticsearch.ES.settings')
     @patch('nefertari.elasticsearch.ES.index')

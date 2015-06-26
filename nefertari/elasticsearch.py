@@ -24,6 +24,7 @@ RESERVED = [
     '_sort',
     '_raw_terms',
     '_search_fields',
+    '_refresh_index',
 ]
 
 
@@ -79,15 +80,18 @@ def includeme(config):
     ES.create_index()
 
 
-def _bulk_body(documents_actions, refresh_index=None):
+def _bulk_body(documents_actions, request_params):
+    if request_params is None:
+        request_params = {}
+    request_params = dictset(request_params)
     kwargs = {
         'client': ES.api,
         'actions': documents_actions,
     }
-    refresh_provided = refresh_index is not None
+
     refresh_enabled = ES.settings.asbool('enable_refresh_query')
-    if refresh_provided and refresh_enabled:
-        kwargs['refresh'] = refresh_index
+    if '_refresh_index' in request_params and refresh_enabled:
+        kwargs['refresh'] = request_params.asbool('_refresh_index')
 
     executed_num, errors = helpers.bulk(**kwargs)
     log.info('Successfully executed {} Elasticsearch action(s)'.format(
@@ -304,7 +308,7 @@ class ES(object):
 
         return docs_actions
 
-    def _bulk(self, action, documents, refresh_index=None):
+    def _bulk(self, action, documents, request_params=None):
         if not documents:
             log.debug('Empty documents: %s' % self.doc_type)
             return
@@ -318,18 +322,18 @@ class ES(object):
                     doc['_timestamp'] = doc_data['timestamp']
 
         if documents_actions:
-            operation = partial(_bulk_body, refresh_index=refresh_index)
+            operation = partial(_bulk_body, request_params=request_params)
             self.process_chunks(
                 documents=documents_actions,
                 operation=operation)
         else:
             log.warning('Empty body')
 
-    def index(self, documents, refresh_index=None):
+    def index(self, documents, request_params=None):
         """ Reindex all `document`s. """
-        self._bulk('index', documents, refresh_index)
+        self._bulk('index', documents, request_params)
 
-    def index_missing_documents(self, documents, refresh_index=None):
+    def index_missing_documents(self, documents, request_params=None):
         """ Index documents that are missing from ES index.
 
         Determines which documents are missing using ES `mget` call which
@@ -361,14 +365,14 @@ class ES(object):
                      'index `{}`'.format(self.doc_type, self.index_name))
             return
 
-        self._bulk('index', documents, refresh_index)
+        self._bulk('index', documents, request_params)
 
-    def delete(self, ids, refresh_index=None):
+    def delete(self, ids, request_params=None):
         if not isinstance(ids, list):
             ids = [ids]
 
         documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
-        self._bulk('delete', documents, refresh_index=refresh_index)
+        self._bulk('delete', documents, request_params=request_params)
 
     def get_by_ids(self, ids, **params):
         if not ids:
@@ -619,8 +623,8 @@ class ES(object):
         return self.get_resource(**kw)
 
     @classmethod
-    def index_refs(cls, db_obj, refresh_index=None):
+    def index_refs(cls, db_obj, request_params=None):
         for model_cls, documents in db_obj.get_reference_documents():
             if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(
-                    documents, refresh_index=refresh_index)
+                    documents, request_params=request_params)

@@ -136,12 +136,6 @@ class BaseView(OptionsViewMixin):
         elif 'text/plain' in request.accept:
             request.override_renderer = 'string'
 
-        if '_refresh_index' in self._query_params:
-            self.refresh_index = self._query_params.asbool(
-                '_refresh_index', pop=True)
-        else:
-            self.refresh_index = None
-
         root_resource = getattr(self, 'root_resource', None)
         self._auth_enabled = root_resource is not None and root_resource.auth
 
