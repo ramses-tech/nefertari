@@ -28,3 +28,7 @@ def includeme(config):
     config.add_request_method(get_resource_map, 'resource_map', reify=True)
 
     config.add_tween('nefertari.tweens.cache_control')
+
+    root = config.get_root_resource()
+    root.add('nef_polymorphic', '{collections:.+,.+}',
+             view='nefertari.view.PolymorphicESView')
