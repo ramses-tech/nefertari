@@ -237,34 +237,56 @@ class BaseView(OptionsViewMixin):
     def setup_default_wrappers(self):
         """ Setup defaulf wrappers.
 
-        It's important for `add_etag` wrapper be applied before
+        Wrappers are applied when view method does not return instance
+        of Response. In this case nefertari renderers call wrappers and
+        handle response generation.
+
+        Note: It's important for `add_etag` wrapper be applied before
         `apply_privacy` as later may remove response data that
         is used to generate etag
         """
+        # Index
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
-        ]
-        self._after_calls['index'] += [
             wrappers.add_etag(self.request),
         ]
-        if self._auth_enabled:
-            self._after_calls['index'] += [
-                wrappers.apply_privacy(self.request),
-            ]
 
+        # Show
         self._after_calls['show'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
         ]
-        if self._auth_enabled:
-            self._after_calls['show'] += [
-                wrappers.apply_privacy(self.request),
-            ]
 
+        # Create
+        self._after_calls['create'] = [
+            wrappers.wrap_in_dict(self.request),
+            wrappers.add_meta(self.request),
+        ]
+
+        # Update
+        self._after_calls['update'] = [
+            wrappers.wrap_in_dict(self.request),
+            wrappers.add_meta(self.request),
+        ]
+
+        # Replace
+        self._after_calls['replace'] = [
+            wrappers.wrap_in_dict(self.request),
+            wrappers.add_meta(self.request),
+        ]
+
+        # Delete Many
         self._after_calls['delete_many'] = [
             wrappers.add_confirmation_url(self.request)
         ]
+
+        # Privacy wrappers
+        if self._auth_enabled:
+            for meth in ('index', 'show', 'create', 'update', 'replace'):
+                self._after_calls[meth] += [
+                    wrappers.apply_privacy(self.request),
+                ]
 
     def __getattr__(self, attr):
         if attr in ACTIONS:

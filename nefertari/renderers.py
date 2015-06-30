@@ -82,31 +82,23 @@ class DefaultResponseRendererMixin(object):
             'encoder': enc_class,
         }
 
-    def _get_create_update_kwargs(self, value, system, common_kw):
-        """ Get kwargs common to create/update/replace view handlers.
-
-        Kwargs include: 'resource', 'location'
-        """
+    def _get_create_update_kwargs(self, value, common_kw):
+        """ Get kwargs common to create, update, replace. """
         kw = common_kw.copy()
-        kw['resource'] = value
-        if hasattr(value, 'to_dict'):
-            kw['resource'] = value.to_dict()
-            resource = system['view']._resource
-            id_name = resource.id_name
-            obj_id = getattr(value, value.pk_field())
-            kw['location'] = system['request'].route_url(
-                resource.uid, **{id_name: obj_id})
+        kw['body'] = value
+        if 'self' in value:
+            kw['headers'] = [('Location', value['self'])]
         return kw
 
     def render_create(self, value, system, common_kw):
         """ Render response for view `create` method (collection POST) """
-        kw = self._get_create_update_kwargs(value, system, common_kw)
+        kw = self._get_create_update_kwargs(value, common_kw)
         return JHTTPCreated(**kw)
 
     def render_update(self, value, system, common_kw):
         """ Render response for view `update` method (item PATCH) """
-        kw = self._get_create_update_kwargs(value, system, common_kw)
-        return JHTTPOk("Updated", **kw)
+        kw = self._get_create_update_kwargs(value, common_kw)
+        return JHTTPOk('Updated', **kw)
 
     def render_replace(self, *args, **kwargs):
         """ Render response for view `replace` method (item PUT) """
@@ -114,14 +106,14 @@ class DefaultResponseRendererMixin(object):
 
     def render_delete(self, value, system, common_kw):
         """ Render response for view `delete` method (item DELETE) """
-        return JHTTPOk("Deleted", **common_kw.copy())
+        return JHTTPOk('Deleted', **common_kw.copy())
 
     def render_delete_many(self, value, system, common_kw):
         """ Render response for view `delete_many` method (collection DELETE)
         """
         if isinstance(value, dict):
             return JHTTPOk(extra=value)
-        msg = "Deleted {} {}(s) objects".format(
+        msg = 'Deleted {} {}(s) objects'.format(
             value, system['view'].Model.__name__)
         return JHTTPOk(msg, **common_kw.copy())
 
@@ -129,7 +121,7 @@ class DefaultResponseRendererMixin(object):
         """ Render response for view `update_many` method
         (collection PUT/PATCH)
         """
-        msg = "Updated {} {}(s) objects".format(
+        msg = 'Updated {} {}(s) objects'.format(
             value, system['view'].Model.__name__)
         return JHTTPOk(msg, **common_kw.copy())
 

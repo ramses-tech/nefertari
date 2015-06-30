@@ -217,16 +217,26 @@ class add_meta(object):
     def __init__(self, request):
         self.request = request
 
+    def _set_object_self(self, obj):
+        """ Add 'self' key value to :obj: dict. """
+        location = self.request.path_url
+        obj_id = urllib.parse.quote(str(obj['id']))
+        if not location.endswith(obj_id):
+            location += '/{}'.format(obj_id)
+        obj.setdefault('self', location)
+
     def __call__(self, **kwargs):
         result = kwargs['result']
+
+        if 'data' not in result:
+            self._set_object_self(result)
+            return result
 
         try:
             result['count'] = len(result["data"])
             for each in result['data']:
                 try:
-                    each.setdefault('self', "%s/%s" % (
-                        self.request.path_url,
-                        urllib.parse.quote(str(each['id']))))
+                    self._set_object_self(each)
                 except TypeError:
                     pass
         finally:
