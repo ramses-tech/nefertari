@@ -344,9 +344,13 @@ class BaseView(OptionsViewMixin):
 
 class PolymorphicESView(BaseView):
 
-    def index(self, collections):
+    def __init__(self, *args, **kwargs):
+        super(PolymorphicESView, self).__init__(*args, **kwargs)
+        collections = self.request.matchdict['collections']
         collections = collections.split('/')[0]
         self.Model = dictset({'__name__': collections})
+
+    def index(self, collections):
         self._query_params.process_int_param('_limit', 20)
         return self.get_collection_es()
 
