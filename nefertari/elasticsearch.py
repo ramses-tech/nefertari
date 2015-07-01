@@ -79,6 +79,10 @@ def includeme(config):
     ES.setup(Settings)
     ES.create_index()
 
+    root = config.get_root_resource()
+    root.add('nef_polymorphic', '{collections:.+,.+}',
+             view='nefertari.view.PolymorphicESView')
+
 
 def _bulk_body(documents_actions, request_params):
     if request_params is None:
