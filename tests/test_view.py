@@ -381,8 +381,11 @@ class TestBaseView(object):
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
+        assert len(view._after_calls['create']) == 3
+        assert len(view._after_calls['update']) == 3
+        assert len(view._after_calls['replace']) == 3
         assert len(view._after_calls['delete_many']) == 1
-        assert wrap.apply_privacy.call_count == 2
+        assert wrap.apply_privacy.call_count == 5
 
     @patch('nefertari.view.wrappers')
     @patch('nefertari.view.BaseView._run_init_actions')
