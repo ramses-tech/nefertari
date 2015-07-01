@@ -364,19 +364,6 @@ class BaseView(OptionsViewMixin):
             self._json_params[name] = ids if ids is None else _get_object(ids)
 
 
-class PolymorphicESView(BaseView):
-
-    def __init__(self, *args, **kwargs):
-        super(PolymorphicESView, self).__init__(*args, **kwargs)
-        collections = self.request.matchdict['collections']
-        collections = collections.split('/')[0]
-        self.Model = dictset({'__name__': collections})
-
-    def index(self, collections):
-        self._query_params.process_int_param('_limit', 20)
-        return self.get_collection_es()
-
-
 def key_error_view(context, request):
     return JHTTPBadRequest("Bad or missing param '%s'" % context.args[0])
 
