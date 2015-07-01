@@ -85,7 +85,7 @@ class TestWrappers(unittest.TestCase):
             'foo',
             wrappers.obj2dict(request=None)(result='foo'))
 
-    def test_add_meta(self):
+    def test_add_meta_collection(self):
         result = {'data': [{'id': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         result = wrappers.add_meta(request=request)(result=result)
@@ -99,6 +99,18 @@ class TestWrappers(unittest.TestCase):
         result = wrappers.add_meta(request=request)(result=result)
         assert result['count'] == 1
         assert result['data'][0]['self'] == 'http://example.com/4'
+
+    def test_add_meta_item(self):
+        result = {'id': 4}
+        request = DummyRequest(path='http://example.com', environ={})
+        result = wrappers.add_meta(request=request)(result=result)
+        assert result == {'id': 4, 'self': 'http://example.com/4'}
+
+    def test_add_meta_url_contains_id(self):
+        result = {'id': 4}
+        request = DummyRequest(path='http://example.com/4', environ={})
+        result = wrappers.add_meta(request=request)(result=result)
+        assert result == {'id': 4, 'self': 'http://example.com/4'}
 
     @patch('nefertari.wrappers.urllib')
     def test_add_meta_type_error(self, mock_lib):

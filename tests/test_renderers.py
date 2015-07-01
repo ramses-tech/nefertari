@@ -160,32 +160,25 @@ class TestDefaultResponseRendererMixin(object):
         system = self._system_mocks()
         system['view']._resource.id_name = 'story_id'
         system['view']._resource.uid = 'user:stories'
-        value = mock.Mock(id=1)
-        value.pk_field.return_value = 'id'
-        value.to_dict.return_value = {'q': 'd'}
+        value = {'id': 1, 'q': 'd', 'self': 'google.com'}
         mixin = renderers.DefaultResponseRendererMixin()
         mixin.render_create(value, system, {'a': 'b'})
-        system['request'].route_url.assert_called_once_with(
-            'user:stories', story_id=1)
         mock_resp.assert_called_once_with(
-            a='b', resource={'q': 'd'},
-            location=system['request'].route_url())
+            a='b', body={'q': 'd', 'self': 'google.com', 'id': 1},
+            headers=[('Location', 'google.com')])
 
     @mock.patch('nefertari.renderers.JHTTPOk')
     def test_render_update(self, mock_resp):
         system = self._system_mocks()
         system['view']._resource.id_name = 'story_id'
         system['view']._resource.uid = 'user:stories'
-        value = mock.Mock(id=1)
-        value.to_dict.return_value = {'foo': 'bar'}
-        value.pk_field.return_value = 'id'
+        value = {'id': 1, 'q': 'd', 'self': 'google.com'}
         mixin = renderers.DefaultResponseRendererMixin()
         mixin.render_update(value, system, {'a': 'b'})
-        system['request'].route_url.assert_called_once_with(
-            'user:stories', story_id=1)
         mock_resp.assert_called_once_with(
-            "Updated", a='b', resource={'foo': 'bar'},
-            location=system['request'].route_url())
+            "Updated", a='b',
+            body={'q': 'd', 'self': 'google.com', 'id': 1},
+            headers=[('Location', 'google.com')])
 
     def test_render_replace(self):
         mixin = renderers.DefaultResponseRendererMixin()
