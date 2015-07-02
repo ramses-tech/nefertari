@@ -80,8 +80,8 @@ class TestPolymorphicACL(object):
         mock_res.return_value = ['foo', 'bar']
         mock_aces.return_value = None
         acl = polymorphic.PolymorphicACL(None)
-        assert len(acl.acl) == 2
-        assert DENY_ALL == acl.acl[-1]
+        assert len(acl.acl) == 1
+        assert [DENY_ALL] == acl.acl
         mock_coll.assert_called_once_with()
         mock_res.assert_called_once_with(['stories', 'users'])
         mock_aces.assert_called_once_with(['foo', 'bar'])
@@ -95,7 +95,7 @@ class TestPolymorphicACL(object):
         aces = [(Allow, 'foobar', 'dostuff')]
         mock_aces.return_value = aces
         acl = polymorphic.PolymorphicACL(None)
-        assert len(acl.acl) == 3
+        assert len(acl.acl) == 2
         assert DENY_ALL == acl.acl[-1]
         assert aces[0] in acl.acl
         assert mock_coll.call_count == 1

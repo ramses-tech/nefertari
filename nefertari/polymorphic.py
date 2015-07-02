@@ -13,8 +13,9 @@ Im particular:
     * add_url_polymorphic: Wrapper class that is used instead of default
         `nefertari.wrappers.add_object_url`.
 
-To use this module, simply include it in your `main()` AFTER you set root
-resource's `auth` variable.
+To use this module, simply include it in your `main()` AFTER root
+resource's `auth` variable and after Pyramid ACLAuthorizationPolicy
+is set up.
 
 By default this module is included by 'nefertari.elasticsearch' when
 `elasticsearch.enable_polymorphic_query` setting is True.
@@ -123,6 +124,7 @@ class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
         DENY_ALL is added to ACL to make sure no access rules are
         inherited.
         """
+        self.__acl__ = []
         collections = self.get_collections()
         resources = self.get_resources(collections)
         aces = self._get_least_permissions_aces(resources)
