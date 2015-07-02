@@ -1,4 +1,4 @@
-from pyramid.security import DENY_ALL, Allow, Denied
+from pyramid.security import DENY_ALL, Allow
 
 from nefertari.view import BaseView
 from nefertari.acl import BaseACL
@@ -6,6 +6,9 @@ from nefertari.utils import dictset
 
 
 def includeme(config):
+    """ Connect view to route that catches all URIs like
+    'something,something,...'
+    """
     root = config.get_root_resource()
     root.add('nef_polymorphic', '{collections:.+,.+}',
              view=PolymorphicESView,
@@ -54,11 +57,11 @@ class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
         super(PolymorphicACL, self).__init__(request)
         self.set_collections_acl()
 
-    def _get_least_permissions_ace(self, resources):
-        """ Get ACE with the least permissions that fits all resources.
+    def _get_least_permissions_aces(self, resources):
+        """ Get ACEs with the least permissions that fit all resources.
 
         To have access to polymorph on N collections, user MUST have
-        access to all of them. If this is true, ACE is returned, that
+        access to all of them. If this is true, ACEs are returned, that
         allows 'index' permissions to current request principals.
 
         Otherwise None is returned thus blocking all permissions except
@@ -66,17 +69,19 @@ class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
 
         :param resources:
         :type resources: list of Resource instances
-        :return: Generated Pyramid ACE
+        :return: Generated Pyramid ACEs or None
         :rtype: tuple or None
         """
         factories = [res.view._factory for res in resources]
         contexts = [factory(self.request) for factory in factories]
         for ctx in contexts:
-            has_perm = self.request.has_permission('index', ctx)
-            if isinstance(has_perm, Denied):
+            if not self.request.has_permission('index', ctx):
                 return
         else:
-            return (Allow, self.request.effective_principals, 'index')
+            return [
+                (Allow, principal, 'index')
+                for principal in self.request.effective_principals
+            ]
 
     def set_collections_acl(self):
         """ Calculate and set ACL valid for requested collections.
@@ -84,14 +89,12 @@ class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
         DENY_ALL is added to ACL to make sure no access rules are
         inherited.
         """
-        #
-        # TODO: Test ACL is generated properly
-        #
         collections = self._get_collections()
         resources = self._get_resources(collections)
-        permissions = self._get_least_permissions_ace(resources)
-        if permissions is not None:
-            self.acl = permissions
+        aces = self._get_least_permissions_aces(resources)
+        if aces is not None:
+            for ace in aces:
+                self.acl = ace
         self.acl = DENY_ALL
 
 
