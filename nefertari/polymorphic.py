@@ -3,6 +3,7 @@ from pyramid.security import DENY_ALL, Allow
 from nefertari.view import BaseView
 from nefertari.acl import BaseACL
 from nefertari.utils import dictset
+from nefertari import wrappers
 
 
 def includeme(config):
@@ -16,10 +17,12 @@ def includeme(config):
 
 
 class PolymorphicHelperMixin(object):
-    """ Helper mixin class that contains methods used by PolymorphicACL
-    and PolymorphicESView.
+    """ Helper mixin class that contains methods used by:
+        * PolymorphicACL
+        * PolymorphicESView
+        * add_url_polymorphic wrapper
     """
-    def _get_collections(self):
+    def get_collections(self):
         """ Get names of collections from request matchdict.
 
         :return: Names of collections
@@ -29,7 +32,7 @@ class PolymorphicHelperMixin(object):
         collections = [coll.strip() for coll in collections.split(',')]
         return set(collections)
 
-    def _get_resources(self, collections):
+    def get_resources(self, collections):
         """ Get resources that correspond to values from :collections:.
 
         :param collections: Collection names for which resources should be
@@ -41,7 +44,7 @@ class PolymorphicHelperMixin(object):
         res_map = self.request.registry._resources_map
         resources = [res for res in res_map.values()
                      if res.collection_name in collections
-                     or res.member_name in collections]
+                     and not res.is_singular]
         resources = [res for res in resources if res]
         return set(resources)
 
@@ -89,8 +92,8 @@ class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
         DENY_ALL is added to ACL to make sure no access rules are
         inherited.
         """
-        collections = self._get_collections()
-        resources = self._get_resources(collections)
+        collections = self.get_collections()
+        resources = self.get_resources(collections)
         aces = self._get_least_permissions_aces(resources)
         if aces is not None:
             for ace in aces:
@@ -104,6 +107,10 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
     Has default implementation of 'index' view method that supports
     all the ES collection read actions(query, aggregation, etc.) across
     multiple collections of ES-based documents.
+
+    To be displayed by polymorphic view, model must have collection view
+    setup that serves instances of this model. Models that only have
+    singular views setup are not served by polymorhic view.
     """
     def __init__(self, *args, **kwargs):
         """ Init view and set fake `self.Model` so its __name__ would
@@ -113,6 +120,22 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
         types = self.determine_types()
         self.Model = dictset({'__name__': ','.join(types)})
 
+    def _run_init_actions(self):
+        self.setup_default_wrappers()
+        self.set_public_limits()
+
+    def setup_default_wrappers(self):
+        self._after_calls['index'] = [
+            wrappers.wrap_in_dict(self.request),
+            wrappers.add_meta(self.request),
+            add_url_polymorphic(self.request),
+            wrappers.add_etag(self.request),
+        ]
+        if self._auth_enabled:
+            self._after_calls['index'] += [
+                wrappers.apply_privacy(self.request),
+            ]
+
     def determine_types(self):
         """ Determine ES type names from request data.
 
@@ -121,8 +144,8 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
         of collection names under which views have been registered.
         """
         from nefertari.elasticsearch import ES
-        collections = self._get_collections()
-        resources = self._get_resources(collections)
+        collections = self.get_collections()
+        resources = self.get_resources(collections)
         models = set([res.view.Model for res in resources])
         es_models = [mdl for mdl in models if mdl
                      and getattr(mdl, '_index_enabled', False)]
@@ -136,3 +159,32 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
         """
         self._query_params.process_int_param('_limit', 20)
         return self.get_collection_es()
+
+
+class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
+    """ Wrapper that adds 'self' to each object in results
+
+    For each object in `result['data']` adds a uri which points
+    to current object
+    """
+    def __init__(self, request):
+        super(add_url_polymorphic, self).__init__(request)
+        self.model_resources = self.get_models_map()
+
+    def get_models_map(self):
+        """ Get map of {model_name: resource} for each collection
+        requested by request.
+        """
+        collections = self.get_collections()
+        resources = self.get_resources(collections)
+        return {res.view.Model.__name__: res for res in resources}
+
+    def _set_object_self(self, obj):
+        """ Override to generate urls instead of just concatenating.
+
+        'self' key is not set for singular resources.
+        """
+        type_, obj_id = obj['_type'], obj['id']
+        resource = self.model_resources[type_]
+        obj['self'] = self.request.route_url(
+            resource.uid, **{resource.id_name: obj_id})

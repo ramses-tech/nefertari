@@ -211,17 +211,35 @@ class add_meta(object):
     In particular adds:
       * 'count': Number of results. Equals to number of objects in
         `result['data']`
-      * 'self': For each object in `result['data']` adds a url which points
-        to current object
     """
     def __init__(self, request):
         self.request = request
+
+    def __call__(self, **kwargs):
+        result = kwargs['result']
+        try:
+            result['count'] = len(result['data'])
+        finally:
+            return result
+
+
+class add_object_url(object):
+    """ Add 'self' to each object in results
+
+    For each object in `result['data']` adds a uri which points
+    to current object
+    """
+    def __init__(self, request):
+        self.request = request
+        route_name = self.request.matched_route.name
+        resource = self.request.registry._resources_map[route_name]
+        self.is_singular = resource.is_singular
 
     def _set_object_self(self, obj):
         """ Add 'self' key value to :obj: dict. """
         location = self.request.path_url
         obj_id = urllib.parse.quote(str(obj['id']))
-        if not location.endswith(obj_id):
+        if not self.is_singular and not location.endswith(obj_id):
             location += '/{}'.format(obj_id)
         obj.setdefault('self', location)
 
@@ -233,7 +251,6 @@ class add_meta(object):
             return result
 
         try:
-            result['count'] = len(result["data"])
             for each in result['data']:
                 try:
                     self._set_object_self(each)

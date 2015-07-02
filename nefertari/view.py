@@ -249,6 +249,7 @@ class BaseView(OptionsViewMixin):
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
             wrappers.add_etag(self.request),
         ]
 
@@ -256,24 +257,28 @@ class BaseView(OptionsViewMixin):
         self._after_calls['show'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Create
         self._after_calls['create'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Update
         self._after_calls['update'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Replace
         self._after_calls['replace'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Delete Many
