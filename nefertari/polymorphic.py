@@ -24,8 +24,8 @@ After inclusion, PolymorphicESView view will be registered to handle GET
 requests. To access polymorphic API endpoint, compose URL with names
 used to access collection GET API endpoints.
 
-E.g. If API has endpoints '/users' and '/stories', polymorphic endpoint
-would be available at '/users,stories' and '/stories,users'.
+E.g. If API had collection endpoints '/users' and '/stories', polymorphic
+endpoint would be available at '/users,stories' and '/stories,users'.
 
 Polymorphic endpoints support all the read functionality regular ES
 endpoint supports: query, search, filter, sort, aggregation, etc.
