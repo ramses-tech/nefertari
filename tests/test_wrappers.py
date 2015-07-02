@@ -85,12 +85,11 @@ class TestWrappers(unittest.TestCase):
             'foo',
             wrappers.obj2dict(request=None)(result='foo'))
 
-    def test_add_meta_collection(self):
+    def test_add_meta(self):
         result = {'data': [{'id': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         result = wrappers.add_meta(request=request)(result=result)
         assert result['count'] == 1
-        assert result['data'][0]['self'] == 'http://example.com/4'
 
         environ = {'QUERY_STRING': '_limit=100'}
         request = DummyRequest(path='http://example.com?_limit=100',
@@ -98,19 +97,6 @@ class TestWrappers(unittest.TestCase):
         assert request.path == 'http://example.com?_limit=100'
         result = wrappers.add_meta(request=request)(result=result)
         assert result['count'] == 1
-        assert result['data'][0]['self'] == 'http://example.com/4'
-
-    def test_add_meta_item(self):
-        result = {'id': 4}
-        request = DummyRequest(path='http://example.com', environ={})
-        result = wrappers.add_meta(request=request)(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com/4'}
-
-    def test_add_meta_url_contains_id(self):
-        result = {'id': 4}
-        request = DummyRequest(path='http://example.com/4', environ={})
-        result = wrappers.add_meta(request=request)(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com/4'}
 
     @patch('nefertari.wrappers.urllib')
     def test_add_meta_type_error(self, mock_lib):
@@ -120,6 +106,65 @@ class TestWrappers(unittest.TestCase):
         result = wrappers.add_meta(request=request)(result=result)
         assert result['count'] == 1
         assert result['data'][0] == {'id': 4}
+
+    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
+    def test_add_object_url_collection(self, mock_determ):
+        mock_determ.return_value = False
+        result = {'data': [{'id': 4}]}
+        request = DummyRequest(path='http://example.com', environ={})
+        result = wrappers.add_object_url(request=request)(result=result)
+        assert result['data'][0]['self'] == 'http://example.com/4'
+
+        environ = {'QUERY_STRING': '_limit=100'}
+        request = DummyRequest(path='http://example.com?_limit=100',
+                               environ=environ)
+        assert request.path == 'http://example.com?_limit=100'
+        result = wrappers.add_object_url(request=request)(result=result)
+        assert result['data'][0]['self'] == 'http://example.com/4'
+
+    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
+    def test_add_object_url_item(self, mock_determ):
+        mock_determ.return_value = False
+        result = {'id': 4}
+        request = DummyRequest(path='http://example.com', environ={})
+        result = wrappers.add_object_url(request=request)(result=result)
+        assert result == {'id': 4, 'self': 'http://example.com/4'}
+
+    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
+    def test_add_object_url_contains_id(self, mock_determ):
+        mock_determ.return_value = False
+        result = {'id': 4}
+        request = DummyRequest(path='http://example.com/4', environ={})
+        result = wrappers.add_object_url(request=request)(result=result)
+        assert result == {'id': 4, 'self': 'http://example.com/4'}
+
+    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
+    @patch('nefertari.wrappers.urllib')
+    def test_add_object_url_type_error(self, mock_lib, mock_determ):
+        mock_determ.return_value = False
+        mock_lib.parse.quote.side_effect = TypeError
+        result = {'data': [{'id': 4}]}
+        request = DummyRequest(path='http://example.com', environ={})
+        result = wrappers.add_object_url(request=request)(result=result)
+        assert result['data'][0] == {'id': 4}
+
+    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
+    def test_add_object_url_singular_resource(self, mock_determ):
+        mock_determ.return_value = True
+        result = {'id': 4}
+        request = DummyRequest(path='http://example.com', environ={})
+        result = wrappers.add_object_url(request=request)(result=result)
+        assert result == {'id': 4, 'self': 'http://example.com'}
+
+    def test_add_object_url__determine_resource_singular(self):
+        route = Mock()
+        route.name = 'foo'
+        registry = Mock(_resources_map={'foo': Mock(is_singular=False)})
+        request = Mock(matched_route=route, registry=registry)
+        wrapper = wrappers.add_object_url(request=request)
+        assert not wrapper._determine_resource_singular()
+        wrapper.request.registry._resources_map['foo'].is_singular = True
+        assert wrapper._determine_resource_singular()
 
     def test_apply_privacy_no_data(self):
         assert wrappers.apply_privacy(None)(result={}) == {}

@@ -231,9 +231,12 @@ class add_object_url(object):
     """
     def __init__(self, request):
         self.request = request
+
+    def _determine_resource_singular(self):
+        """ Determine whether requested resource is singular """
         route_name = self.request.matched_route.name
         resource = self.request.registry._resources_map[route_name]
-        self.is_singular = resource.is_singular
+        return resource.is_singular
 
     def _set_object_self(self, obj):
         """ Add 'self' key value to :obj: dict. """
@@ -244,6 +247,7 @@ class add_object_url(object):
         obj.setdefault('self', location)
 
     def __call__(self, **kwargs):
+        self.is_singular = self._determine_resource_singular()
         result = kwargs['result']
 
         if 'data' not in result:
