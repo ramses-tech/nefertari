@@ -1,3 +1,34 @@
+"""
+Module that defines all the objects required to handle polymorphic
+collection read requests.
+
+Only ES-based models that have collection view registered are handled
+by this module.
+
+Im particular:
+    * PolymorphicACL: Dynamic factory class that generates ACL considering
+        ACLs of all the collections requested.
+    * PolymorphicESView: View that handles polymorphic collection read
+        requests.
+    * add_url_polymorphic: Wrapper class that is used instead of default
+        `nefertari.wrappers.add_object_url`.
+
+To use this module, simply include it in your `main()` AFTER you set root
+resource's `auth` variable.
+
+By default this module is included by 'nefertari.elasticsearch' when
+`elasticsearch.enable_polymorphic_query` setting is True.
+
+After inclusion, PolymorphicESView view will be registered to handle GET
+requests. To access polymorphic API endpoint, compose URL with names
+used to access collection GET API endpoints.
+
+E.g. If API has endpoints '/users' and '/stories', polymorphic endpoint
+would be available at '/users,stories' and '/stories,users'.
+
+Polymorphic endpoints support all the read functionality regular ES
+endpoint supports: query, search, filter, sort, aggregation, etc.
+"""
 from pyramid.security import DENY_ALL, Allow
 
 from nefertari.view import BaseView
@@ -167,17 +198,13 @@ class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
     For each object in `result['data']` adds a uri which points
     to current object
     """
-    def __init__(self, request):
-        super(add_url_polymorphic, self).__init__(request)
-        self.model_resources = self.get_models_map()
-
     def get_models_map(self):
         """ Get map of {model_name: resource} for each collection
         requested by request.
         """
         collections = self.get_collections()
         resources = self.get_resources(collections)
-        return {res.view.Model.__name__: res for res in resources}
+        return {res.view.Model._type: res for res in resources}
 
     def _set_object_self(self, obj):
         """ Override to generate urls instead of just concatenating.
@@ -188,3 +215,7 @@ class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
         resource = self.model_resources[type_]
         obj['self'] = self.request.route_url(
             resource.uid, **{resource.id_name: obj_id})
+
+    def __call__(self, **kwargs):
+        self.model_resources = self.get_models_map()
+        return super(add_url_polymorphic, self).__call__(**kwargs)

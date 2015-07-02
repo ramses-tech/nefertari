@@ -107,12 +107,12 @@ class TestWrappers(unittest.TestCase):
         assert result['count'] == 1
         assert result['data'][0] == {'id': 4}
 
-    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
-    def test_add_object_url_collection(self, mock_determ):
-        mock_determ.return_value = False
+    def test_add_object_url_collection(self):
         result = {'data': [{'id': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
-        result = wrappers.add_object_url(request=request)(result=result)
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper._is_singular = False
+        result = wrapper(result=result)
         assert result['data'][0]['self'] == 'http://example.com/4'
 
         environ = {'QUERY_STRING': '_limit=100'}
@@ -122,49 +122,53 @@ class TestWrappers(unittest.TestCase):
         result = wrappers.add_object_url(request=request)(result=result)
         assert result['data'][0]['self'] == 'http://example.com/4'
 
-    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
-    def test_add_object_url_item(self, mock_determ):
-        mock_determ.return_value = False
+    def test_add_object_url_item(self):
         result = {'id': 4}
         request = DummyRequest(path='http://example.com', environ={})
-        result = wrappers.add_object_url(request=request)(result=result)
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper._is_singular = False
+        result = wrapper(result=result)
         assert result == {'id': 4, 'self': 'http://example.com/4'}
 
-    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
-    def test_add_object_url_contains_id(self, mock_determ):
-        mock_determ.return_value = False
+    def test_add_object_url_contains_id(self):
         result = {'id': 4}
         request = DummyRequest(path='http://example.com/4', environ={})
-        result = wrappers.add_object_url(request=request)(result=result)
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper._is_singular = False
+        result = wrapper(result=result)
         assert result == {'id': 4, 'self': 'http://example.com/4'}
 
-    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
     @patch('nefertari.wrappers.urllib')
-    def test_add_object_url_type_error(self, mock_lib, mock_determ):
-        mock_determ.return_value = False
+    def test_add_object_url_type_error(self, mock_lib):
         mock_lib.parse.quote.side_effect = TypeError
         result = {'data': [{'id': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
-        result = wrappers.add_object_url(request=request)(result=result)
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper._is_singular = False
+        result = wrapper(result=result)
         assert result['data'][0] == {'id': 4}
 
-    @patch('nefertari.wrappers.add_object_url._determine_resource_singular')
-    def test_add_object_url_singular_resource(self, mock_determ):
-        mock_determ.return_value = True
+    def test_add_object_url_singular_resource(self):
         result = {'id': 4}
         request = DummyRequest(path='http://example.com', environ={})
-        result = wrappers.add_object_url(request=request)(result=result)
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper._is_singular = True
+        result = wrapper(result=result)
         assert result == {'id': 4, 'self': 'http://example.com'}
 
-    def test_add_object_url__determine_resource_singular(self):
+    def test_add_object_url_is_singular_property(self):
         route = Mock()
         route.name = 'foo'
         registry = Mock(_resources_map={'foo': Mock(is_singular=False)})
         request = Mock(matched_route=route, registry=registry)
         wrapper = wrappers.add_object_url(request=request)
-        assert not wrapper._determine_resource_singular()
+        wrapper._is_singular = None
+        assert not wrapper.is_singular
+        assert not wrapper._is_singular
         wrapper.request.registry._resources_map['foo'].is_singular = True
-        assert wrapper._determine_resource_singular()
+        wrapper._is_singular = None
+        assert wrapper.is_singular
+        assert wrapper._is_singular
 
     def test_apply_privacy_no_data(self):
         assert wrappers.apply_privacy(None)(result={}) == {}
