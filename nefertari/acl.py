@@ -85,15 +85,12 @@ class GuestACL(BaseACL):
     """
     def __init__(self, request):
         super(GuestACL, self).__init__(request)
-        self.acl = (
-            Allow, Everyone, ['index', 'show', 'collection_options',
-                              'item_options'])
+        self.acl = (Allow, Everyone, ['index', 'collection_options'])
 
     def context_acl(self, obj):
         return [
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['index', 'show', 'collection_options',
-                               'item_options']),
+            (Allow, Everyone, ['show', 'item_options']),
         ]
 
 
