@@ -30,10 +30,10 @@ class BaseACL(SelfParamMixin):
         * all collection and item access to admins.
     """
     __context_class__ = None
+    __item_acl__ = [(Allow, 'g:admin', ALL_PERMISSIONS)]
 
     def __init__(self, request):
         self.__acl__ = [(Allow, 'g:admin', ALL_PERMISSIONS)]
-        self.__context_acl__ = [(Allow, 'g:admin', ALL_PERMISSIONS)]
         self.request = request
 
     @property
@@ -44,9 +44,6 @@ class BaseACL(SelfParamMixin):
     def acl(self, val):
         assert(isinstance(val, tuple))
         self.__acl__.append(val)
-
-    def context_acl(self, obj):
-        return self.__context_acl__
 
     def __getitem__(self, key):
         assert(self.__context_class__)
@@ -83,15 +80,14 @@ class GuestACL(BaseACL):
 
     Gives read permissions to everyone.
     """
+    __item_acl__ = [
+        (Allow, 'g:admin', ALL_PERMISSIONS),
+        (Allow, Everyone, ['show', 'item_options']),
+    ]
+
     def __init__(self, request):
         super(GuestACL, self).__init__(request)
         self.acl = (Allow, Everyone, ['index', 'collection_options'])
-
-    def context_acl(self, obj):
-        return [
-            (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['show', 'item_options']),
-        ]
 
 
 class AuthenticatedReadACL(BaseACL):
@@ -100,13 +96,11 @@ class AuthenticatedReadACL(BaseACL):
     Gives read access to all Authenticated users.
     Gives delete, create, update access to admin only.
     """
+    __item_acl__ = [
+        (Allow, 'g:admin', ALL_PERMISSIONS),
+        (Allow, Authenticated, ['show', 'item_options']),
+    ]
 
     def __init__(self, request):
         super(AuthenticatedReadACL, self).__init__(request)
         self.acl = (Allow, Authenticated, ['index', 'collection_options'])
-
-    def context_acl(self, obj):
-        return [
-            (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, ['show', 'item_options']),
-        ]
