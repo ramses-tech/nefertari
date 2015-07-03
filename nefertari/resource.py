@@ -10,11 +10,22 @@ ACTIONS = ['index', 'show', 'create', 'update',
 DEFAULT_ID_NAME = 'id'
 
 
+def get_app_package_name(config):
+    """ Get package name of app that is running.
+
+    Name is either name of app that included nefertari, or
+    current package name (which is 'nefertari').
+    """
+    if config.includepath:
+        return config.includepath[0].split(':')[0]
+    return config.package_name
+
+
 def get_root_resource(config):
-    "Returns the root resource."
+    """Returns the root resource."""
+    app_package_name = get_app_package_name(config)
     return config.registry._root_resources.setdefault(
-        config.package_name,
-        Resource(config))
+        app_package_name, Resource(config))
 
 
 def get_resource_map(request):
@@ -162,7 +173,8 @@ def get_default_view_path(resource):
     view_file = '%s' % '_'.join(parts)
     view = '%s:%sView' % (view_file, snake2camel(view_file))
 
-    return '%s.views.%s' % (resource.config.package_name, view)
+    app_package_name = get_app_package_name(resource.config)
+    return '%s.views.%s' % (app_package_name, view)
 
 
 class Resource(object):

@@ -13,7 +13,7 @@ from nefertari.json_httpexceptions import (
 from nefertari.utils import dictset, merge_dicts, str2dict
 from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
-from nefertari.utility_views import OptionsViewMixin
+from nefertari.view_helpers import OptionsViewMixin, ESAggregator
 
 log = logging.getLogger(__name__)
 
@@ -249,6 +249,7 @@ class BaseView(OptionsViewMixin):
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
             wrappers.add_etag(self.request),
         ]
 
@@ -256,24 +257,28 @@ class BaseView(OptionsViewMixin):
         self._after_calls['show'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Create
         self._after_calls['create'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Update
         self._after_calls['update'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Replace
         self._after_calls['replace'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
+            wrappers.add_object_url(self.request),
         ]
 
         # Delete Many
@@ -362,121 +367,6 @@ class BaseView(OptionsViewMixin):
                 self._json_params[name].append(obj)
         else:
             self._json_params[name] = ids if ids is None else _get_object(ids)
-
-
-class ESAggregator(object):
-    """ Provides methods to perform Elasticsearch aggregations.
-
-    Example of using ESAggregator:
-        >> # Create an instance with view
-        >> aggregator = ESAggregator(view)
-        >> # Replace view.index with wrapped version
-        >> view.index = aggregator.wrap(view.index)
-
-    Attributes:
-        :_aggregations_keys: Sequence of strings representing name(s) of the
-            root key under which aggregations names are defined. Order of keys
-            matters - first key found in request is popped and returned. May be
-            overriden by defining it on view.
-
-    Examples:
-        If _aggregations_keys=('_aggregations',), then query string params
-        should look like:
-            _aggregations.min_price.min.field=price
-    """
-    _aggregations_keys = ('_aggregations', '_aggs')
-
-    def __init__(self, view):
-        self.view = view
-        view_aggregations_keys = getattr(view, '_aggregations_keys', None)
-        if view_aggregations_keys:
-            self._aggregations_keys = view_aggregations_keys
-
-    def wrap(self, func):
-        """ Wrap :func: to perform aggregation on :func: call.
-
-        Should be called with view instance methods.
-        """
-        six.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return self.aggregate()
-            except KeyError:
-                return func(*args, **kwargs)
-        return wrapper
-
-    def pop_aggregations_params(self):
-        """ Pop and return aggregation params from query string params.
-
-        Aggregation params are expected to be prefixed(nested under) by
-        any of `self._aggregations_keys`.
-        """
-        self._query_params = BaseView.convert_dotted(self.view._query_params)
-
-        for key in self._aggregations_keys:
-            if key in self._query_params:
-                return self._query_params.pop(key)
-        else:
-            raise KeyError('Missing aggregation params')
-
-    def stub_wrappers(self):
-        """ Remove default 'index' after call wrappers and add only
-        those needed for aggregation results output.
-        """
-        self.view._after_calls['index'] = []
-
-    @classmethod
-    def get_aggregations_fields(cls, params):
-        """ Recursively get values under the 'field' key.
-
-        Is used to get names of fields on which aggregations should be
-        performed.
-        """
-        fields = []
-        for key, val in params.items():
-            if isinstance(val, dict):
-                fields += cls.get_aggregations_fields(val)
-            if key == 'field':
-                fields.append(val)
-        return fields
-
-    def check_aggregations_privacy(self, aggregations_params):
-        """ Check per-field privacy rules in aggregations.
-
-        Privacy is checked by making sure user has access to the fields
-        used in aggregations.
-        """
-        fields = self.get_aggregations_fields(aggregations_params)
-        fields_dict = dictset.fromkeys(fields)
-        fields_dict['_type'] = self.view.Model.__name__
-
-        wrapper = wrappers.apply_privacy(self.view.request)
-        allowed_fields = set(wrapper(result=fields_dict).keys())
-        not_allowed_fields = set(fields) - set(allowed_fields)
-
-        if not_allowed_fields:
-            err = 'Not enough permissions to aggregate on fields: {}'.format(
-                ','.join(not_allowed_fields))
-            raise ValueError(err)
-
-    def aggregate(self):
-        """ Perform aggregation and return response. """
-        from nefertari.elasticsearch import ES
-        aggregations_params = self.pop_aggregations_params()
-        if self.view._auth_enabled:
-            self.check_aggregations_privacy(aggregations_params)
-        self.stub_wrappers()
-
-        search_params = []
-        if 'q' in self._query_params:
-            search_params.append(self._query_params.pop('q'))
-        _raw_terms = ' AND '.join(search_params)
-
-        return ES(self.view.Model.__name__).aggregate(
-            _aggregations_params=aggregations_params,
-            _raw_terms=_raw_terms,
-            **self._query_params
-        )
 
 
 def key_error_view(context, request):
