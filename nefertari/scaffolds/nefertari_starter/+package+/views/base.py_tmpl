@@ -14,12 +14,3 @@ class BaseView(NefertariBaseView):
 
         if self.request.method.upper() in ['GET', 'HEAD']:
             self._query_params.process_int_param('_limit', 20)
-
-        self._auth = {{package}}.Settings.asbool('auth')
-
-    def resolve_kwargs(self, kwargs):
-        resolved = {}
-        for key, value in kwargs.items():
-            key = key.split('_', 1)[1]
-            resolved[key] = value
-        return resolved

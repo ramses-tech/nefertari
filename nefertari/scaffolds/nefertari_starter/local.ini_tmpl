@@ -19,9 +19,6 @@ request_timing.enable = true
 request_timing.slow_request_threshold = 2
 
 auth_tkt_secret = {{random_string}}
-system.user = system
-system.password = 123456
-system.email = user@domain.com
 
 #  MongoDB settings
 mongodb.host = localhost
@@ -32,7 +29,6 @@ mongodb.db = {{package}}
 elasticsearch.hosts = localhost:9200
 elasticsearch.sniff = false
 elasticsearch.index_name = {{package}}
-elasticsearch.index.disable = false
 elasticsearch.chunk_size = 1000
 elasticsearch.enable_refresh_query = true
 elasticsearch.enable_aggregations = true

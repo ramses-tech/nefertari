@@ -1,0 +1,61 @@
+import logging
+from random import random
+
+from {{package}}.views.base import BaseView
+from {{package}}.models import Item
+
+log = logging.getLogger(__name__)
+
+
+class ArbitraryObject(object):
+    def __init__(self, *args, **kwargs):
+        self.attr = random()
+
+    def to_dict(self, *args, **kwargs):
+        return dict(attr=self.attr)
+
+
+class ItemsView(BaseView):
+    Model = Item
+
+    def index(self):
+        return self.get_collection_es()
+
+    def show(self, **kwargs):
+        return self.context
+
+    def create(self):
+        item = self.Model(**self._json_params)
+        item.arbitrary_object = ArbitraryObject()
+        return item.save(self._query_params)
+
+    def update(self, **kwargs):
+        item = self.Model.get_resource(
+            id=kwargs.pop('item_id'), **kwargs)
+        return item.update(self._json_params, self._query_params)
+
+    def replace(self, **kwargs):
+        return self.update(**kwargs)
+
+    def delete(self, **kwargs):
+        item = self.Model.get_resource(
+            id=kwargs.pop('item_id'), **kwargs)
+        item.delete(self._query_params)
+
+    def delete_many(self):
+        es_items = self.get_collection_es()
+        items = self.Model.filter_objects(
+            es_items, _limit=self._query_params['_limit'])
+
+        if self.needs_confirmation():
+            return items
+
+        return self.Model._delete_many(items, self._query_params)
+
+    def update_many(self):
+        es_items = self.get_collection_es()
+        items = self.Model.filter_objects(
+            es_items, _limit=self._query_params['_limit'])
+
+        return self.Model._update_many(
+            items, self._json_params, self._query_params)

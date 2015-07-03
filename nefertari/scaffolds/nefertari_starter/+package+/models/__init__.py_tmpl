@@ -1,6 +1,6 @@
 import sys
 
-__all__ = ('User',)
+__all__ = ('Item',)
 
 this = sys.modules[__name__]
 
@@ -9,4 +9,4 @@ def includeme(config):
     pass
 
 
-from {{package}}.models.user import User
+from {{package}}.models.item import Item
