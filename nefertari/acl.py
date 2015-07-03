@@ -55,7 +55,6 @@ class BaseACL(SelfParamMixin):
         pk_field = self.__context_class__.pk_field()
         obj = self.__context_class__.get(
             __raise=True, **{pk_field: key})
-        obj.__acl__ = self.context_acl(obj)
         obj.__parent__ = self
         obj.__name__ = key
         return obj
