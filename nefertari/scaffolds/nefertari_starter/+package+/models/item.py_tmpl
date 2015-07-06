@@ -1,0 +1,12 @@
+from nefertari import engine as eng
+from nefertari.engine import ESBaseDocument
+
+
+class Item(ESBaseDocument):
+    __tablename__ = 'items'
+
+    _public_fields = ['id', 'name', 'description']
+
+    id = eng.IdField(primary_key=True)
+    name = eng.StringField(required=True)
+    description = eng.TextField()

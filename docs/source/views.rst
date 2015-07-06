@@ -10,6 +10,7 @@ It is recommended that your views reside in a package. In this case, each module
 * *show*: called upon ``GET`` request to a collection-item, e.g. ``/collection/<id>``
 * *create*: called upon ``POST`` request to a collection
 * *update*: called upon ``PATCH`` request to a collection-item
+* *replace*: called upon ``PUT`` request to a collection-item
 * *delete*: called upon ``DELETE`` request to a collection-item
 * *update_many*: called upon ``PATCH`` request to a collection or filtered collection, e.g. ``/collection?_exists_=<field>``
 * *delete_many*: called upon ``DELETE`` request to a collection or filtered collection

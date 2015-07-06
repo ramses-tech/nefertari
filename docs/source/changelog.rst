@@ -1,6 +1,12 @@
 Changelog
 =========
 
+* :release:`0.4.1 <2015-07-06>`
+* :bug:`-` Fixed a bug when setting "cors.allow_origins = *"
+* :bug:`-` Fixed errors in http methods HEAD/OPTIONS response
+* :bug:`-` Fixed response of http methods POST/PATCH/PUT not returning created/updated objects
+* :support:`- backported` Added support for Elasticsearch polymorphic collections of type "/api/collection1,collectionN"
+
 * :release:`0.4.0 <2015-06-14>`
 * :support:`-` Added python3 support
 * :feature:`-` Added ES aggregations
