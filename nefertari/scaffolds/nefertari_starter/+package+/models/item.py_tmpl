@@ -1,7 +1,4 @@
-from datetime import datetime
-
 from nefertari import engine as eng
-
 from nefertari.engine import ESBaseDocument
 
 

@@ -27,6 +27,10 @@ def bootstrap(config):
     config.include('nefertari.view')
     config.include('nefertari.elasticsearch')
 
+    if Settings.asbool('debug'):
+        log.warning('*** DEBUG DEBUG DEBUG mode ***')
+        config.add_tween('nefertari.tweens.get_tunneling')
+
     def _route_url(request, route_name, *args, **kw):
         if config.route_prefix:
             route_name = '%s_%s' % (config.route_prefix, route_name)
@@ -46,10 +50,7 @@ def main(global_config, **settings):
     Settings.update(settings)
     Settings.update(global_config)
 
-    config = Configurator(
-        settings=settings,
-        root_factory=NefertariRootACL,
-    )
+    config = Configurator(settings=settings)
 
     config.include('nefertari.engine')
 
@@ -62,7 +63,6 @@ def main(global_config, **settings):
     ES.setup_mappings()
 
     config.commit()
-    initialize()
 
     return config.make_wsgi_app()
 
@@ -84,9 +84,3 @@ def create_resources(config):
     root.add(
         'item', 'items',
         id_name='item_' + Item.pk_field())
-
-
-def initialize():
-    from {{package}}.models import Item
-    import transaction
-    log.info('Initializing')

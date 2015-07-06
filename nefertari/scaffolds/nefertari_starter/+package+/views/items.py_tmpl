@@ -1,5 +1,4 @@
 import logging
-from random import random
 
 from {{package}}.views.base import BaseView
 from {{package}}.models import Item
@@ -14,7 +13,9 @@ class ItemsView(BaseView):
         return self.get_collection_es()
 
     def show(self, **kwargs):
-        return self.context
+        return self.Model.get(
+            id=kwargs.pop('item_id'),
+            __raise=True)
 
     def create(self):
         item = self.Model(**self._json_params)
