@@ -2,7 +2,6 @@ import logging
 
 from nefertari.view import BaseView as NefertariBaseView
 from nefertari.engine import JSONEncoder
-import {{package}}
 
 log = logging.getLogger(__name__)
 
