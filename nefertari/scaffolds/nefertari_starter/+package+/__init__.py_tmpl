@@ -1,12 +1,10 @@
 from pkg_resources import get_distribution
 import logging
 
-from pyramid.authorization import ACLAuthorizationPolicy
 from pyramid.config import Configurator
 
 import nefertari
 from nefertari.utils import dictset
-from nefertari.acl import RootACL as NefertariRootACL
 
 APP_NAME = __package__.split('.')[0]
 _DIST = get_distribution(APP_NAME)
@@ -25,26 +23,9 @@ def bootstrap(config):
 
     config.include('nefertari')
 
-    root = config.get_root_resource()
-    root.auth = Settings.asbool('auth')
-    root.default_factory = 'nefertari.acl.AdminACL'
-
     config.include('{{package}}.models')
     config.include('nefertari.view')
     config.include('nefertari.elasticsearch')
-
-    if Settings.asbool('debug'):
-        log.warning('*** DEBUG DEBUG DEBUG mode ***')
-        config.add_tween('nefertari.tweens.get_tunneling')
-
-    if Settings.asbool('cors.enable'):
-        config.add_tween('nefertari.tweens.cors')
-
-    if Settings.asbool('ssl_middleware.enable'):
-        config.add_tween('nefertari.tweens.ssl')
-
-    if Settings.asbool('request_timing.enable'):
-        config.add_tween('nefertari.tweens.request_timing')
 
     def _route_url(request, route_name, *args, **kw):
         if config.route_prefix:
@@ -64,7 +45,7 @@ def bootstrap(config):
 def main(global_config, **settings):
     Settings.update(settings)
     Settings.update(global_config)
-    authz_policy = ACLAuthorizationPolicy()
+
     config = Configurator(
         settings=settings,
         root_factory=NefertariRootACL,
@@ -100,12 +81,9 @@ def create_resources(config):
     from {{package}}.models import Item
     root = config.get_root_resource()
 
-    root.add('s_one', 's', factory='nefertari.acl.GuestACL')
-
     root.add(
         'item', 'items',
-        id_name='item_' + Item.pk_field(),
-        factory="nefertari.acl.AdminACL")
+        id_name='item_' + Item.pk_field())
 
 
 def initialize():

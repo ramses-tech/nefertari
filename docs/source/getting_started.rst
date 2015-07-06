@@ -7,7 +7,13 @@ Getting started
 
     $ virtualenv my_project
     $ source my_project/bin/activate
-    $ cd my_project
     $ pip install nefertari
     $ pcreate -s nefertari_starter my_project
+    $ cd my_project
+    $ pip install -r requirements.txt
     $ pserve local.ini
+
+Tutorials
+---------
+
+1. For a more complete example of a Pyramid project using Nefertari, you can take a look at the `Example Project <https://github.com/brandicted/nefertari-example>`_.
