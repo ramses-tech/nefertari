@@ -67,17 +67,13 @@ class BaseACL(CopyACLMixin, SelfParamMixin):
         return obj
 
 
-class RootACL(CopyACLMixin):
+class RootACL(object):
     __acl__ = [
-        (Allow, 'g:admin', ALL_PERMISSIONS),
-    ]
-    __item_acl__ = [
         (Allow, 'g:admin', ALL_PERMISSIONS),
     ]
 
     def __init__(self, request):
         self.request = request
-        super(RootACL, self).__init__(request)
 
 
 class AdminACL(BaseACL):
