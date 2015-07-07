@@ -34,13 +34,12 @@ url parameter                                       description
 ``_aggregations.<dot_notation_object>``             to use ES search aggregations, e.g. ``?_aggregations.my_agg.terms.field=tag`` [#]_
 ========================================            ===========
 
-
 Updating listfields
 -------------------
 
 Items in listfields can be removed using "-" prefix.
 
-PATCH `/api/<collection>/<id>
+PATCH ``/api/<collection>/<id>``
 
 .. code-block:: json
 
@@ -50,7 +49,7 @@ PATCH `/api/<collection>/<id>
 
 Items can be both added and removed at the same time.
 
-PATCH `/api/<collection>/<id>
+PATCH ``/api/<collection>/<id>``
 
 .. code-block:: json
 
@@ -60,7 +59,7 @@ PATCH `/api/<collection>/<id>
 
 Listfields can be emptied by setting their value to "" or null.
 
-PATCH `/api/<collection>/<id>
+PATCH ``/api/<collection>/<id>``
 
 .. code-block:: json
 

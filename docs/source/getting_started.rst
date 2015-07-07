@@ -10,7 +10,6 @@ Getting started
     $ pip install nefertari
     $ pcreate -s nefertari_starter my_project
     $ cd my_project
-    $ pip install -r requirements.txt
     $ pserve local.ini
 
 Tutorials

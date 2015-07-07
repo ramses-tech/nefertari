@@ -2,10 +2,10 @@ Changelog
 =========
 
 * :release:`0.4.1 <2015-07-06>`
-* :bug:`-` Fixed a bug when setting "cors.allow_origins = *"
+* :bug:`-` Fixed a bug when setting ``cors.allow_origins = *``
 * :bug:`-` Fixed errors in http methods HEAD/OPTIONS response
 * :bug:`-` Fixed response of http methods POST/PATCH/PUT not returning created/updated objects
-* :support:`- backported` Added support for Elasticsearch polymorphic collections of type "/api/collection1,collectionN"
+* :support:`- backported` Added support for Elasticsearch polymorphic collections accessible at ``/api/<collection_1>,<collection_N>``
 
 * :release:`0.4.0 <2015-06-14>`
 * :support:`-` Added python3 support
@@ -45,4 +45,4 @@ Changelog
 * :support:`-` Improved docs
 
 * :release:`0.1.1 <2015-04-01>`
-* :support:`-` Initial release after two years of development as "Presto". Now with database engines! Originally extracted and generalized from the Brandicted API which only used MongoDB.
+* :support:`-` Initial release after two years of development as 'Presto'. Now with database engines! Originally extracted and generalized from the Brandicted API which only used MongoDB.

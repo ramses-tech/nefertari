@@ -36,7 +36,7 @@ setup(
     author='Brandicted',
     author_email='hello@brandicted.com',
     url='https://github.com/brandicted/nefertari',
-    keywords='web wsgi bfg pylons pyramid rest',
+    keywords='web wsgi bfg pylons pyramid rest api elasticsearch',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -47,6 +47,6 @@ setup(
         nefertari.index = nefertari.scripts.es:main
         nefertari.post2api = nefertari.scripts.post2api:main
     [pyramid.scaffold]
-        nefertari_starter=nefertari.scaffolds:NefertariStarterTemplate
+        nefertari_starter = nefertari.scaffolds:NefertariStarterTemplate
     """,
 )
