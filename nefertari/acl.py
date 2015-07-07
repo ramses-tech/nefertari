@@ -1,6 +1,15 @@
 from pyramid.security import ALL_PERMISSIONS, Allow, Everyone, Authenticated
 
 
+class CopyACLMixin(object):
+    """ ACL mixin that copies `self.__item_acl__` to
+    `self.__context_class__.__item_acl__` """
+    def __init__(self, request):
+        model = self.__context_class__
+        if model is not None and model.__item_acl__ is None:
+            model.__item_acl__ = self.__item_acl__
+
+
 class SelfParamMixin(object):
     """ ACL mixin that implements method to translate input key value
     to a user ID field, when key value equals :param_value:
@@ -23,7 +32,7 @@ class SelfParamMixin(object):
         return obj_id
 
 
-class BaseACL(SelfParamMixin):
+class BaseACL(CopyACLMixin, SelfParamMixin):
     """ Base ACL class.
 
     Grants:
@@ -35,6 +44,7 @@ class BaseACL(SelfParamMixin):
     def __init__(self, request):
         self.__acl__ = [(Allow, 'g:admin', ALL_PERMISSIONS)]
         self.request = request
+        super(BaseACL, self).__init__(request)
 
     @property
     def acl(self):
@@ -57,13 +67,17 @@ class BaseACL(SelfParamMixin):
         return obj
 
 
-class RootACL(object):
+class RootACL(CopyACLMixin):
     __acl__ = [
+        (Allow, 'g:admin', ALL_PERMISSIONS),
+    ]
+    __item_acl__ = [
         (Allow, 'g:admin', ALL_PERMISSIONS),
     ]
 
     def __init__(self, request):
         self.request = request
+        super(RootACL, self).__init__(request)
 
 
 class AdminACL(BaseACL):
