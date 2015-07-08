@@ -51,9 +51,7 @@ def main(global_config, **settings):
     Settings.update(global_config)
 
     config = Configurator(settings=settings)
-
     config.include('nefertari.engine')
-
     config.include(includeme)
 
     from nefertari.engine import setup_database

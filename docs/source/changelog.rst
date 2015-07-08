@@ -1,7 +1,7 @@
 Changelog
 =========
 
-* :release:`0.4.1 <2015-07-06>`
+* :release:`0.4.1 <2015-07-07>`
 * :bug:`-` Fixed a bug when setting ``cors.allow_origins = *``
 * :bug:`-` Fixed errors in http methods HEAD/OPTIONS response
 * :bug:`-` Fixed response of http methods POST/PATCH/PUT not returning created/updated objects
