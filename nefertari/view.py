@@ -184,7 +184,7 @@ class BaseView(OptionsViewMixin):
 
         return ES(self.Model.__name__).get_collection(
             _raw_terms=self._raw_terms,
-            # _identifiers=self.request.effective_principals,
+            _identifiers=self.request.effective_principals,
             **self._query_params)
 
     def fill_null_values(self, model_cls=None):

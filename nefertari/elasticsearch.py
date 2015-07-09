@@ -165,6 +165,33 @@ def build_qs(params, _raw_terms='', operator='AND'):
     return _terms
 
 
+def build_acl_query(identifiers):
+    from pyramid.security import Allow, Deny, ALL_PERMISSIONS
+    from nefertari import engine
+    query = {
+        'filter': {
+            # 'or': [{'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'show'}}],
+            # 'or': [{'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'all'}}],
+            'or': [],
+            'not': {'filter': {'or': []}}
+        }
+    }
+    allowed_acl = []
+    denied_acl = []
+    for ident in identifiers:
+        allowed_acl += [
+            (Allow, ident, ALL_PERMISSIONS),
+            (Allow, ident, 'show')]
+        denied_acl += [
+            (Deny, ident, ALL_PERMISSIONS),
+            (Deny, ident, 'show')]
+
+    allowed_acl = engine.ACLField.stringify_acl(allowed_acl)
+    denied_acl = engine.ACLField.stringify_acl(denied_acl)
+    # TODO: How to determine that access to resource A is given one
+    # user identifier before it is blocked to another? And vice versa.
+
+
 class _ESDocs(list):
     def __init__(self, *args, **kw):
         self._total = 0
@@ -468,6 +495,10 @@ class ES(object):
                 _params['body'] = {"query": {"match_all": {}}}
         else:
             _params['body'] = params['body']
+
+        if _identifiers is not None:
+            permissions_query = build_acl_query(_identifiers)
+            _params['body'].update(permissions_query)
 
         if '_limit' not in params:
             raise JHTTPBadRequest('Missing _limit')
