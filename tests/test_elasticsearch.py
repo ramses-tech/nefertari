@@ -549,6 +549,32 @@ class TestES(object):
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
 
+    def test_build_search_params_with_body(self):
+        obj = es.ES('Foo', 'foondex')
+        params = obj.build_search_params({
+            'body': {'query': {'query_string': 'foo'}},
+            '_raw_terms': ' AND q:5',
+            '_limit': 10,
+            '_search_fields': 'a,b',
+            '_fields': ['a'],
+            '_sort': '+a,-b,c',
+        })
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'fields', 'from_', 'index', 'size',
+            'sort'])
+        assert params['body'] == {
+            'query': {
+                'query_string': {
+                    'fields': ['b^1', 'a^2'],
+                    'query': 'foo'
+                }
+            }
+        }
+        assert params['index'] == 'foondex'
+        assert params['doc_type'] == 'foo'
+        assert params['fields'] == ['a']
+        assert params['sort'] == 'a:asc,b:desc,c:asc'
+
     @patch('nefertari.elasticsearch.ES.api.count')
     def test_do_count(self, mock_count):
         obj = es.ES('Foo', 'foondex')

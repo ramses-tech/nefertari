@@ -450,6 +450,8 @@ class ES(object):
             doc_type=self.doc_type
         )
 
+        _identifiers = params.pop('_identifiers', None)
+
         if 'body' not in params:
             query_string = build_qs(
                 params.remove(RESERVED),
@@ -464,6 +466,8 @@ class ES(object):
                 }
             else:
                 _params['body'] = {"query": {"match_all": {}}}
+        else:
+            _params['body'] = params['body']
 
         if '_limit' not in params:
             raise JHTTPBadRequest('Missing _limit')
@@ -484,6 +488,9 @@ class ES(object):
             search_fields.reverse()
             search_fields = [s + '^' + str(i) for i, s in
                              enumerate(search_fields, 1)]
+            current_qs = _params['body']['query']['query_string']
+            if isinstance(current_qs, str):
+                _params['body']['query']['query_string'] = {'query': current_qs}
             _params['body']['query']['query_string']['fields'] = search_fields
 
         return _params
