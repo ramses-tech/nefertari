@@ -168,12 +168,24 @@ def build_qs(params, _raw_terms='', operator='AND'):
 def build_acl_query(identifiers):
     from pyramid.security import Allow, Deny, ALL_PERMISSIONS
     from nefertari import engine
+    # query = {
+    #     'filter': {
+    #         'or': [
+    #             {'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'show'}},
+    #             {'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'all'}},
+    #         ],
+    #         'not': {'filter': {'or': []}}
+    #     }
+    # }
     query = {
         'filter': {
-            # 'or': [{'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'show'}}],
-            # 'or': [{'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'all'}}],
-            'or': [],
-            'not': {'filter': {'or': []}}
+            'bool': {
+                'should': [
+                    # {'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'show'}},
+                    # {'term': {'_acl.action': 'allow', '_acl.identifier': '...', '_acl.permission': 'all'}},
+                ],
+                'must_not': []
+            }
         }
     }
     allowed_acl = []
