@@ -160,8 +160,9 @@ def build_qs(params, _raw_terms='', operator='AND'):
             terms.append('%s:%s' % (k, v))
 
     terms = sorted([term for term in terms if term])
-    _terms = (' %s ' % operator).join(terms) + _raw_terms
-
+    _terms = (' %s ' % operator).join(terms)
+    if _raw_terms:
+        _terms += ' AND ' + _raw_terms
     return _terms
 
 
