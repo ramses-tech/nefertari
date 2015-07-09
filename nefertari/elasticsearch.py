@@ -499,6 +499,7 @@ class ES(object):
         if _identifiers is not None:
             permissions_query = build_acl_query(_identifiers)
             _params['body'].update(permissions_query)
+            _params['body']['filtered'] = _params['body'].pop('query_string')
 
         if '_limit' not in params:
             raise JHTTPBadRequest('Missing _limit')
