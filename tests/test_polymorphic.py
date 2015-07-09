@@ -1,7 +1,7 @@
-import pytest
 from mock import Mock, patch
 
 from nefertari import polymorphic
+from nefertari.renderers import _JSONEncoder
 
 
 class TestPolymorphicHelperMixin(object):
@@ -105,9 +105,12 @@ class TestPolymorphicACL(object):
 
 class TestPolymorphicESView(object):
 
+    class DummyPolymorphicESView(polymorphic.PolymorphicESView):
+        _json_encoder = _JSONEncoder
+
     def _dummy_view(self):
         request = Mock(content_type='', method='', accept=[''], user=None)
-        return polymorphic.PolymorphicESView(
+        return self.DummyPolymorphicESView(
             context={}, request=request,
             _json_params={'foo': 'bar'},
             _query_params={'foo1': 'bar1'})

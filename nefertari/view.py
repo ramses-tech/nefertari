@@ -63,7 +63,6 @@ class ViewMapper(object):
 class BaseView(OptionsViewMixin):
     """Base class for nefertari views.
     """
-
     __view_mapper__ = ViewMapper
     _default_renderer = 'nefertari_json'
     _json_encoder = None
@@ -104,6 +103,8 @@ class BaseView(OptionsViewMixin):
         self.request = request
         self._query_params = dictset(_query_params or request.params.mixed())
         self._json_params = dictset(_json_params)
+        if self._json_encoder is None:
+            self._json_encoder = engine.JSONEncoder
 
         ctype = request.content_type
         if request.method in ['POST', 'PUT', 'PATCH']:
@@ -205,7 +206,11 @@ class BaseView(OptionsViewMixin):
     def set_public_limits(self):
         """ Set public limits if auth is enabled and user is not
         authenticated.
+
+        Also sets default limit for GET, HEAD requests.
         """
+        if self.request.method.upper() in ['GET', 'HEAD']:
+            self._query_params.process_int_param('_limit', 20)
         if self._auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 

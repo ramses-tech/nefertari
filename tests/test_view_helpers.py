@@ -8,6 +8,8 @@ from nefertari.view_helpers import ESAggregator
 
 class DemoView(BaseView):
     """ BaseView inherits from OptionsViewMixin """
+    _json_encoder = 'Foo'
+
     def create(self):
         pass
 
