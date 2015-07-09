@@ -178,14 +178,7 @@ class BaseView(OptionsViewMixin):
         results for default response renderers to work properly.
         """
         from nefertari.elasticsearch import ES
-        search_params = []
-        if 'q' in self._query_params:
-            search_params.append(self._query_params.pop('q'))
-        self._raw_terms = ' AND '.join(search_params)
-
-        return ES(self.Model.__name__).get_collection(
-            _raw_terms=self._raw_terms,
-            **self._query_params)
+        return ES(self.Model.__name__).get_collection(**self._query_params)
 
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: None}.

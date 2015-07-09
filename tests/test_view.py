@@ -256,7 +256,7 @@ class TestBaseView(object):
         mock_es.settings = dictset(enable_aggregations=True)
         request = Mock(content_type='', method='', accept=[''])
         view = DummyBaseView(context={}, request=request,
-                        _query_params={'foo': 'bar'})
+                             _query_params={'foo': 'bar'})
         type(view).index = 1
         view._setup_aggregation()
         aggregator.assert_called_once_with(view)
@@ -274,7 +274,7 @@ class TestBaseView(object):
         result = view.get_collection_es()
         mock_es.assert_called_once_with('MyModel')
         mock_es().get_collection.assert_called_once_with(
-            _raw_terms='movies', foo='bar')
+            foo='bar', q='movies')
         assert result == mock_es().get_collection()
 
     @patch('nefertari.view.BaseView._run_init_actions')

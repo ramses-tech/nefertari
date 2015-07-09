@@ -151,8 +151,7 @@ class TestESAggregator(object):
         mock_es.assert_called_once_with('FooBar')
         mock_es().aggregate.assert_called_once_with(
             _aggregations_params={'foo': 1},
-            _raw_terms='2',
-            zoo=3)
+            q='2', zoo=3)
 
     def test_get_aggregations_fields(self):
         params = {
