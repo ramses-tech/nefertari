@@ -6,15 +6,22 @@ from contextlib import contextmanager
 import six
 from pyramid.config import Configurator
 
-from nefertari.renderers import _JSONEncoder
-
 
 log = logging.getLogger(__name__)
 
 
+def get_json_encoder():
+    try:
+        from nefertari import engine
+        return engine.JSONEncoder
+    except AttributeError:
+        from nefertari.renderers import _JSONEncoder
+        return _JSONEncoder
+
+
 def json_dumps(body, encoder=None):
     if encoder is None:
-        encoder = _JSONEncoder
+        encoder = get_json_encoder()
     return json.dumps(body, cls=encoder)
 
 

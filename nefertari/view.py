@@ -103,8 +103,6 @@ class BaseView(OptionsViewMixin):
         self.request = request
         self._query_params = dictset(_query_params or request.params.mixed())
         self._json_params = dictset(_json_params)
-        if self._json_encoder is None:
-            self._json_encoder = engine.JSONEncoder
 
         ctype = request.content_type
         if request.method in ['POST', 'PUT', 'PATCH']:
