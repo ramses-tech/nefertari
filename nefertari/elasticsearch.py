@@ -185,10 +185,9 @@ def build_acl_query(identifiers):
     allow_ids = list(set([ace['identifier'] for ace in allowed_acl]))
     allow_perms = list(set([ace['permission'] for ace in allowed_acl]))
     must = [
-        # {'term': {'_acl.action': 'allow'}},
-        {'terms': {'_acl.identifier': ['g:foo']}},
-        # {'terms': {'_acl.identifier': allow_ids}},
-        # {'terms': {'_acl.permission': allow_perms}},
+        {'term': {'_acl.action': 'allow'}},
+        {'terms': {'_acl.identifier': allow_ids}},
+        {'terms': {'_acl.permission': allow_perms}},
     ]
 
     # Denied query
@@ -196,9 +195,9 @@ def build_acl_query(identifiers):
     deny_ids = list(set([ace['identifier'] for ace in denied_acl]))
     deny_perms = list(set([ace['permission'] for ace in denied_acl]))
     must_not = [
-        # {'term': {'_acl.action': 'deny'}},
-        {'terms': {'_acl.identifier': ['g:foo']}},
-        # {'terms': {'_acl.permission': deny_perms}},
+        {'term': {'_acl.action': 'deny'}},
+        {'terms': {'_acl.identifier': deny_ids}},
+        {'terms': {'_acl.permission': deny_perms}},
     ]
 
     def get_bool_filter(query_terms):
