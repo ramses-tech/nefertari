@@ -112,7 +112,7 @@ class apply_privacy(object):
     calling 'is_admin()' method on 'self.request.user'.
 
     If this wrapper is called without request, no filtering is performed.
-    Fields visible to all types of users: 'self', '_type'.
+    Fields visible to all types of users: '_self', '_type'.
     """
     def __init__(self, request):
         self.request = request
@@ -143,7 +143,7 @@ class apply_privacy(object):
                 fields &= public_fields
 
         fields.add('_type')
-        fields.add('self')
+        fields.add('_self')
         return data.subset(fields)
 
     def __call__(self, **kwargs):
@@ -224,7 +224,7 @@ class add_meta(object):
 
 
 class add_object_url(object):
-    """ Add 'self' to each object in results
+    """ Add '_self' to each object in results
 
     For each object in `result['data']` adds a uri which points
     to current object
@@ -243,12 +243,12 @@ class add_object_url(object):
         return self._is_singular
 
     def _set_object_self(self, obj):
-        """ Add 'self' key value to :obj: dict. """
+        """ Add '_self' key value to :obj: dict. """
         location = self.request.path_url
         obj_id = urllib.parse.quote(str(obj['id']))
         if not self.is_singular and not location.endswith(obj_id):
             location += '/{}'.format(obj_id)
-        obj.setdefault('self', location)
+        obj.setdefault('_self', location)
 
     def __call__(self, **kwargs):
         result = kwargs['result']

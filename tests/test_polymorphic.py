@@ -194,7 +194,7 @@ class TestAddUrlPolymorphicWrapper(object):
         wrapper.model_resources = {'Story': resource1}
         obj = {'_type': 'Story', 'id': 4}
         wrapper._set_object_self(obj)
-        assert obj == {'_type': 'Story', 'id': 4, 'self': 'foobar'}
+        assert obj == {'_type': 'Story', 'id': 4, '_self': 'foobar'}
         wrapper.request.route_url.assert_called_once_with(
             'mystories', story_id=4)
 
@@ -207,8 +207,8 @@ class TestAddUrlPolymorphicWrapper(object):
         wrapper.request.route_url.return_value = 'foobar'
         obj = {'_type': 'Story', 'id': 4}
         assert wrapper(result=obj) == {
-            '_type': 'Story', 'id': 4, 'self': 'foobar'}
+            '_type': 'Story', 'id': 4, '_self': 'foobar'}
 
         obj = {'data': [{'_type': 'Story', 'id': 4}]}
         assert wrapper(result=obj) == {
-            'data': [{'_type': 'Story', 'id': 4, 'self': 'foobar'}]}
+            'data': [{'_type': 'Story', 'id': 4, '_self': 'foobar'}]}

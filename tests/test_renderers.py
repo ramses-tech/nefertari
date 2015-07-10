@@ -160,11 +160,11 @@ class TestDefaultResponseRendererMixin(object):
         system = self._system_mocks()
         system['view']._resource.id_name = 'story_id'
         system['view']._resource.uid = 'user:stories'
-        value = {'id': 1, 'q': 'd', 'self': 'google.com'}
+        value = {'id': 1, 'q': 'd', '_self': 'google.com'}
         mixin = renderers.DefaultResponseRendererMixin()
         mixin.render_create(value, system, {'a': 'b'})
         mock_resp.assert_called_once_with(
-            a='b', body={'q': 'd', 'self': 'google.com', 'id': 1},
+            a='b', body={'q': 'd', '_self': 'google.com', 'id': 1},
             headers=[('Location', 'google.com')])
 
     @mock.patch('nefertari.renderers.JHTTPOk')
@@ -172,12 +172,12 @@ class TestDefaultResponseRendererMixin(object):
         system = self._system_mocks()
         system['view']._resource.id_name = 'story_id'
         system['view']._resource.uid = 'user:stories'
-        value = {'id': 1, 'q': 'd', 'self': 'google.com'}
+        value = {'id': 1, 'q': 'd', '_self': 'google.com'}
         mixin = renderers.DefaultResponseRendererMixin()
         mixin.render_update(value, system, {'a': 'b'})
         mock_resp.assert_called_once_with(
             "Updated", a='b',
-            body={'q': 'd', 'self': 'google.com', 'id': 1},
+            body={'q': 'd', '_self': 'google.com', 'id': 1},
             headers=[('Location', 'google.com')])
 
     def test_render_replace(self):

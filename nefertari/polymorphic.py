@@ -215,7 +215,7 @@ class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
         """
         type_, obj_id = obj['_type'], obj['id']
         resource = self.model_resources[type_]
-        obj['self'] = self.request.route_url(
+        obj['_self'] = self.request.route_url(
             resource.uid, **{resource.id_name: obj_id})
 
     def __call__(self, **kwargs):

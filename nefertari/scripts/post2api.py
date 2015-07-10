@@ -40,7 +40,7 @@ def load_singular_objects(inputfile, destination):
 
     for parent in parent_objects:
         print(parent_route)
-        parent_url = parent['self'].replace(query_string, '')
+        parent_url = parent['_self'].replace(query_string, '')
         singular_url = parent_url + '/' + singlular_field
         child = json_data.pop()
         data = json.dumps(child, default=_jdefault)

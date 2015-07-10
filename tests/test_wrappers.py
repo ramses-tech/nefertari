@@ -14,7 +14,7 @@ from nefertari.utils import dictset
 class TestWrappers(unittest.TestCase):
     model_test_data = dictset({
         '_type': 'foo',
-        'self': 'http://example.com/1',
+        '_self': 'http://example.com/1',
         'name': 'User1',
         'desc': 'User 1 data',
         'id': 1,
@@ -113,14 +113,14 @@ class TestWrappers(unittest.TestCase):
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
         result = wrapper(result=result)
-        assert result['data'][0]['self'] == 'http://example.com/4'
+        assert result['data'][0]['_self'] == 'http://example.com/4'
 
         environ = {'QUERY_STRING': '_limit=100'}
         request = DummyRequest(path='http://example.com?_limit=100',
                                environ=environ)
         assert request.path == 'http://example.com?_limit=100'
         result = wrappers.add_object_url(request=request)(result=result)
-        assert result['data'][0]['self'] == 'http://example.com/4'
+        assert result['data'][0]['_self'] == 'http://example.com/4'
 
     def test_add_object_url_item(self):
         result = {'id': 4}
@@ -128,7 +128,7 @@ class TestWrappers(unittest.TestCase):
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
         result = wrapper(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com/4'}
+        assert result == {'id': 4, '_self': 'http://example.com/4'}
 
     def test_add_object_url_contains_id(self):
         result = {'id': 4}
@@ -136,7 +136,7 @@ class TestWrappers(unittest.TestCase):
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
         result = wrapper(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com/4'}
+        assert result == {'id': 4, '_self': 'http://example.com/4'}
 
     @patch('nefertari.wrappers.urllib')
     def test_add_object_url_type_error(self, mock_lib):
@@ -154,7 +154,7 @@ class TestWrappers(unittest.TestCase):
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = True
         result = wrapper(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com'}
+        assert result == {'id': 4, '_self': 'http://example.com'}
 
     def test_add_object_url_is_singular_property(self):
         route = Mock()
@@ -182,7 +182,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=None)
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'name', 'self']
+            '_self', '_type', 'desc', 'name']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_no_request(self, mock_eng):
@@ -192,7 +192,7 @@ class TestWrappers(unittest.TestCase):
         mock_eng.get_document_cls.return_value = document_cls
         filtered = wrappers.apply_privacy(None)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_self', '_type', 'desc', 'id', 'name', 'other_field']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_auth(self, mock_eng):
@@ -204,7 +204,7 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=False)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'id', 'self']
+            '_self', '_type', 'id']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_auth_calculated(self, mock_eng):
@@ -221,7 +221,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=User())
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'id', 'self']
+            '_self', '_type', 'id']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_admin(self, mock_eng):
@@ -233,13 +233,13 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_self', '_type', 'desc', 'id', 'name', 'other_field']
         filtered['_type'] == 'foo'
         filtered['desc'] == 'User 1 data'
         filtered['id'] == 1
         filtered['name'] == 'User1'
         filtered['other_field'] == 123
-        filtered['self'] == 'http://example.com/1'
+        filtered['_self'] == 'http://example.com/1'
         mock_eng.get_document_cls.assert_called_once_with('foo')
 
     @patch('nefertari.wrappers.engine')
@@ -250,12 +250,12 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
-            'desc', 'id', 'name', 'other_field', 'self']
+            '_self', 'desc', 'id', 'name', 'other_field']
         filtered['desc'] == 'User 1 data'
         filtered['id'] == 1
         filtered['name'] == 'User1'
         filtered['other_field'] == 123
-        filtered['self'] == 'http://example.com/1'
+        filtered['_self'] == 'http://example.com/1'
         assert not mock_eng.get_document_cls.called
 
     @patch('nefertari.wrappers.engine')
@@ -288,13 +288,13 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=User())
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_self', '_type', 'desc', 'id', 'name', 'other_field']
         filtered['_type'] == 'foo'
         filtered['desc'] == 'User 1 data'
         filtered['id'] == 1
         filtered['name'] == 'User1'
         filtered['other_field'] == 123
-        filtered['self'] == 'http://example.com/1'
+        filtered['_self'] == 'http://example.com/1'
         mock_eng.get_document_cls.assert_called_once_with('foo')
 
     @patch('nefertari.wrappers.engine')
@@ -304,7 +304,7 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_self', '_type', 'desc', 'id', 'name', 'other_field']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_no_fields(self, mock_eng):
@@ -315,7 +315,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=False)
-        assert list(sorted(filtered.keys())) == ['_type', 'self']
+        assert list(sorted(filtered.keys())) == ['_self', '_type']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_collection(self, mock_eng):
@@ -334,7 +334,7 @@ class TestWrappers(unittest.TestCase):
         assert list(sorted(filtered.keys())) == ['count', 'data', 'total']
         assert len(filtered['data']) == 1
         data = filtered['data'][0]
-        assert list(sorted(data.keys())) == ['_type', 'id', 'self']
+        assert list(sorted(data.keys())) == ['_self', '_type', 'id']
 
     @patch('nefertari.wrappers.obj2dict')
     def test_wrap_in_dict_no_meta_dict(self, mock_obj):

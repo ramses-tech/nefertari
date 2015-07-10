@@ -89,8 +89,8 @@ class DefaultResponseRendererMixin(object):
         """ Get kwargs common to create, update, replace. """
         kw = common_kw.copy()
         kw['body'] = value
-        if 'self' in value:
-            kw['headers'] = [('Location', value['self'])]
+        if '_self' in value:
+            kw['headers'] = [('Location', value['_self'])]
         return kw
 
     def render_create(self, value, system, common_kw):
