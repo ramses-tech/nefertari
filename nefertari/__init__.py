@@ -14,6 +14,7 @@ def includeme(config):
     from nefertari.resource import get_root_resource, get_resource_map
     from nefertari.renderers import (
         JsonRendererFactory, NefertariJsonRendererFactory)
+    from nefertari.utils import dictset
 
     log.info("%s %s" % (APP_NAME, __version__))
     config.add_directive('get_root_resource', get_root_resource)
@@ -28,3 +29,7 @@ def includeme(config):
     config.add_request_method(get_resource_map, 'resource_map', reify=True)
 
     config.add_tween('nefertari.tweens.cache_control')
+
+    Settings = dictset(config.registry.settings)
+    root = config.get_root_resource()
+    root.auth = Settings.asbool('auth')

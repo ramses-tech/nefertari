@@ -13,9 +13,8 @@ Im particular:
     * add_url_polymorphic: Wrapper class that is used instead of default
         `nefertari.wrappers.add_object_url`.
 
-To use this module, simply include it in your `main()` AFTER root
-resource's `auth` variable and after Pyramid ACLAuthorizationPolicy
-is set up.
+To use this module, simply include it in your `main()` after
+Pyramid ACLAuthorizationPolicy is set up and nefertari is included.
 
 By default this module is included by 'nefertari.elasticsearch' when
 `elasticsearch.enable_polymorphic_query` setting is True.
