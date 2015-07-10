@@ -184,6 +184,7 @@ class BaseView(OptionsViewMixin):
 
         return ES(self.Model.__name__).get_collection(
             _raw_terms=self._raw_terms,
+            # Next line enables filtering by ACL
             _identifiers=self.request.effective_principals,
             **self._query_params)
 

@@ -168,22 +168,8 @@ def build_qs(params, _raw_terms='', operator='AND'):
 def build_acl_query(identifiers):
     from pyramid.security import Allow, Deny, ALL_PERMISSIONS
     from nefertari import engine
-    query = {
-        'filter': {
-            'bool': {
-                'must': [
-                    # {'term': {'_acl.action': 'allow'}},
-                    # {'terms': {'_acl.identifier': ['id1', 'id2', ...]}},
-                    # {'terms': {'_acl.permission': ['all', 'show']}},
-                ],
-                'must_not': [
-                    # {'term': {'_acl.action': 'deny'}},
-                    # {'terms': {'_acl.identifier': ['id1', 'id2', ...]}},
-                    # {'terms': {'_acl.permission': ['all', 'show']}},
-                ]
-            }
-        }
-    }
+
+    # Generate ACLs from identifiers
     allowed_acl = []
     denied_acl = []
     for ident in identifiers:
@@ -194,10 +180,44 @@ def build_acl_query(identifiers):
             (Deny, ident, ALL_PERMISSIONS),
             (Deny, ident, 'show')]
 
+    # Allowed query
     allowed_acl = engine.ACLField.stringify_acl(allowed_acl)
+    allow_ids = list(set([ace['identifier'] for ace in allowed_acl]))
+    allow_perms = list(set([ace['permission'] for ace in allowed_acl]))
+    must = [
+        # {'term': {'_acl.action': 'allow'}},
+        {'terms': {'_acl.identifier': ['g:foo']}},
+        # {'terms': {'_acl.identifier': allow_ids}},
+        # {'terms': {'_acl.permission': allow_perms}},
+    ]
+
+    # Denied query
     denied_acl = engine.ACLField.stringify_acl(denied_acl)
-    # TODO: How to determine that access to resource A is given one
-    # user identifier before it is blocked to another? And vice versa.
+    deny_ids = list(set([ace['identifier'] for ace in denied_acl]))
+    deny_perms = list(set([ace['permission'] for ace in denied_acl]))
+    must_not = [
+        # {'term': {'_acl.action': 'deny'}},
+        {'terms': {'_acl.identifier': ['g:foo']}},
+        # {'terms': {'_acl.permission': deny_perms}},
+    ]
+
+    def get_bool_filter(query_terms):
+        return {
+            'nested': {
+                'path': '_acl',
+                'filter': {'bool': {'must': query_terms}}
+            }
+        }
+
+    return {
+        'filter': {
+            'bool': {
+                'must': get_bool_filter(must),
+                'must_not': get_bool_filter(must_not),
+            }
+        }
+    }
+
 
 
 class _ESDocs(list):
@@ -506,8 +526,8 @@ class ES(object):
 
         if _identifiers is not None:
             permissions_query = build_acl_query(_identifiers)
-            _params['body'].update(permissions_query)
-            _params['body']['filtered'] = _params['body'].pop('query_string')
+            _params['body'] = {'query': {'filtered': _params['body']}}
+            _params['body']['query']['filtered'].update(permissions_query)
 
         if '_limit' not in params:
             raise JHTTPBadRequest('Missing _limit')
