@@ -151,6 +151,61 @@ class TestHelperFunctions(object):
         mock_helpers.bulk.assert_called_once_with(
             client=mock_es.api, refresh=True, actions='foo')
 
+    @patch('nefertari.elasticsearch.engine')
+    def test_build_acl_bool_terms(self, mock_eng):
+        from pyramid.security import Allow
+        mock_eng.ACLField.stringify_acl.return_value = [
+            {'identifier': 'user', 'permission': 'show'},
+            {'identifier': 'admin', 'permission': 'create'},
+            {'identifier': 'admin', 'permission': 'show'},
+        ]
+        mock_eng.ACLField._stringify_action.return_value = 'allow'
+        terms = es._build_acl_bool_terms('zoo', Allow)
+        mock_eng.ACLField.stringify_acl.assert_called_once_with('zoo')
+        mock_eng.ACLField._stringify_action.assert_called_once_with(Allow)
+        assert len(terms) == 3
+        assert {'term': {'_acl.action': 'allow'}} in terms
+        assert {'terms': {'_acl.identifier': ['admin', 'user']}} in terms
+        assert {'terms': {'_acl.permission': ['create', 'show']}} in terms
+
+    def test_build_acl_from_identifiers(self):
+        from pyramid.security import Deny, ALL_PERMISSIONS
+        acl = es._build_acl_from_identifiers(['admin', 'user'], Deny)
+        assert (Deny, 'user', 'show') in acl
+        assert (Deny, 'user', ALL_PERMISSIONS) in acl
+        assert (Deny, 'admin', 'show') in acl
+        assert (Deny, 'admin', ALL_PERMISSIONS) in acl
+
+    @patch('nefertari.elasticsearch._build_acl_bool_terms')
+    @patch('nefertari.elasticsearch._build_acl_from_identifiers')
+    def test_build_acl_query(self, build_ids, build_terms):
+        from pyramid.security import Deny, Allow
+        build_ids.return_value = [(1, 2, 3)]
+        build_terms.return_value = 'foo'
+        query = es.build_acl_query(['user', 'admin'])
+        build_ids.assert_has_calls([
+            call(['user', 'admin'], Allow),
+            call(['user', 'admin'], Deny),
+        ])
+        build_terms.assert_has_calls([
+            call([(1, 2, 3)], Allow),
+            call([(1, 2, 3)], Deny),
+        ])
+        must = must_not = {
+            'nested': {
+                'path': '_acl',
+                'filter': {'bool': {'must': 'foo'}}
+            }
+        }
+        assert query == {
+            'filter': {
+                'bool': {
+                    'must': must,
+                    'must_not': must_not
+                }
+            }
+        }
+
 
 class TestES(object):
 
@@ -485,6 +540,26 @@ class TestES(object):
         except JHTTPNotFound:
             raise Exception('Unexpected error')
         assert len(docs) == 0
+
+    @patch('nefertari.elasticsearch.build_acl_query')
+    def test_build_search_params_identifiers(self, mock_build):
+        obj = es.ES('Foo', 'foondex')
+        mock_build.return_value = {'filter': 'zoo'}
+        params = obj.build_search_params(
+            {'foo': 1, '_limit': 10, '_identifiers': [3, 4]})
+        assert sorted(params.keys()) == sorted([
+            'body', 'doc_type', 'from_', 'size', 'index'])
+        assert params['body'] == {
+            'query': {
+                'filtered': {
+                    'filter': 'zoo',
+                    'query': {'query_string': {'query': 'foo:1'}}
+                }
+            }
+        }
+        assert params['index'] == 'foondex'
+        assert params['doc_type'] == 'foo'
+        mock_build.assert_called_once_with([3, 4])
 
     def test_build_search_params_no_body(self):
         obj = es.ES('Foo', 'foondex')

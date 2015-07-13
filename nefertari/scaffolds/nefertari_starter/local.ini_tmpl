@@ -21,6 +21,7 @@ elasticsearch.chunk_size = 1000
 elasticsearch.enable_refresh_query = false
 elasticsearch.enable_aggregations = false
 elasticsearch.enable_polymorphic_query = false
+elasticsearch.acl_filtering = true
 
 # {{package}}
 host = localhost

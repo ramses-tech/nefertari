@@ -173,8 +173,8 @@ def _build_acl_bool_terms(acl, action_obj):
     """
     acl = engine.ACLField.stringify_acl(acl)
     action = engine.ACLField._stringify_action(action_obj)
-    identifiers = list(set([ace['identifier'] for ace in acl]))
-    permissions = list(set([ace['permission'] for ace in acl]))
+    identifiers = sorted(set([ace['identifier'] for ace in acl]))
+    permissions = sorted(set([ace['permission'] for ace in acl]))
     return [
         {'term': {'_acl.action': action}},
         {'terms': {'_acl.identifier': identifiers}},
