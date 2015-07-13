@@ -1,6 +1,7 @@
 import logging
 
-from {{package}}.views.base import BaseView
+from nefertari.view import BaseView
+
 from {{package}}.models import Item
 
 log = logging.getLogger(__name__)
@@ -36,8 +37,7 @@ class ItemsView(BaseView):
 
     def delete_many(self):
         es_items = self.get_collection_es()
-        items = self.Model.filter_objects(
-            es_items, _limit=self._query_params['_limit'])
+        items = self.Model.filter_objects(es_items)
 
         if self.needs_confirmation():
             return items
@@ -46,8 +46,7 @@ class ItemsView(BaseView):
 
     def update_many(self):
         es_items = self.get_collection_es()
-        items = self.Model.filter_objects(
-            es_items, _limit=self._query_params['_limit'])
+        items = self.Model.filter_objects(es_items)
 
         return self.Model._update_many(
             items, self._json_params, self._query_params)
