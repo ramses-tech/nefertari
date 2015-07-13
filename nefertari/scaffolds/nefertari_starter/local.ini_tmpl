@@ -3,7 +3,7 @@ use = egg:{{package}}
 
 # Nefertari
 nefertari.engine = nefertari_{{engine}}
-debug = true
+enable_get_tunneling = true
 
 # SQLA
 sqlalchemy.url = postgresql://%(host)s:5432/{{package}}
