@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 crypt = cryptacular.bcrypt.BCRYPTPasswordManager()
 
 
-class AuthModelDefaultMixin(object):
+class AuthModelMixin(object):
     """ Mixin that implements all methods required for Ticket and Token
     auth systems to work.
 
@@ -20,16 +20,16 @@ class AuthModelDefaultMixin(object):
     """
     @classmethod
     def get_resource(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_resource(
+        return super(AuthModelMixin, self).get_resource(
             *args, **kwargs)
 
     @classmethod
     def pk_field(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).pk_field(*args, **kwargs)
+        return super(AuthModelMixin, self).pk_field(*args, **kwargs)
 
     @classmethod
     def get_or_create(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_or_create(
+        return super(AuthModelMixin, self).get_or_create(
             *args, **kwargs)
 
     @classmethod
@@ -151,6 +151,10 @@ def lower_strip(instance, new_value):
     return (new_value or '').lower().strip()
 
 
+def random_uuid(instance, new_value):
+    return new_value or uuid.uuid4().hex
+
+
 def encrypt_password(instance, new_value):
     """ Crypt :new_value: if it's not crypted yet. """
     if new_value and not crypt.match(new_value):
@@ -158,37 +162,26 @@ def encrypt_password(instance, new_value):
     return new_value
 
 
-def get_authuser_model():
-    """ Define and return AuthModel model class.
+class AuthUserMixin(AuthModelMixin):
+    """ Mixin that may be used as base for auth User models.
 
-    Wrapped in function to avoid unnecessary DB tables creation.
+    Implements basic operations to support Pyramid Ticket-based and custom
+    ApiKey token-based authentication.
     """
-
-    class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
-        """ Class that is meant to be User class in Auth system.
-
-        Implements basic operations to support Pyramid Ticket-based and custom
-        ApiKey token-based authentication.
-        """
-        __tablename__ = 'nefertari_authuser'
-
-        id = engine.IdField(primary_key=True)
-
-        username = engine.StringField(
-            min_length=1, max_length=50, unique=True, required=True,
-            before_validation=[lower_strip])
-        email = engine.StringField(
-            unique=True, required=True,
-            before_validation=[lower_strip])
-        password = engine.StringField(
-            min_length=3, required=True,
-            after_validation=[encrypt_password])
-
-        groups = engine.ListField(
-            item_type=engine.StringField,
-            choices=['admin', 'user'], default=['user'])
-
-    return AuthUser
+    id = engine.IdField()
+    username = engine.StringField(
+        primary_key=True, unique=True,
+        min_length=1, max_length=50,
+        before_validation=[random_uuid, lower_strip])
+    email = engine.StringField(
+        unique=True, required=True,
+        before_validation=[lower_strip])
+    password = engine.StringField(
+        min_length=3, required=True,
+        after_validation=[encrypt_password])
+    groups = engine.ListField(
+        item_type=engine.StringField,
+        choices=['admin', 'user'], default=['user'])
 
 
 def create_apikey_token():
