@@ -182,11 +182,13 @@ class BaseView(OptionsViewMixin):
             search_params.append(self._query_params.pop('q'))
         self._raw_terms = ' AND '.join(search_params)
 
-        return ES(self.Model.__name__).get_collection(
-            _raw_terms=self._raw_terms,
-            # Next line enables filtering by ACL
-            _identifiers=self.request.effective_principals,
-            **self._query_params)
+        params = {'_raw_terms': self._raw_terms}
+        params.update(self._query_params)
+
+        if ES.settings.asbool('acl_filtering'):
+            params['_identifiers'] = self.request.effective_principals
+
+        return ES(self.Model.__name__).get_collection(**params)
 
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: null value}.

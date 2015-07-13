@@ -165,40 +165,66 @@ def build_qs(params, _raw_terms='', operator='AND'):
     return _terms
 
 
+def _build_acl_bool_terms(acl, action_obj):
+    """ Build ACL bool filter from given Pyramid ACL.
+
+    :param acl: Valid Pyramid ACL used to build a bool filter query.
+    :param action_obj: Pyramid ACL action object (Allow, Deny)
+    """
+    acl = engine.ACLField.stringify_acl(acl)
+    action = engine.ACLField._stringify_action(action_obj)
+    identifiers = list(set([ace['identifier'] for ace in acl]))
+    permissions = list(set([ace['permission'] for ace in acl]))
+    return [
+        {'term': {'_acl.action': action}},
+        {'terms': {'_acl.identifier': identifiers}},
+        {'terms': {'_acl.permission': permissions}},
+    ]
+
+
+def _build_acl_from_identifiers(identifiers, action_obj):
+    """ Build ACL with 'all' and 'show' permissions for which
+    of :identifiers: controlled by :action_obj:.
+
+    :param identifiers: List of valid Pyramid ACL identifiers for
+        which ACL should be built.
+    :param action_obj: Pyramid ACL action object (Allow, Deny) which
+        should be used in all ACEs of ACL.
+    :return: Valid Pyramid ACL.
+    """
+    from pyramid.security import ALL_PERMISSIONS
+    acl = []
+    for ident in identifiers:
+        acl += [
+            (action_obj, ident, ALL_PERMISSIONS),
+            (action_obj, ident, 'show'),
+        ]
+    return acl
+
+
 def build_acl_query(identifiers):
-    from pyramid.security import Allow, Deny, ALL_PERMISSIONS
-    from nefertari import engine
+    """ Build ES query to filter collection by only getting items
+    for which user has 'show' or 'all' permission and does not have
+    any of these permissions denied.
+
+    Object is shown when its ACL allows 'all' or 'show' permissions
+    to any one of identifiers and doesn't deny 'all' or 'show' permissions
+    to any one of identifiers.
+    Order of ACEs in ACL doesn't affect filtering results.
+
+    :param identifiers: List of valid Pyramid ACL identifiers for
+        which object permissions should be allowed.
+    :return: ES 'filter' query part.
+    """
+    from pyramid.security import Allow, Deny
 
     # Generate ACLs from identifiers
-    allowed_acl = []
-    denied_acl = []
-    for ident in identifiers:
-        allowed_acl += [
-            (Allow, ident, ALL_PERMISSIONS),
-            (Allow, ident, 'show')]
-        denied_acl += [
-            (Deny, ident, ALL_PERMISSIONS),
-            (Deny, ident, 'show')]
+    allowed_acl = _build_acl_from_identifiers(identifiers, Allow)
+    denied_acl = _build_acl_from_identifiers(identifiers, Deny)
 
-    # Allowed query
-    allowed_acl = engine.ACLField.stringify_acl(allowed_acl)
-    allow_ids = list(set([ace['identifier'] for ace in allowed_acl]))
-    allow_perms = list(set([ace['permission'] for ace in allowed_acl]))
-    must = [
-        {'term': {'_acl.action': 'allow'}},
-        {'terms': {'_acl.identifier': allow_ids}},
-        {'terms': {'_acl.permission': allow_perms}},
-    ]
-
-    # Denied query
-    denied_acl = engine.ACLField.stringify_acl(denied_acl)
-    deny_ids = list(set([ace['identifier'] for ace in denied_acl]))
-    deny_perms = list(set([ace['permission'] for ace in denied_acl]))
-    must_not = [
-        {'term': {'_acl.action': 'deny'}},
-        {'terms': {'_acl.identifier': deny_ids}},
-        {'terms': {'_acl.permission': deny_perms}},
-    ]
+    # Generate bool terms queries
+    must = _build_acl_bool_terms(allowed_acl, Allow)
+    must_not = _build_acl_bool_terms(denied_acl, Deny)
 
     def get_bool_filter(query_terms):
         return {
@@ -216,7 +242,6 @@ def build_acl_query(identifiers):
             }
         }
     }
-
 
 
 class _ESDocs(list):
