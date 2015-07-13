@@ -223,13 +223,6 @@ class BaseView(OptionsViewMixin):
             rel_model_cls = engine.get_relationship_cls(field, model_cls)
             self.id2obj(field, rel_model_cls)
 
-    def get_debug(self, package=None):
-        if not package:
-            key = 'debug'
-        else:
-            key = '%s.debug' % package.split('.')[0]
-        return asbool(self.request.registry.settings.get(key))
-
     def setup_default_wrappers(self):
         """ Setup defaulf wrappers.
 
