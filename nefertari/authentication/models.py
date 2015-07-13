@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 crypt = cryptacular.bcrypt.BCRYPTPasswordManager()
 
 
-class AuthModelMixin(object):
+class AuthModelMethodsMixin(object):
     """ Mixin that implements all methods required for Ticket and Token
     auth systems to work.
 
@@ -20,16 +20,16 @@ class AuthModelMixin(object):
     """
     @classmethod
     def get_resource(self, *args, **kwargs):
-        return super(AuthModelMixin, self).get_resource(
+        return super(AuthModelMethodsMixin, self).get_resource(
             *args, **kwargs)
 
     @classmethod
     def pk_field(self, *args, **kwargs):
-        return super(AuthModelMixin, self).pk_field(*args, **kwargs)
+        return super(AuthModelMethodsMixin, self).pk_field(*args, **kwargs)
 
     @classmethod
     def get_or_create(self, *args, **kwargs):
-        return super(AuthModelMixin, self).get_or_create(
+        return super(AuthModelMethodsMixin, self).get_or_create(
             *args, **kwargs)
 
     @classmethod
@@ -162,7 +162,7 @@ def encrypt_password(instance, new_value):
     return new_value
 
 
-class AuthUserMixin(AuthModelMixin):
+class AuthUserMixin(AuthModelMethodsMixin):
     """ Mixin that may be used as base for auth User models.
 
     Implements basic operations to support Pyramid Ticket-based and custom

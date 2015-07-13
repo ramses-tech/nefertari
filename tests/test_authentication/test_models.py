@@ -26,16 +26,16 @@ class TestModelHelpers(object):
         assert models.create_apikey_token() == 'foobar'
 
 
-mixin_path = 'nefertari.authentication.models.AuthModelMixin.'
+mixin_path = 'nefertari.authentication.models.AuthModelMethodsMixin.'
 
 
-class TestAuthModelMixin(object):
+class TestAuthModelMethodsMixin(object):
     def test_is_admin(self, engine_mock):
         from nefertari.authentication import models
         user = Mock(groups=['user'])
-        assert not models.AuthModelMixin.is_admin(user)
+        assert not models.AuthModelMethodsMixin.is_admin(user)
         user = Mock(groups=['user', 'admin'])
-        assert models.AuthModelMixin.is_admin(user)
+        assert models.AuthModelMethodsMixin.is_admin(user)
 
     @patch(mixin_path + 'get_resource')
     def test_get_token_credentials(self, mock_res, engine_mock):
@@ -43,7 +43,7 @@ class TestAuthModelMixin(object):
         user = Mock()
         user.api_key.token = 'foo-token'
         mock_res.return_value = user
-        token = models.AuthModelMixin.get_token_credentials('user1', 1)
+        token = models.AuthModelMethodsMixin.get_token_credentials('user1', 1)
         assert token == 'foo-token'
         mock_res.assert_called_once_with(username='user1')
 
@@ -51,7 +51,7 @@ class TestAuthModelMixin(object):
     def test_get_token_credentials_user_not_found(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.return_value = None
-        token = models.AuthModelMixin.get_token_credentials('user1', 1)
+        token = models.AuthModelMethodsMixin.get_token_credentials('user1', 1)
         assert token is None
         mock_res.assert_called_once_with(username='user1')
 
@@ -61,7 +61,7 @@ class TestAuthModelMixin(object):
             self, mock_res, mock_forg, engine_mock):
         from nefertari.authentication import models
         mock_res.side_effect = Exception
-        token = models.AuthModelMixin.get_token_credentials('user1', 1)
+        token = models.AuthModelMethodsMixin.get_token_credentials('user1', 1)
         assert token is None
         mock_res.assert_called_once_with(username='user1')
         mock_forg.assert_called_once_with(1)
@@ -72,7 +72,7 @@ class TestAuthModelMixin(object):
         user = Mock(groups=['admin', 'user'])
         user.api_key.token = 'token'
         mock_res.return_value = user
-        groups = models.AuthModelMixin.get_groups_by_token(
+        groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups == ['g:admin', 'g:user']
         mock_res.assert_called_once_with(username='user1')
@@ -81,7 +81,7 @@ class TestAuthModelMixin(object):
     def test_get_groups_by_token_user_not_found(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.return_value = None
-        groups = models.AuthModelMixin.get_groups_by_token(
+        groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups is None
         mock_res.assert_called_once_with(username='user1')
@@ -92,7 +92,7 @@ class TestAuthModelMixin(object):
         user = Mock(groups=['admin', 'user'])
         user.api_key.token = 'dasdasd'
         mock_res.return_value = user
-        groups = models.AuthModelMixin.get_groups_by_token(
+        groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups is None
         mock_res.assert_called_once_with(username='user1')
@@ -103,7 +103,7 @@ class TestAuthModelMixin(object):
             self, mock_res, mock_forg, engine_mock):
         from nefertari.authentication import models
         mock_res.side_effect = Exception
-        groups = models.AuthModelMixin.get_groups_by_token(
+        groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups is None
         mock_res.assert_called_once_with(username='user1')
@@ -114,12 +114,12 @@ class TestAuthModelMixin(object):
         from nefertari.authentication import models
         user = Mock(password=models.crypt.encode('foo'))
         mock_res.return_value = user
-        success, usr = models.AuthModelMixin.authenticate_by_password(
+        success, usr = models.AuthModelMethodsMixin.authenticate_by_password(
             {'login': 'user1', 'password': 'foo'})
         assert success
         assert user == usr
         mock_res.assert_called_once_with(username='user1')
-        models.AuthModelMixin.authenticate_by_password(
+        models.AuthModelMethodsMixin.authenticate_by_password(
             {'login': 'user1@example.com', 'password': 'foo'})
         mock_res.assert_called_with(email='user1@example.com')
 
@@ -127,7 +127,7 @@ class TestAuthModelMixin(object):
     def test_authenticate_by_password_not_found(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.return_value = None
-        success, usr = models.AuthModelMixin.authenticate_by_password(
+        success, usr = models.AuthModelMethodsMixin.authenticate_by_password(
             {'login': 'user1', 'password': 'foo'})
         assert not success
         assert usr is None
@@ -139,7 +139,7 @@ class TestAuthModelMixin(object):
         from nefertari.authentication import models
         user = Mock(password=models.crypt.encode('foo'))
         mock_res.return_value = user
-        success, usr = models.AuthModelMixin.authenticate_by_password(
+        success, usr = models.AuthModelMethodsMixin.authenticate_by_password(
             {'login': 'user1', 'password': 'asdasdasd'})
         assert not success
         assert user == usr
@@ -149,7 +149,7 @@ class TestAuthModelMixin(object):
     def test_authenticate_by_password_exception(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.side_effect = Exception
-        success, usr = models.AuthModelMixin.authenticate_by_password(
+        success, usr = models.AuthModelMethodsMixin.authenticate_by_password(
             {'login': 'user1', 'password': 'asdasdasd'})
         assert not success
         assert usr is None
@@ -162,7 +162,7 @@ class TestAuthModelMixin(object):
         mock_field.return_value = 'idid'
         user = Mock(groups=['admin', 'user'])
         mock_res.return_value = user
-        groups = models.AuthModelMixin.get_groups_by_userid(
+        groups = models.AuthModelMethodsMixin.get_groups_by_userid(
             'user1', 1)
         assert groups == ['g:admin', 'g:user']
         mock_res.assert_called_once_with(idid='user1')
@@ -174,7 +174,7 @@ class TestAuthModelMixin(object):
         from nefertari.authentication import models
         mock_field.return_value = 'idid'
         mock_res.return_value = None
-        groups = models.AuthModelMixin.get_groups_by_userid(
+        groups = models.AuthModelMethodsMixin.get_groups_by_userid(
             'user1', 1)
         assert groups is None
         mock_res.assert_called_once_with(idid='user1')
@@ -187,7 +187,7 @@ class TestAuthModelMixin(object):
         from nefertari.authentication import models
         mock_field.return_value = 'idid'
         mock_res.side_effect = Exception
-        groups = models.AuthModelMixin.get_groups_by_userid(
+        groups = models.AuthModelMethodsMixin.get_groups_by_userid(
             'user1', 1)
         assert groups is None
         mock_res.assert_called_once_with(idid='user1')
@@ -196,7 +196,7 @@ class TestAuthModelMixin(object):
     @patch(mixin_path + 'get_or_create')
     def test_create_account(self, mock_get, engine_mock):
         from nefertari.authentication import models
-        models.AuthModelMixin.create_account(
+        models.AuthModelMethodsMixin.create_account(
             {'username': 1, 'password': 2, 'email': 3, 'foo': 4})
         mock_get.assert_called_once_with(
             email=3,
@@ -208,7 +208,7 @@ class TestAuthModelMixin(object):
         engine_mock.mock_add_spec([])
         mock_get.side_effect = JHTTPBadRequest
         with pytest.raises(JHTTPBadRequest) as ex:
-            models.AuthModelMixin.create_account({'email': 3})
+            models.AuthModelMethodsMixin.create_account({'email': 3})
         assert str(ex.value) == 'Failed to create account.'
         mock_get.assert_called_once_with(email=3, defaults={'email': 3})
 
@@ -220,7 +220,7 @@ class TestAuthModelMixin(object):
         from nefertari.authentication import models
         mock_auth.return_value = 123
         mock_id.return_value = 'idid'
-        models.AuthModelMixin.get_authuser_by_userid(1)
+        models.AuthModelMethodsMixin.get_authuser_by_userid(1)
         mock_auth.assert_called_once_with(1)
         mock_res.assert_called_once_with(idid=123)
 
@@ -232,7 +232,7 @@ class TestAuthModelMixin(object):
         from nefertari.authentication import models
         mock_auth.return_value = None
         mock_id.return_value = 'idid'
-        models.AuthModelMixin.get_authuser_by_userid(1)
+        models.AuthModelMethodsMixin.get_authuser_by_userid(1)
         mock_auth.assert_called_once_with(1)
         assert not mock_res.called
 
@@ -242,7 +242,7 @@ class TestAuthModelMixin(object):
             self, mock_res, mock_auth, engine_mock):
         from nefertari.authentication import models
         mock_auth.return_value = 'user1'
-        models.AuthModelMixin.get_authuser_by_name(1)
+        models.AuthModelMethodsMixin.get_authuser_by_name(1)
         mock_auth.assert_called_once_with(1)
         mock_res.assert_called_once_with(username='user1')
 
@@ -252,6 +252,6 @@ class TestAuthModelMixin(object):
             self, mock_res, mock_auth, engine_mock):
         from nefertari.authentication import models
         mock_auth.return_value = None
-        models.AuthModelMixin.get_authuser_by_name(1)
+        models.AuthModelMethodsMixin.get_authuser_by_name(1)
         mock_auth.assert_called_once_with(1)
         assert not mock_res.called
