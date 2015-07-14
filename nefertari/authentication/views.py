@@ -162,24 +162,24 @@ class TokenAuthRegisterView(TokenAuthViewMixin, BaseView):
         return self.register(*args, **kwargs)
 
 
-class TokenAuthClaimTokenView(TokenAuthViewMixin, BaseView):
+class TokenAuthClaimView(TokenAuthViewMixin, BaseView):
     """ Ticket auth view to claim registered token.
 
     Register with::
         root = config.get_root_resource()
-        root.add('token', view='path.to.TokenAuthClaimTokenView',
+        root.add('token', view='path.to.TokenAuthClaimView',
                  factory='nefertari.acl.AuthenticationACL')
     """
     def create(self, *args, **kwargs):
         return self.claim_token(*args, **kwargs)
 
 
-class TokenAuthResetTokenView(TokenAuthViewMixin, BaseView):
+class TokenAuthResetView(TokenAuthViewMixin, BaseView):
     """ Ticket auth view to reset registered token.
 
     Register with::
         root = config.get_root_resource()
-        root.add('reset_token', view='path.to.TokenAuthResetTokenView',
+        root.add('reset_token', view='path.to.TokenAuthResetView',
                  factory='nefertari.acl.AuthenticationACL')
     """
     def create(self, *args, **kwargs):
