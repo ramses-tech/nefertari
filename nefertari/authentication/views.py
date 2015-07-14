@@ -26,8 +26,7 @@ class TicketAuthViewMixin(object):
     def login(self, **params):
         self._json_params.update(params)
         next = self._query_params.get('next', '')
-        login_url = self.request.route_url('login')
-        if next.startswith(login_url):
+        if self.request.path in next:
             next = ''  # never use the login form itself as next
 
         unauthorized_url = self._query_params.get('unauthorized', None)
