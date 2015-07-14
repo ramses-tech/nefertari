@@ -6,8 +6,8 @@ from nefertari.json_httpexceptions import (
 from nefertari.view import BaseView
 
 
-class TicketAuthenticationView(BaseView):
-    """ View for auth operations to use with Pyramid ticket-based auth.
+class TicketAuthViewMixin(object):
+    """ View mixin for auth operations to use with Pyramid ticket-based auth.
         `login` (POST): Login the user with 'login' and 'password'
         `logout`: Logout user
     """
@@ -57,7 +57,46 @@ class TicketAuthenticationView(BaseView):
         return JHTTPOk('Logged out', headers=headers)
 
 
-class TokenAuthenticationView(BaseView):
+class TicketAuthRegisterView(TicketAuthViewMixin, BaseView):
+    """ Ticket auth register view.
+
+    Register with::
+        root = config.get_root_resource()
+        root.add('account', view='path.to.TicketAuthRegisterView',
+                 factory='nefertari.acl.AuthenticationACL')
+    """
+    def create(self, *args, **kwargs):
+        return self.register(*args, **kwargs)
+
+
+class TicketAuthLoginView(TicketAuthViewMixin, BaseView):
+    """ Ticket auth login view.
+
+    Register with::
+        root = config.get_root_resource()
+        root.add('login', view='path.to.TicketAuthLoginView',
+                 factory='nefertari.acl.AuthenticationACL')
+    """
+    def create(self, *args, **kwargs):
+        return self.login(*args, **kwargs)
+
+
+class TicketAuthLogoutView(TicketAuthViewMixin, BaseView):
+    """ Ticket auth logout view. Allows logout on GET and POST.
+
+    Register with::
+        root = config.get_root_resource()
+        root.add('logout', view='path.to.TicketAuthLogoutView',
+                 factory='nefertari.acl.AuthenticationACL')
+    """
+    def create(self, *args, **kwargs):
+        return self.logout(*args, **kwargs)
+
+    def show(self, *args, **kwargs):
+        return self.logout(*args, **kwargs)
+
+
+class TokenAuthViewMixin(object):
     """ View for auth operations to use with
     `nefertari.authentication.policies.ApiKeyAuthenticationPolicy`
     token-based auth. Implements methods:
@@ -109,3 +148,39 @@ class TokenAuthenticationView(BaseView):
         self.user.api_key.reset_token()
         headers = remember(self.request, self.user.username)
         return JHTTPOk('Registered', headers=headers)
+
+
+class TokenAuthRegisterView(TokenAuthViewMixin, BaseView):
+    """ Token auth register view.
+
+    Register with::
+        root = config.get_root_resource()
+        root.add('register', view='path.to.TokenAuthRegisterView',
+                 factory='nefertari.acl.AuthenticationACL')
+    """
+    def create(self, *args, **kwargs):
+        return self.register(*args, **kwargs)
+
+
+class TokenAuthClaimTokenView(TokenAuthViewMixin, BaseView):
+    """ Ticket auth view to claim registered token.
+
+    Register with::
+        root = config.get_root_resource()
+        root.add('token', view='path.to.TokenAuthClaimTokenView',
+                 factory='nefertari.acl.AuthenticationACL')
+    """
+    def create(self, *args, **kwargs):
+        return self.claim_token(*args, **kwargs)
+
+
+class TokenAuthResetTokenView(TokenAuthViewMixin, BaseView):
+    """ Ticket auth view to reset registered token.
+
+    Register with::
+        root = config.get_root_resource()
+        root.add('reset_token', view='path.to.TokenAuthResetTokenView',
+                 factory='nefertari.acl.AuthenticationACL')
+    """
+    def create(self, *args, **kwargs):
+        return self.reset_token(*args, **kwargs)
