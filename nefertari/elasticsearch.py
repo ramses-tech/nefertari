@@ -303,7 +303,7 @@ class ES(object):
                 '_op_type': action,
                 '_index': self.index_name,
                 '_type': _doc_type,
-                '_id': doc['id'],
+                '_id': doc['_pk'],
                 '_source': doc,
             }
 
@@ -352,7 +352,7 @@ class ES(object):
             index=self.index_name,
             doc_type=self.doc_type,
             fields=['_id'],
-            body={'ids': [d['id'] for d in documents]},
+            body={'ids': [d['_pk'] for d in documents]},
         )
         try:
             response = ES.api.mget(**query_kwargs)
@@ -361,7 +361,7 @@ class ES(object):
         else:
             indexed_ids = set(
                 d['_id'] for d in response['docs'] if d.get('found'))
-        documents = [d for d in documents if str(d['id']) not in indexed_ids]
+        documents = [d for d in documents if str(d['_pk']) not in indexed_ids]
 
         if not documents:
             log.info('No documents of type `{}` are missing from '
@@ -374,7 +374,7 @@ class ES(object):
         if not isinstance(ids, list):
             ids = [ids]
 
-        documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
+        documents = [{'_pk': _id, '_type': self.doc_type} for _id in ids]
         self._bulk('delete', documents, request_params=request_params)
 
     def get_by_ids(self, ids, **params):

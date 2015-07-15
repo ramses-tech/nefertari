@@ -142,8 +142,7 @@ class apply_privacy(object):
             else:
                 fields &= public_fields
 
-        fields.add('_type')
-        fields.add('self')
+        fields.update(['_type', '_pk', 'self'])
         return data.subset(fields)
 
     def __call__(self, **kwargs):
@@ -245,9 +244,9 @@ class add_object_url(object):
     def _set_object_self(self, obj):
         """ Add 'self' key value to :obj: dict. """
         location = self.request.path_url
-        obj_id = urllib.parse.quote(str(obj['id']))
-        if not self.is_singular and not location.endswith(obj_id):
-            location += '/{}'.format(obj_id)
+        obj_pk = urllib.parse.quote(str(obj['_pk']))
+        if not self.is_singular and not location.endswith(obj_pk):
+            location += '/{}'.format(obj_pk)
         obj.setdefault('self', location)
 
     def __call__(self, **kwargs):
@@ -293,11 +292,11 @@ class add_confirmation_url(object):
 class add_etag(object):
     """ Add ETAG header to response.
 
-    Etag is generated md5-encoding '_version' + 'id' of each object
+    Etag is generated md5-encoding '_version' + '_pk' of each object
     in a sequence of objects returned.
 
     This wrapper should be applied before `apply_privacy` if later is
-    used or before any wrapper that may remove `_version` and `id` keys
+    used or before any wrapper that may remove `_version` and `_pk` keys
     from output.
     """
     def __init__(self, request):
@@ -309,7 +308,7 @@ class add_etag(object):
         etag_src = ''
 
         def etag(data):
-            return str(data.get('_version', '')) + str(data.get('id', ''))
+            return str(data.get('_version', '')) + str(data.get('_pk', ''))
 
         try:
             etag_src += etag(result)

@@ -45,7 +45,7 @@ def create_json_response(obj, request=None, log_it=False, show_stack=False,
                 extra['remote_addr'] = request.remote_addr
 
         if obj.location:
-            body['id'] = obj.location.split('/')[-1]
+            body['_pk'] = obj.location.split('/')[-1]
         body.update(extra)
 
     obj.body = six.b(json_dumps(body, encoder=encoder))

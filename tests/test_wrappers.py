@@ -13,6 +13,7 @@ from nefertari.utils import dictset
 
 class TestWrappers(unittest.TestCase):
     model_test_data = dictset({
+        '_pk': '1',
         '_type': 'foo',
         'self': 'http://example.com/1',
         'name': 'User1',
@@ -108,7 +109,7 @@ class TestWrappers(unittest.TestCase):
         assert result['data'][0] == {'id': 4}
 
     def test_add_object_url_collection(self):
-        result = {'data': [{'id': 4}]}
+        result = {'data': [{'_pk': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
@@ -123,38 +124,38 @@ class TestWrappers(unittest.TestCase):
         assert result['data'][0]['self'] == 'http://example.com/4'
 
     def test_add_object_url_item(self):
-        result = {'id': 4}
+        result = {'_pk': 4}
         request = DummyRequest(path='http://example.com', environ={})
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
         result = wrapper(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com/4'}
+        assert result == {'_pk': 4, 'self': 'http://example.com/4'}
 
     def test_add_object_url_contains_id(self):
-        result = {'id': 4}
+        result = {'_pk': 4}
         request = DummyRequest(path='http://example.com/4', environ={})
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
         result = wrapper(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com/4'}
+        assert result == {'_pk': 4, 'self': 'http://example.com/4'}
 
     @patch('nefertari.wrappers.urllib')
     def test_add_object_url_type_error(self, mock_lib):
         mock_lib.parse.quote.side_effect = TypeError
-        result = {'data': [{'id': 4}]}
+        result = {'data': [{'_pk': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = False
         result = wrapper(result=result)
-        assert result['data'][0] == {'id': 4}
+        assert result['data'][0] == {'_pk': 4}
 
     def test_add_object_url_singular_resource(self):
-        result = {'id': 4}
+        result = {'_pk': 4}
         request = DummyRequest(path='http://example.com', environ={})
         wrapper = wrappers.add_object_url(request=request)
         wrapper._is_singular = True
         result = wrapper(result=result)
-        assert result == {'id': 4, 'self': 'http://example.com'}
+        assert result == {'_pk': 4, 'self': 'http://example.com'}
 
     def test_add_object_url_is_singular_property(self):
         route = Mock()
@@ -182,7 +183,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=None)
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'name', 'self']
+            '_pk', '_type', 'desc', 'name', 'self']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_no_request(self, mock_eng):
@@ -192,7 +193,7 @@ class TestWrappers(unittest.TestCase):
         mock_eng.get_document_cls.return_value = document_cls
         filtered = wrappers.apply_privacy(None)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_pk', '_type', 'desc', 'id', 'name', 'other_field', 'self']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_auth(self, mock_eng):
@@ -204,7 +205,7 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=False)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'id', 'self']
+            '_pk', '_type', 'id', 'self']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_auth_calculated(self, mock_eng):
@@ -221,7 +222,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=User())
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'id', 'self']
+            '_pk', '_type', 'id', 'self']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_admin(self, mock_eng):
@@ -233,7 +234,7 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_pk', '_type', 'desc', 'id', 'name', 'other_field', 'self']
         filtered['_type'] == 'foo'
         filtered['desc'] == 'User 1 data'
         filtered['id'] == 1
@@ -250,7 +251,7 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
-            'desc', 'id', 'name', 'other_field', 'self']
+            '_pk', 'desc', 'id', 'name', 'other_field', 'self']
         filtered['desc'] == 'User 1 data'
         filtered['id'] == 1
         filtered['name'] == 'User1'
@@ -288,7 +289,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=User())
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_pk', '_type', 'desc', 'id', 'name', 'other_field', 'self']
         filtered['_type'] == 'foo'
         filtered['desc'] == 'User 1 data'
         filtered['id'] == 1
@@ -304,7 +305,7 @@ class TestWrappers(unittest.TestCase):
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=True)
         assert list(sorted(filtered.keys())) == [
-            '_type', 'desc', 'id', 'name', 'other_field', 'self']
+            '_pk', '_type', 'desc', 'id', 'name', 'other_field', 'self']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_item_no_fields(self, mock_eng):
@@ -315,7 +316,7 @@ class TestWrappers(unittest.TestCase):
         request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(
             result=self.model_test_data, is_admin=False)
-        assert list(sorted(filtered.keys())) == ['_type', 'self']
+        assert list(sorted(filtered.keys())) == ['_pk', '_type', 'self']
 
     @patch('nefertari.wrappers.engine')
     def test_apply_privacy_collection(self, mock_eng):
@@ -334,7 +335,7 @@ class TestWrappers(unittest.TestCase):
         assert list(sorted(filtered.keys())) == ['count', 'data', 'total']
         assert len(filtered['data']) == 1
         data = filtered['data'][0]
-        assert list(sorted(data.keys())) == ['_type', 'id', 'self']
+        assert list(sorted(data.keys())) == ['_pk', '_type', 'id', 'self']
 
     @patch('nefertari.wrappers.obj2dict')
     def test_wrap_in_dict_no_meta_dict(self, mock_obj):
@@ -409,33 +410,33 @@ class TestWrappers(unittest.TestCase):
         wrapper = wrappers.add_etag(Mock())
         wrapper.request.response.etag = None
         wrapper(result={'data': [
-            {'id': 1, '_version': 1},
-            {'id': 2, '_version': 1},
+            {'_pk': 1, '_version': 1},
+            {'_pk': 2, '_version': 1},
         ]})
         expected1 = '20d135f0f28185b84a4cf7aa51f29500'
         assert wrapper.request.response.etag == expected1
 
         # Etag is the same when data isn't changed
         wrapper(result={'data': [
-            {'id': 1, '_version': 1},
-            {'id': 2, '_version': 1},
+            {'_pk': 1, '_version': 1},
+            {'_pk': 2, '_version': 1},
         ]})
         assert isinstance(wrapper.request.response.etag, six.string_types)
         assert wrapper.request.response.etag == expected1
 
         # New object added
         wrapper(result={'data': [
-            {'id': 1, '_version': 1},
-            {'id': 2, '_version': 1},
-            {'id': 3, '_version': 1},
+            {'_pk': 1, '_version': 1},
+            {'_pk': 2, '_version': 1},
+            {'_pk': 3, '_version': 1},
         ]})
         assert isinstance(wrapper.request.response.etag, six.string_types)
         assert wrapper.request.response.etag != expected1
 
         # Existing object's version changed
         wrapper(result={'data': [
-            {'id': 1, '_version': 1},
-            {'id': 2, '_version': 2},
+            {'_pk': 1, '_version': 1},
+            {'_pk': 2, '_version': 2},
         ]})
         assert isinstance(wrapper.request.response.etag, six.string_types)
         assert wrapper.request.response.etag != expected1
