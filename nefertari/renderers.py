@@ -3,6 +3,7 @@ import logging
 from datetime import date, datetime
 
 from nefertari import wrappers
+from nefertari.utils import get_json_encoder
 from nefertari.json_httpexceptions import JHTTPOk, JHTTPCreated
 
 log = logging.getLogger(__name__)
@@ -42,8 +43,9 @@ class JsonRendererFactory(object):
     def _render_response(self, value, system):
         """ Render a response """
         view = system['view']
-        enc_class = getattr(
-            view, '_json_encoder', _JSONEncoder) or _JSONEncoder
+        enc_class = getattr(view, '_json_encoder', None)
+        if enc_class is None:
+            enc_class = get_json_encoder()
         return json.dumps(value, cls=enc_class)
 
     def __call__(self, value, system):
@@ -75,8 +77,9 @@ class DefaultResponseRendererMixin(object):
     """
     def _get_common_kwargs(self, system):
         """ Get kwargs common for all methods. """
-        enc_class = getattr(
-            system['view'], '_json_encoder', _JSONEncoder) or _JSONEncoder
+        enc_class = getattr(system['view'], '_json_encoder', None)
+        if enc_class is None:
+            enc_class = get_json_encoder()
         return {
             'request': system['request'],
             'encoder': enc_class,
@@ -86,8 +89,8 @@ class DefaultResponseRendererMixin(object):
         """ Get kwargs common to create, update, replace. """
         kw = common_kw.copy()
         kw['body'] = value
-        if 'self' in value:
-            kw['headers'] = [('Location', value['self'])]
+        if '_self' in value:
+            kw['headers'] = [('Location', value['_self'])]
         return kw
 
     def render_create(self, value, system, common_kw):

@@ -195,7 +195,7 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
 
 
 class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
-    """ Wrapper that adds 'self' to each object in results
+    """ Wrapper that adds '_self' to each object in results
 
     For each object in `result['data']` adds a uri which points
     to current object
@@ -211,11 +211,11 @@ class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
     def _set_object_self(self, obj):
         """ Override to generate urls instead of just concatenating.
 
-        'self' key is not set for singular resources.
+        '_self' key is not set for singular resources.
         """
         type_, obj_id = obj['_type'], obj['id']
         resource = self.model_resources[type_]
-        obj['self'] = self.request.route_url(
+        obj['_self'] = self.request.route_url(
             resource.uid, **{resource.id_name: obj_id})
 
     def __call__(self, **kwargs):

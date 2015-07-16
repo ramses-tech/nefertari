@@ -205,6 +205,7 @@ class TestAuthModelDefaultMixin(object):
     @patch(mixin_path + 'get_or_create')
     def test_create_account_bad_request(self, mock_get, engine_mock):
         from nefertari.authentication import models
+        engine_mock.mock_add_spec([])
         mock_get.side_effect = JHTTPBadRequest
         with pytest.raises(JHTTPBadRequest) as ex:
             models.AuthModelDefaultMixin.create_account({'email': 3})

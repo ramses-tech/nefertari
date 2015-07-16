@@ -489,7 +489,7 @@ class TestES(object):
     def test_build_search_params_no_body(self):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params(
-            {'foo': 1, 'zoo': 2, '_raw_terms': ' AND q:5', '_limit': 10}
+            {'foo': 1, 'zoo': 2, 'q': ' AND q:5', '_limit': 10}
         )
         assert sorted(params.keys()) == sorted([
             'body', 'doc_type', 'from_', 'size', 'index'])

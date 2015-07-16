@@ -134,5 +134,5 @@ class TestJSONHTTPExceptionsModule(object):
             location='http://example.com/1',
             encoder=1)
         mock_create.assert_called_once_with(
-            obj=resp, resource={'foo': 'bar', 'self': 'http://example.com/1'},
+            obj=resp, resource={'foo': 'bar', '_self': 'http://example.com/1'},
             request=None, encoder=1, body=None)

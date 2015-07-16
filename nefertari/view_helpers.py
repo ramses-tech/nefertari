@@ -201,13 +201,6 @@ class ESAggregator(object):
             self.check_aggregations_privacy(aggregations_params)
         self.stub_wrappers()
 
-        search_params = []
-        if 'q' in self._query_params:
-            search_params.append(self._query_params.pop('q'))
-        _raw_terms = ' AND '.join(search_params)
-
         return ES(self.view.Model.__name__).aggregate(
             _aggregations_params=aggregations_params,
-            _raw_terms=_raw_terms,
-            **self._query_params
-        )
+            **self._query_params)

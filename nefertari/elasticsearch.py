@@ -22,7 +22,6 @@ RESERVED = [
     '_fields',
     '_count',
     '_sort',
-    '_raw_terms',
     '_search_fields',
     '_refresh_index',
 ]
@@ -449,11 +448,10 @@ class ES(object):
             index=self.index_name,
             doc_type=self.doc_type
         )
+        _raw_terms = params.pop('q', '')
 
         if 'body' not in params:
-            query_string = build_qs(
-                params.remove(RESERVED),
-                params.get('_raw_terms', ''))
+            query_string = build_qs(params.remove(RESERVED), _raw_terms)
             if query_string:
                 _params['body'] = {
                     'query': {
