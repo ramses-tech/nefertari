@@ -363,22 +363,6 @@ class TestBaseView(object):
         eng.get_relationship_cls.assert_called_once_with('foo', 'Model1')
         id2obj.assert_called_once_with('foo', eng.get_relationship_cls())
 
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_get_debug(self, run):
-        request = self.get_common_mock_request()
-        request.registry.settings = {'super.debug': 'true'}
-        view = DummyBaseView(
-            context={}, request=request, _query_params={'foo': 'bar'})
-        assert view.get_debug(package='super')
-
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_get_debug_no_package(self, run):
-        request = self.get_common_mock_request()
-        request.registry.settings = {'debug': 'false'}
-        view = DummyBaseView(
-            context={}, request=request, _query_params={'foo': 'bar'})
-        assert not view.get_debug()
-
     @patch('nefertari.view.wrappers')
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_setup_default_wrappers_with_auth(self, run, wrap):

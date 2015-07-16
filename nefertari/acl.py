@@ -104,7 +104,6 @@ class AuthenticatedReadACL(BaseACL):
     Gives read access to all Authenticated users.
     Gives delete, create, update access to admin only.
     """
-
     def __init__(self, request):
         super(AuthenticatedReadACL, self).__init__(request)
         self.acl = (Allow, Authenticated, ['index', 'collection_options'])
@@ -113,4 +112,23 @@ class AuthenticatedReadACL(BaseACL):
         return [
             (Allow, 'g:admin', ALL_PERMISSIONS),
             (Allow, Authenticated, ['show', 'item_options']),
+        ]
+
+
+class AuthenticationACL(BaseACL):
+    """ Special ACL factory to be used with authentication views
+    (login, logout, register, etc.)
+
+    Allows 'create', 'show' and option methods to everyone.
+    """
+    def __init__(self, request):
+        super(AuthenticationACL, self).__init__(request)
+        self.acl = (Allow, Everyone, [
+            'create', 'show', 'collection_options', 'item_options'])
+
+    def context_acl(self, obj):
+        return [
+            (Allow, 'g:admin', ALL_PERMISSIONS),
+            (Allow, Everyone, [
+                'create', 'show', 'collection_options', 'item_options']),
         ]
