@@ -17,7 +17,7 @@ The most convenient option was the beautiful `flask-restless <https://flask-rest
 
 We were also inspired by `pyramid-royal <https://pyramid-royal.readthedocs.org/en/latest/>`_ from our fellow Montreal Python colleague Hadrien David. He showed how traversal is a-ok for matching routes in a tree of resources, which is what REST should be anyway.
 
-However, we had become quite used to the power of using Elasticsearch and wanted to retain the option of using it as a first class citizen to power most GET views. Plus we were already using traversal without really thinking. Therefore we decided to add Postgres support via SQLA to our platform, and thus was born Nefertari.
+However, we had become quite used to the power of Elasticsearch and wanted to retain the option of using it as a first class citizen to power most GET views. Plus we were already using traversal without really thinking. Therefore we decided to add Postgres support via SQLA to our platform, and thus was born Nefertari.
 
 
 Vision
