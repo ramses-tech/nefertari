@@ -130,7 +130,7 @@ class TestHelperFunctions(object):
         assert qs == 'foo:1 OR foo:2'
 
     def test_build_raw_terms(self):
-        qs = es.build_qs(dictset({'foo': [1, 2]}), _raw_terms=' AND qoo:1')
+        qs = es.build_qs(dictset({'foo': [1, 2]}), _raw_terms='qoo:1')
         assert qs == 'foo:1 OR foo:2 AND qoo:1'
 
     def test_build_operator(self):
@@ -489,12 +489,12 @@ class TestES(object):
     def test_build_search_params_no_body(self):
         obj = es.ES('Foo', 'foondex')
         params = obj.build_search_params(
-            {'foo': 1, 'zoo': 2, 'q': ' AND q:5', '_limit': 10}
+            {'foo': 1, 'zoo': 2, 'q': '5', '_limit': 10}
         )
         assert sorted(params.keys()) == sorted([
             'body', 'doc_type', 'from_', 'size', 'index'])
         assert params['body'] == {
-            'query': {'query_string': {'query': 'foo:1 AND zoo:2 AND q:5'}}}
+            'query': {'query_string': {'query': 'foo:1 AND zoo:2 AND 5'}}}
         assert params['index'] == 'foondex'
         assert params['doc_type'] == 'foo'
 
