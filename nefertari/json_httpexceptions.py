@@ -110,6 +110,6 @@ class JHTTPCreated(http_exc.HTTPCreated):
         super(JHTTPCreated, self).__init__(*args, **kwargs)
 
         if resource and 'location' in kwargs:
-            resource['self'] = kwargs['location']
+            resource['_self'] = kwargs['location']
 
         create_json_response(**resp_kwargs)

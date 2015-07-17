@@ -10,10 +10,12 @@ from pyramid.url import route_path
 from pyramid.response import Response
 
 from nefertari.view import BaseView
+from nefertari.renderers import _JSONEncoder
 
 
 def get_test_view_class(name=''):
     class View(BaseView):
+        _json_encoder = _JSONEncoder
         Model = mock.Mock(__name__='Foo')
 
         def __init__(self, *a, **k):
@@ -60,7 +62,7 @@ class Test(unittest.TestCase):
 
 
 class DummyCrudView(object):
-    _json_encoder = None
+    _json_encoder = _JSONEncoder
 
     def __init__(self, request):
         self.request = request
@@ -169,7 +171,7 @@ class TestResourceGeneration(Test):
 
 
 class DummyCrudRenderedView(object):
-    _json_encoder = None
+    _json_encoder = _JSONEncoder
 
     def __init__(self, request):
         self.request = request

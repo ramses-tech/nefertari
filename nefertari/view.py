@@ -63,7 +63,6 @@ class ViewMapper(object):
 class BaseView(OptionsViewMixin):
     """Base class for nefertari views.
     """
-
     __view_mapper__ = ViewMapper
     _default_renderer = 'nefertari_json'
     _json_encoder = None
@@ -177,13 +176,7 @@ class BaseView(OptionsViewMixin):
         results for default response renderers to work properly.
         """
         from nefertari.elasticsearch import ES
-        search_params = []
-        if 'q' in self._query_params:
-            search_params.append(self._query_params.pop('q'))
-        self._raw_terms = ' AND '.join(search_params)
-
-        params = {'_raw_terms': self._raw_terms}
-        params.update(self._query_params)
+        params = self._query_params.copy()
 
         if ES.settings.asbool('acl_filtering'):
             params['_identifiers'] = self.request.effective_principals
@@ -209,7 +202,11 @@ class BaseView(OptionsViewMixin):
     def set_public_limits(self):
         """ Set public limits if auth is enabled and user is not
         authenticated.
+
+        Also sets default limit for GET, HEAD requests.
         """
+        if self.request.method.upper() in ['GET', 'HEAD']:
+            self._query_params.process_int_param('_limit', 20)
         if self._auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
@@ -230,13 +227,6 @@ class BaseView(OptionsViewMixin):
                 continue
             rel_model_cls = engine.get_relationship_cls(field, model_cls)
             self.id2obj(field, rel_model_cls)
-
-    def get_debug(self, package=None):
-        if not package:
-            key = 'debug'
-        else:
-            key = '%s.debug' % package.split('.')[0]
-        return asbool(self.request.registry.settings.get(key))
 
     def setup_default_wrappers(self):
         """ Setup defaulf wrappers.

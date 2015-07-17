@@ -6,11 +6,22 @@ from nefertari.utils import utils
 
 class TestUtils(object):
 
-    @patch('nefertari.utils.utils.json')
-    def test_json_dumps(self, mock_json):
+    @patch('nefertari.engine')
+    def test_get_json_encoder_engine(self, mock_eng):
+        eng = utils.get_json_encoder()
+        assert eng == mock_eng.JSONEncoder
+
+    def test_get_json_encoder_default(self):
         from nefertari.renderers import _JSONEncoder
+        eng = utils.get_json_encoder()
+        assert eng is _JSONEncoder
+
+    @patch('nefertari.utils.utils.get_json_encoder')
+    @patch('nefertari.utils.utils.json')
+    def test_json_dumps(self, mock_json, mock_get):
         utils.json_dumps('foo')
-        mock_json.dumps.assert_called_once_with('foo', cls=_JSONEncoder)
+        mock_get.assert_called_once_with()
+        mock_json.dumps.assert_called_once_with('foo', cls=mock_get())
 
     @patch('nefertari.utils.utils.json')
     def test_json_dumps_encoder(self, mock_json):

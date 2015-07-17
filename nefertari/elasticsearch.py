@@ -22,7 +22,6 @@ RESERVED = [
     '_fields',
     '_count',
     '_sort',
-    '_raw_terms',
     '_search_fields',
     '_refresh_index',
 ]
@@ -160,8 +159,10 @@ def build_qs(params, _raw_terms='', operator='AND'):
             terms.append('%s:%s' % (k, v))
 
     terms = sorted([term for term in terms if term])
-    _terms = (' %s ' % operator).join(terms) + _raw_terms
-
+    _terms = (' %s ' % operator).join(terms)
+    if _raw_terms:
+        add = (' AND ' + _raw_terms) if _terms else _raw_terms
+        _terms += add
     return _terms
 
 
@@ -528,13 +529,12 @@ class ES(object):
             index=self.index_name,
             doc_type=self.doc_type
         )
+        _raw_terms = params.pop('q', '')
 
         _identifiers = params.pop('_identifiers', None)
 
         if 'body' not in params:
-            query_string = build_qs(
-                params.remove(RESERVED),
-                params.get('_raw_terms', ''))
+            query_string = build_qs(params.remove(RESERVED), _raw_terms)
             if query_string:
                 _params['body'] = {
                     'query': {

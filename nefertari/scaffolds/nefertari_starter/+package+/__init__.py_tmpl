@@ -27,8 +27,7 @@ def bootstrap(config):
     config.include('nefertari.view')
     config.include('nefertari.elasticsearch')
 
-    if Settings.asbool('debug'):
-        log.warning('*** DEBUG DEBUG DEBUG mode ***')
+    if Settings.asbool('enable_get_tunneling'):
         config.add_tween('nefertari.tweens.get_tunneling')
 
     def _route_url(request, route_name, *args, **kw):
