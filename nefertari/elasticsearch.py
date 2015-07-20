@@ -89,13 +89,13 @@ def _bulk_body(documents_actions, request):
     }
 
     if request is None:
-        GET_params = {}
+        query_params = {}
     else:
-        GET_params = request.params.mixed()
-    GET_params = dictset(GET_params)
+        query_params = request.params.mixed()
+    query_params = dictset(query_params)
     refresh_enabled = ES.settings.asbool('enable_refresh_query')
-    if '_refresh_index' in GET_params and refresh_enabled:
-        kwargs['refresh'] = GET_params.asbool('_refresh_index')
+    if '_refresh_index' in query_params and refresh_enabled:
+        kwargs['refresh'] = query_params.asbool('_refresh_index')
 
     executed_num, errors = helpers.bulk(**kwargs)
     log.info('Successfully executed {} Elasticsearch action(s)'.format(
