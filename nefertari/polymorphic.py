@@ -212,10 +212,10 @@ class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
 
         '_self' key is not set for singular resources.
         """
-        type_, obj_id = obj['_type'], obj['id']
+        type_, obj_pk = obj['_type'], obj['_pk']
         resource = self.model_resources[type_]
         obj['_self'] = self.request.route_url(
-            resource.uid, **{resource.id_name: obj_id})
+            resource.uid, **{resource.id_name: obj_pk})
 
     def __call__(self, **kwargs):
         self.model_resources = self.get_models_map()

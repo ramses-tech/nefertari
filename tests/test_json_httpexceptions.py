@@ -38,7 +38,7 @@ class TestJSONHTTPExceptionsModule(object):
         assert isinstance(obj2.body, six.binary_type)
         body = json.loads(obj2.body.decode('utf-8'))
         assert sorted(body.keys()) == [
-            'client_addr', 'explanation', 'id', 'message', 'remote_addr',
+            '_pk', 'client_addr', 'explanation', 'message', 'remote_addr',
             'request_url', 'status_code', 'timestamp', 'title'
         ]
         assert body['remote_addr'] == '127.0.0.2'
@@ -47,7 +47,7 @@ class TestJSONHTTPExceptionsModule(object):
         assert body['explanation'] == 'success'
         assert body['title'] == 'bar'
         assert body['message'] == 'foo'
-        assert body['id'] == 'api'
+        assert body['_pk'] == 'api'
         assert body['request_url'] == 'http://example.com'
 
     @patch.object(jsonex, 'add_stack')
@@ -65,7 +65,7 @@ class TestJSONHTTPExceptionsModule(object):
         assert body['explanation'] == 'success'
         assert body['title'] == 'bar'
         assert body['message'] == 'foo'
-        assert body['id'] == 'api'
+        assert body['_pk'] == 'api'
 
     @patch.object(jsonex, 'add_stack')
     def test_create_json_response_stack_calls(self, mock_stack):
