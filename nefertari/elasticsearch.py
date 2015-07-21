@@ -111,9 +111,6 @@ def process_fields_param(fields):
     * Fields list is split if needed
     * '_type' field is added, if not present, so the actual value is
       displayed instead of 'None'
-    * '_source=False' is returned as well, so document source is not
-      loaded from ES. This is done because source is not used when
-      'fields' param is provided
     """
     if not fields:
         return fields
@@ -122,8 +119,8 @@ def process_fields_param(fields):
     if '_type' not in fields:
         fields.append('_type')
     return {
-        'fields': fields,
-        '_source': False,
+        '_source_include': fields,
+        '_source': True,
     }
 
 
@@ -427,7 +424,7 @@ class ES(object):
 
         for _d in data['docs']:
             try:
-                _d = _d['fields'] if fields else _d['_source']
+                _d = _d['_source']
             except KeyError:
                 msg = "ES: '%s(%s)' resource not found" % (
                     _d['_type'], _d['_id'])
@@ -577,7 +574,7 @@ class ES(object):
             return documents
 
         for da in data['hits']['hits']:
-            _d = da['fields'] if fields else da['_source']
+            _d = da['_source']
             _d['_score'] = da['_score']
             documents.append(dict2obj(_d))
 

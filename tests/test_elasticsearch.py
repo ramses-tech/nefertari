@@ -86,14 +86,14 @@ class TestHelperFunctions(object):
 
     def test_process_fields_param_string(self):
         assert es.process_fields_param('foo,bar') == {
-            'fields': ['foo', 'bar', '_type'],
-            '_source': False
+            '_source_include': ['foo', 'bar', '_type'],
+            '_source': True
         }
 
     def test_process_fields_param_list(self):
         assert es.process_fields_param(['foo', 'bar']) == {
-            'fields': ['foo', 'bar', '_type'],
-            '_source': False
+            '_source_include': ['foo', 'bar', '_type'],
+            '_source': True
         }
 
     @patch('nefertari.elasticsearch.ES')
@@ -434,17 +434,16 @@ class TestES(object):
                 '_type': 'foo',
                 '_id': 1,
                 '_source': {'_id': 1, '_type': 'Story', 'name': 'bar'},
-                'fields': {'name': 'bar'}
             }]
         }
         docs = obj.get_by_ids(documents, _limit=1, _fields=['name'])
         mock_mget.assert_called_once_with(
             body={'docs': [{'_index': 'foondex', '_type': 'story', '_id': 1}]},
-            fields=['name', '_type'], _source=False
+            _source_include=['name', '_type'], _source=True
         )
         assert len(docs) == 1
-        assert not hasattr(docs[0], '_id')
-        assert not hasattr(docs[0], '_type')
+        assert hasattr(docs[0], '_id')
+        assert hasattr(docs[0], '_type')
         assert docs[0].name == 'bar'
         assert docs._nefertari_meta['total'] == 1
         assert docs._nefertari_meta['start'] == 0
@@ -644,7 +643,7 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         mock_search.return_value = {
             'hits': {
-                'hits': [{'fields': {'foo': 'bar', 'id': 1}, '_score': 2}],
+                'hits': [{'_source': {'foo': 'bar', 'id': 1}, '_score': 2}],
                 'total': 4,
             },
             'took': 2.8,
@@ -652,8 +651,8 @@ class TestES(object):
         docs = obj.get_collection(
             fields=['foo'], body={'foo': 'bar'}, from_=0)
         mock_search.assert_called_once_with(
-            body={'foo': 'bar'}, fields=['foo', '_type'], from_=0,
-            _source=False)
+            body={'foo': 'bar'}, _source_include=['foo', '_type'],
+            from_=0, _source=True)
         assert len(docs) == 1
         assert docs[0].id == 1
         assert docs[0]._score == 2
