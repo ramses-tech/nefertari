@@ -245,7 +245,10 @@ class add_object_url(object):
     def _set_object_self(self, obj):
         """ Add '_self' key value to :obj: dict. """
         location = self.request.path_url
-        obj_pk = urllib.parse.quote(str(obj['_pk']))
+        try:
+            obj_pk = urllib.parse.quote(str(obj['_pk']))
+        except KeyError:
+            return
         if not self.is_singular and not location.endswith(obj_pk):
             location += '/{}'.format(obj_pk)
         obj.setdefault('_self', location)
