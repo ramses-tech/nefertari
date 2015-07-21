@@ -147,16 +147,17 @@ class AuthModelMethodsMixin(object):
             return cls.get_resource(username=username)
 
 
-def lower_strip(instance, new_value):
-    return (new_value or '').lower().strip()
+def lower_strip(**kwargs):
+    return (kwargs['new_value'] or '').lower().strip()
 
 
-def random_uuid(instance, new_value):
-    return new_value or uuid.uuid4().hex
+def random_uuid(**kwargs):
+    return kwargs['new_value'] or uuid.uuid4().hex
 
 
-def encrypt_password(instance, new_value):
+def encrypt_password(**kwargs):
     """ Crypt :new_value: if it's not crypted yet. """
+    new_value = kwargs['new_value']
     if new_value and not crypt.match(new_value):
         new_value = str(crypt.encode(new_value))
     return new_value
