@@ -157,7 +157,7 @@ class TestPolymorphicESView(object):
         mock_res.return_value = [stories_res, users_res]
         view = self._dummy_view()
         types = view.determine_types()
-        assert types == ['storyfoo']
+        assert types == ['StoryFoo']
         mock_coll.assert_called_with()
         mock_res.assert_called_with(['stories', 'users'])
 

@@ -178,7 +178,8 @@ class ES(object):
 
     @classmethod
     def src2type(cls, source):
-        return source.lower()
+        """ Convert string :source: to ES document _type name. """
+        return source
 
     @classmethod
     def setup(cls, settings):
@@ -295,7 +296,7 @@ class ES(object):
                         type(doc).__name__))
 
             if '_type' in doc:
-                _doc_type = self.src2type(doc['_type'])
+                _doc_type = self.src2type(doc.pop('_type'))
             else:
                 _doc_type = self.doc_type
 
@@ -422,19 +423,20 @@ class ES(object):
             documents._nefertari_meta.update(total=0)
             return documents
 
-        for _d in data['docs']:
+        for found_doc in data['docs']:
             try:
-                _d = _d['_source']
+                output_doc = found_doc['_source']
+                output_doc['_type'] = found_doc['_type']
             except KeyError:
                 msg = "ES: '%s(%s)' resource not found" % (
-                    _d['_type'], _d['_id'])
+                    found_doc['_type'], found_doc['_id'])
                 if __raise_on_empty:
                     raise JHTTPNotFound(msg)
                 else:
                     log.error(msg)
                     continue
 
-            documents.append(dict2obj(dictset(_d)))
+            documents.append(dict2obj(dictset(output_doc)))
 
         documents._nefertari_meta.update(
             total=len(documents),
@@ -573,10 +575,11 @@ class ES(object):
                 total=0, took=0)
             return documents
 
-        for da in data['hits']['hits']:
-            _d = da['_source']
-            _d['_score'] = da['_score']
-            documents.append(dict2obj(_d))
+        for found_doc in data['hits']['hits']:
+            output_doc = found_doc['_source']
+            output_doc['_score'] = found_doc['_score']
+            output_doc['_type'] = found_doc['_type']
+            documents.append(dict2obj(output_doc))
 
         documents._nefertari_meta.update(
             total=data['hits']['total'],
