@@ -26,6 +26,7 @@ def bootstrap(config):
     config.include('{{package}}.models')
     config.include('nefertari.view')
     config.include('nefertari.elasticsearch')
+    config.include('nefertari.json_httpexceptions')
 
     if Settings.asbool('enable_get_tunneling'):
         config.add_tween('nefertari.tweens.get_tunneling')
