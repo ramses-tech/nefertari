@@ -82,18 +82,20 @@ def includeme(config):
         config.include('nefertari.polymorphic')
 
 
-def _bulk_body(documents_actions, request_params):
-    if request_params is None:
-        request_params = {}
-    request_params = dictset(request_params)
+def _bulk_body(documents_actions, request):
     kwargs = {
         'client': ES.api,
         'actions': documents_actions,
     }
 
+    if request is None:
+        query_params = {}
+    else:
+        query_params = request.params.mixed()
+    query_params = dictset(query_params)
     refresh_enabled = ES.settings.asbool('enable_refresh_query')
-    if '_refresh_index' in request_params and refresh_enabled:
-        kwargs['refresh'] = request_params.asbool('_refresh_index')
+    if '_refresh_index' in query_params and refresh_enabled:
+        kwargs['refresh'] = query_params.asbool('_refresh_index')
 
     executed_num, errors = helpers.bulk(**kwargs)
     log.info('Successfully executed {} Elasticsearch action(s)'.format(
@@ -109,9 +111,6 @@ def process_fields_param(fields):
     * Fields list is split if needed
     * '_type' field is added, if not present, so the actual value is
       displayed instead of 'None'
-    * '_source=False' is returned as well, so document source is not
-      loaded from ES. This is done because source is not used when
-      'fields' param is provided
     """
     if not fields:
         return fields
@@ -120,8 +119,8 @@ def process_fields_param(fields):
     if '_type' not in fields:
         fields.append('_type')
     return {
-        'fields': fields,
-        '_source': False,
+        '_source_include': fields,
+        '_source': True,
     }
 
 
@@ -258,7 +257,8 @@ class ES(object):
 
     @classmethod
     def src2type(cls, source):
-        return source.lower()
+        """ Convert string :source: to ES document _type name. """
+        return source
 
     @classmethod
     def setup(cls, settings):
@@ -375,7 +375,7 @@ class ES(object):
                         type(doc).__name__))
 
             if '_type' in doc:
-                _doc_type = self.src2type(doc['_type'])
+                _doc_type = self.src2type(doc.pop('_type'))
             else:
                 _doc_type = self.doc_type
 
@@ -383,7 +383,7 @@ class ES(object):
                 '_op_type': action,
                 '_index': self.index_name,
                 '_type': _doc_type,
-                '_id': doc['id'],
+                '_id': doc['_pk'],
                 '_source': doc,
             }
 
@@ -391,7 +391,7 @@ class ES(object):
 
         return docs_actions
 
-    def _bulk(self, action, documents, request_params=None):
+    def _bulk(self, action, documents, request=None):
         if not documents:
             log.debug('Empty documents: %s' % self.doc_type)
             return
@@ -405,18 +405,18 @@ class ES(object):
                     doc['_timestamp'] = doc_data['timestamp']
 
         if documents_actions:
-            operation = partial(_bulk_body, request_params=request_params)
+            operation = partial(_bulk_body, request=request)
             self.process_chunks(
                 documents=documents_actions,
                 operation=operation)
         else:
             log.warning('Empty body')
 
-    def index(self, documents, request_params=None):
+    def index(self, documents, request=None):
         """ Reindex all `document`s. """
-        self._bulk('index', documents, request_params)
+        self._bulk('index', documents, request)
 
-    def index_missing_documents(self, documents, request_params=None):
+    def index_missing_documents(self, documents, request=None):
         """ Index documents that are missing from ES index.
 
         Determines which documents are missing using ES `mget` call which
@@ -432,7 +432,7 @@ class ES(object):
             index=self.index_name,
             doc_type=self.doc_type,
             fields=['_id'],
-            body={'ids': [d['id'] for d in documents]},
+            body={'ids': [d['_pk'] for d in documents]},
         )
         try:
             response = ES.api.mget(**query_kwargs)
@@ -441,21 +441,21 @@ class ES(object):
         else:
             indexed_ids = set(
                 d['_id'] for d in response['docs'] if d.get('found'))
-        documents = [d for d in documents if str(d['id']) not in indexed_ids]
+        documents = [d for d in documents if str(d['_pk']) not in indexed_ids]
 
         if not documents:
             log.info('No documents of type `{}` are missing from '
                      'index `{}`'.format(self.doc_type, self.index_name))
             return
 
-        self._bulk('index', documents, request_params)
+        self._bulk('index', documents, request)
 
-    def delete(self, ids, request_params=None):
+    def delete(self, ids, request=None):
         if not isinstance(ids, list):
             ids = [ids]
 
-        documents = [{'id': _id, '_type': self.doc_type} for _id in ids]
-        self._bulk('delete', documents, request_params=request_params)
+        documents = [{'_pk': _id, '_type': self.doc_type} for _id in ids]
+        self._bulk('delete', documents, request=request)
 
     def get_by_ids(self, ids, **params):
         if not ids:
@@ -502,19 +502,20 @@ class ES(object):
             documents._nefertari_meta.update(total=0)
             return documents
 
-        for _d in data['docs']:
+        for found_doc in data['docs']:
             try:
-                _d = _d['fields'] if fields else _d['_source']
+                output_doc = found_doc['_source']
+                output_doc['_type'] = found_doc['_type']
             except KeyError:
                 msg = "ES: '%s(%s)' resource not found" % (
-                    _d['_type'], _d['_id'])
+                    found_doc['_type'], found_doc['_id'])
                 if __raise_on_empty:
                     raise JHTTPNotFound(msg)
                 else:
                     log.error(msg)
                     continue
 
-            documents.append(dict2obj(dictset(_d)))
+            documents.append(dict2obj(dictset(output_doc)))
 
         documents._nefertari_meta.update(
             total=len(documents),
@@ -665,10 +666,11 @@ class ES(object):
                 total=0, took=0)
             return documents
 
-        for da in data['hits']['hits']:
-            _d = da['fields'] if fields else da['_source']
-            _d['_score'] = da['_score']
-            documents.append(dict2obj(_d))
+        for found_doc in data['hits']['hits']:
+            output_doc = found_doc['_source']
+            output_doc['_score'] = found_doc['_score']
+            output_doc['_type'] = found_doc['_type']
+            documents.append(dict2obj(output_doc))
 
         documents._nefertari_meta.update(
             total=data['hits']['total'],
@@ -717,8 +719,8 @@ class ES(object):
         return self.get_resource(**kw)
 
     @classmethod
-    def index_refs(cls, db_obj, request_params=None):
+    def index_refs(cls, db_obj, request=None):
         for model_cls, documents in db_obj.get_reference_documents():
             if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(
-                    documents, request_params=request_params)
+                    documents, request=request)
