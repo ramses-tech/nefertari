@@ -561,7 +561,7 @@ class TestES(object):
             }
         }
         assert params['index'] == 'foondex'
-        assert params['doc_type'] == 'foo'
+        assert params['doc_type'] == 'Foo'
         mock_build.assert_called_once_with([3, 4])
 
     def test_build_search_params_no_body(self):
@@ -649,7 +649,7 @@ class TestES(object):
             }
         }
         assert params['index'] == 'foondex'
-        assert params['doc_type'] == 'foo'
+        assert params['doc_type'] == 'Foo'
         assert params['fields'] == ['a']
         assert params['sort'] == 'a:asc,b:desc,c:asc'
 
