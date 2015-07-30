@@ -18,7 +18,6 @@ class DataProxy(object):
             _dict[attr] = val
             if __depth:
                 kw = kwargs.copy()
-                kw['__nested'] = True
                 kw['__depth'] = __depth - 1
 
                 if hasattr(val, 'to_dict'):
