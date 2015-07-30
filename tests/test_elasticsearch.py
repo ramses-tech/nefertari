@@ -74,7 +74,8 @@ class TestESHttpConnection(object):
     @patch('nefertari.elasticsearch.log')
     def test_perform_request_no_index(self, mock_log):
         mock_log.level = logging.DEBUG
-        mock_log.debug.side_effect = TransportError(404, '')
+        mock_log.debug.side_effect = TransportError(
+            404, 'IndexMissingException')
         conn = es.ESHttpConnection()
         with pytest.raises(es.IndexNotFoundException):
             conn.perform_request('POST', 'http://localhost:9200')
@@ -753,7 +754,7 @@ class TestES(object):
         assert story.id == 4
         assert story.foo == 'bar'
         mock_get.assert_called_once_with(
-            name='foo', index='foondex', doc_type='Foo', ignore=404)
+            name='foo', index='foondex', doc_type='Foo')
 
     @patch('nefertari.elasticsearch.ES.api.get_source')
     def test_get_resource_no_index_raise(self, mock_get):
