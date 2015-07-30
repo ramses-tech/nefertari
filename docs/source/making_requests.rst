@@ -22,7 +22,7 @@ url parameter                               description
 Query syntax for ElasticSearch
 ------------------------------
 
-Additional parameters are available when using an ElasticSearch-enabled collection (see **ESBaseDocument** in the `Wrapper API <database_backends.html#wrapper-api>`_ section of this documentation).
+Additional parameters are available when using an ElasticSearch-enabled collection (see **ESBaseDocument** in the `Wrapper API <database_backends.html#id1>`_ section of this documentation).
 
 ========================================            ===========
 url parameter                                       description
