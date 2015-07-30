@@ -169,7 +169,6 @@ class AuthUserMixin(AuthModelMethodsMixin):
     Implements basic operations to support Pyramid Ticket-based and custom
     ApiKey token-based authentication.
     """
-    id = engine.IdField()
     username = engine.StringField(
         primary_key=True, unique=True,
         min_length=1, max_length=50,
