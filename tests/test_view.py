@@ -265,6 +265,7 @@ class TestBaseView(object):
 
     @patch('nefertari.elasticsearch.ES')
     def test_get_collection_es(self, mock_es):
+        mock_es.settings.asbool.return_value = False
         request = Mock(content_type='', method='', accept=[''])
         view = DummyBaseView(
             context={}, request=request,
@@ -276,6 +277,25 @@ class TestBaseView(object):
         mock_es().get_collection.assert_called_once_with(
             foo='bar', q='movies')
         assert result == mock_es().get_collection()
+
+    @patch('nefertari.elasticsearch.ES')
+    def test_get_collection_es_acl_filtering(self, mock_es):
+        mock_es.settings.asbool.return_value = True
+        request = Mock(content_type='', method='', accept=[''])
+        view = BaseView(
+            context={}, request=request,
+            _query_params={'foo': 'bar'})
+        view.Model = Mock(__name__='MyModel')
+        view._query_params['q'] = 'movies'
+        view.request.effective_principals = [3, 4, 5]
+        result = view.get_collection_es()
+        mock_es.assert_called_once_with('MyModel')
+        mock_es().get_collection.assert_called_once_with(
+            q='movies', foo='bar',
+            _identifiers=[3, 4, 5])
+        assert result == mock_es().get_collection()
+        mock_es.settings.asbool.assert_called_once_with(
+            'acl_filtering')
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_fill_null_values(self, run):

@@ -176,10 +176,15 @@ class BaseView(OptionsViewMixin):
         results for default response renderers to work properly.
         """
         from nefertari.elasticsearch import ES
-        return ES(self.Model.__name__).get_collection(**self._query_params)
+        params = self._query_params.copy()
+
+        if ES.settings.asbool('acl_filtering'):
+            params['_identifiers'] = self.request.effective_principals
+
+        return ES(self.Model.__name__).get_collection(**params)
 
     def fill_null_values(self, model_cls=None):
-        """ Fill missing model fields in JSON with {key: None}.
+        """ Fill missing model fields in JSON with {key: null value}.
 
         Only run for PUT requests.
         """
