@@ -60,13 +60,13 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
         except Exception as e:
             log.error(e.error)
             status_code = e.status_code
-            if status_code == 404:
+            if status_code == 404 and 'IndexMissingException' in e.error:
                 raise IndexNotFoundException()
             if status_code == 'N/A':
                 status_code = 400
             raise exception_response(
                 status_code,
-                detail=six.b('Elasticsearch error'),
+                explanation=six.b(e.error),
                 extra=dict(data=e))
         else:
             self._catch_index_error(resp)
@@ -300,7 +300,7 @@ class ES(object):
         index_name = index_name or ES.settings.index_name
         try:
             ES.api.indices.exists([index_name])
-        except IndexNotFoundException:
+        except (IndexNotFoundException, JHTTPNotFound):
             ES.api.indices.create(index_name)
 
     @classmethod
@@ -687,30 +687,34 @@ class ES(object):
         return documents
 
     def get_resource(self, **kw):
-        __raise = kw.pop('__raise_on_empty', True)
+        __raise_on_empty = kw.pop('__raise_on_empty', True)
 
         params = dict(
             index=self.index_name,
             doc_type=self.doc_type
         )
-        params.setdefault('ignore', 404)
         params.update(kw)
+        not_found_msg = "'{}({})' resource not found".format(
+            self.doc_type, params)
 
         try:
             data = ES.api.get_source(**params)
         except IndexNotFoundException:
-            if __raise:
-                raise JHTTPNotFound(
-                    "{}({}) resource not found (Index does not exist)".format(
-                        self.doc_type, params))
+            if __raise_on_empty:
+                raise JHTTPNotFound("{} (Index does not exist)".format(
+                    not_found_msg, self.doc_type, params))
+            data = {}
+        except JHTTPNotFound:
             data = {}
 
         if not data:
-            msg = "'%s(%s)' resource not found" % (self.doc_type, params)
-            if __raise:
-                raise JHTTPNotFound(msg)
+            if __raise_on_empty:
+                raise JHTTPNotFound(not_found_msg)
             else:
-                log.debug(msg)
+                log.debug(not_found_msg)
+
+        if '_type' not in data:
+            data['_type'] = self.doc_type
 
         return dict2obj(data)
 

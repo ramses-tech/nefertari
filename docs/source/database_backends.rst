@@ -11,33 +11,34 @@ Each Nefertari engine is maintained in its own repository:
 * `Nefertari SQLA Engine <https://github.com/brandicted/nefertari-sqla>`_
 * `Nefertari MongoDB Engine <https://github.com/brandicted/nefertari-mongodb>`_
 
-Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ or the database engine itself to read (GET) any given resource. You can read more about **ESBaseDocument** in the `Wrapper API <database_backends.html#wrapper-api>`_ section below.
+Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ or the database engine itself to read (GET) any given resource. You can read more about **ESBaseDocument** in the `Wrapper API <database_backends.html#id1>`_ section below.
 
 Field abstractions
 ------------------
 
 * BigIntegerField
+* BinaryField
 * BooleanField
+* ChoiceField
 * DateField
 * DateTimeField
-* ChoiceField
+* DecimalField
+* DictField
 * FloatField
+* ForeignKeyField
+* IdField
 * IntegerField
 * IntervalField
-* BinaryField
-* DecimalField
+* ListField
 * PickleField
+* Relationship
 * SmallIntegerField
 * StringField
 * TextField
 * TimeField
 * UnicodeField
 * UnicodeTextField
-* Relationship
-* IdField
-* ForeignKeyField
-* ListField
-* DictField
+
 
 Wrapper API
 -----------
