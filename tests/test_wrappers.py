@@ -487,3 +487,25 @@ class TestWrappers(unittest.TestCase):
         view.add_after_call.side_effect = ValueError
         with pytest.raises(JHTTPBadRequest):
             wrappers.set_public_limits(view)
+
+    @patch('nefertari.wrappers.set_total')
+    @patch('nefertari.wrappers.set_public_count')
+    def test_set_public_limits_count(self, mock_count, mock_set):
+        request = Mock()
+        request.registry.settings = {'public_max_limit': 123}
+        view = Mock(
+            request=request,
+            _query_params={
+                '_limit': 100, '_page': 1, '_start': 90,
+                '_count': ''})
+        wrappers.set_public_limits(view)
+        mock_count.assert_called_once_with(request, public_max=123)
+        view.add_after_call.assert_called_with(
+            'index', mock_count(), pos=0)
+        assert view.add_after_call.call_count == 2
+
+    def test_set_public_count(self):
+        wrapper = wrappers.set_public_count(None, public_max=10)
+        assert wrapper(result=1) == 1
+        assert wrapper(result=5) == 5
+        assert wrapper(result=15) == 10
