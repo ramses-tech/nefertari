@@ -100,13 +100,13 @@ class AuthModelMethodsMixin(object):
         Used by Ticket-based auth as `callback` kwarg.
         """
         try:
-            user = cls.get_resource(**{cls.pk_field(): userid})
+            cache_request_user(cls, request, userid)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
         else:
-            if user:
-                return ['g:%s' % g for g in user.groups]
+            if request._user:
+                return ['g:%s' % g for g in request._user.groups]
 
     @classmethod
     def create_account(cls, params):
@@ -131,9 +131,10 @@ class AuthModelMethodsMixin(object):
         Used by Ticket-based auth. Is added as request method to populate
         `request.user`.
         """
-        _id = authenticated_userid(request)
-        if _id:
-            return cls.get_resource(**{cls.pk_field(): _id})
+        userid = authenticated_userid(request)
+        if userid:
+            cache_request_user(cls, request, userid)
+            return request._user
 
     @classmethod
     def get_authuser_by_name(cls, request):
@@ -238,3 +239,20 @@ def create_apikey_model(user_model):
     ApiKey.autogenerate_for(user_model, 'user')
 
     return ApiKey
+
+
+def cache_request_user(user_cls, request, user_id):
+    """ Helper function to cache currently logged in user.
+
+    User is cached at `request._user`. Caching happens only only
+    if user is not already cached or if cached user's pk does not
+    match `user_id`.
+
+    :param user_cls: User model class to use for user lookup.
+    :param request: Pyramid Request instance.
+    :user_id: Current user primary key field value.
+    """
+    pk_field = user_cls.pk_field()
+    user = getattr(request, '_user', None)
+    if user is None or getattr(user, pk_field, None) != user_id:
+        request._user = user_cls.get_resource(**{pk_field: user_id})
