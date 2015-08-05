@@ -205,7 +205,7 @@ class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
         """
         collections = self.get_collections()
         resources = self.get_resources(collections)
-        return {res.view.Model._type: res for res in resources}
+        return {res.view.Model.__name__: res for res in resources}
 
     def _set_object_self(self, obj):
         """ Override to generate urls instead of just concatenating.
