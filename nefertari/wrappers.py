@@ -345,6 +345,27 @@ class set_total(object):
         return result
 
 
+class set_public_count(object):
+    """ Wrapper that makes sure `_count` query returns number that is
+    in `public_max_limit` bounds.
+    """
+    def __init__(self, request, public_max):
+        """
+        :param request: Pyramid Request instance.
+        :param public_max: Value of `public_max_limit` setting.
+        """
+        self.request = request
+        self.public_max = public_max
+
+    def __call__(self, **kwargs):
+        count = kwargs['result']
+        try:
+            count = min(self.public_max, count)
+        except (KeyError, TypeError):
+            pass
+        return count
+
+
 def set_public_limits(view):
     public_max = int(view.request.registry.settings.get(
         'public_max_limit', 100))
@@ -354,8 +375,14 @@ def set_public_limits(view):
         _page = int(view._query_params.get('_page', 0))
         _start = int(view._query_params.get('_start', 0))
 
-        view.add_after_call('index', set_total(view.request, total=public_max),
-                            pos=0)
+        total_wrapper = set_total(view.request, total=public_max)
+        view.add_after_call('index', total_wrapper, pos=0)
+
+        if '_count' in view._query_params:
+            count_wrapper = set_public_count(
+                view.request, public_max=public_max)
+            view.add_after_call('index', count_wrapper, pos=0)
+
     except ValueError:
         from nefertari.json_httpexceptions import JHTTPBadRequest
         raise JHTTPBadRequest("Bad _limit/_page param")
