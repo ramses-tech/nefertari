@@ -549,11 +549,6 @@ class ES(object):
         else:
             _params['body'] = params['body']
 
-        if _identifiers is not None:
-            permissions_query = build_acl_query(_identifiers)
-            _params['body'] = {'query': {'filtered': _params['body']}}
-            _params['body']['query']['filtered'].update(permissions_query)
-
         if '_limit' not in params:
             raise JHTTPBadRequest('Missing _limit')
 
@@ -577,6 +572,12 @@ class ES(object):
             if isinstance(current_qs, str):
                 _params['body']['query']['query_string'] = {'query': current_qs}
             _params['body']['query']['query_string']['fields'] = search_fields
+
+        # Add ACL filters in the because it reorders query params
+        if _identifiers is not None:
+            permissions_query = build_acl_query(_identifiers)
+            _params['body'] = {'query': {'filtered': _params['body']}}
+            _params['body']['query']['filtered'].update(permissions_query)
 
         return _params
 
