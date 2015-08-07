@@ -178,7 +178,7 @@ class TestESAggregator(object):
         wrapper.return_value = {'foo': None, 'bar': None}
         try:
             aggregator.check_aggregations_privacy({'zoo': 2})
-        except ValueError:
+        except Exception:
             raise Exception('Unexpected error')
         aggregator.get_aggregations_fields.assert_called_once_with({'zoo': 2})
         mock_privacy.assert_called_once_with(1)
@@ -195,7 +195,7 @@ class TestESAggregator(object):
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'bar': None}
-        with pytest.raises(ValueError) as ex:
+        with pytest.raises(Exception) as ex:
             aggregator.check_aggregations_privacy({'zoo': 2})
         expected = 'Not enough permissions to aggregate on fields: foo'
         assert expected == str(ex.value)
