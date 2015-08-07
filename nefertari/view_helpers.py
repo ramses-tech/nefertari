@@ -2,6 +2,7 @@ import six
 
 from nefertari.utils import dictset
 from nefertari import wrappers
+from nefertari.json_httpexceptions import JHTTPForbidden
 
 
 class OptionsViewMixin(object):
@@ -191,7 +192,7 @@ class ESAggregator(object):
         if not_allowed_fields:
             err = 'Not enough permissions to aggregate on fields: {}'.format(
                 ','.join(not_allowed_fields))
-            raise Exception(err)
+            raise JHTTPForbidden(err)
 
     def aggregate(self):
         """ Perform aggregation and return response. """

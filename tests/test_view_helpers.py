@@ -4,6 +4,7 @@ from mock import Mock, patch
 from nefertari.view import BaseView
 from nefertari.utils import dictset
 from nefertari.view_helpers import ESAggregator
+from nefertari.json_httpexceptions import JHTTPForbidden
 
 
 class DemoView(BaseView):
@@ -178,7 +179,7 @@ class TestESAggregator(object):
         wrapper.return_value = {'foo': None, 'bar': None}
         try:
             aggregator.check_aggregations_privacy({'zoo': 2})
-        except Exception:
+        except JHTTPForbidden:
             raise Exception('Unexpected error')
         aggregator.get_aggregations_fields.assert_called_once_with({'zoo': 2})
         mock_privacy.assert_called_once_with(1)
@@ -195,7 +196,7 @@ class TestESAggregator(object):
         wrapper = Mock()
         mock_privacy.return_value = wrapper
         wrapper.return_value = {'bar': None}
-        with pytest.raises(Exception) as ex:
+        with pytest.raises(JHTTPForbidden) as ex:
             aggregator.check_aggregations_privacy({'zoo': 2})
         expected = 'Not enough permissions to aggregate on fields: foo'
         assert expected == str(ex.value)
