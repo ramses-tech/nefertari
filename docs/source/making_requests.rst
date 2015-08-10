@@ -39,33 +39,30 @@ Updating listfields
 
 Items in listfields can be removed using "-" prefix.
 
-PATCH ``/api/<collection>/<id>``
+.. code-block:: sh
 
-.. code-block:: json
-
-    {
+    $ curl -XPATCH 'http://localhost:6543/api/<collection>/<id>' -d '{
         "<list_field_name>": [-<item>]
     }
+    '
 
 Items can be both added and removed at the same time.
 
-PATCH ``/api/<collection>/<id>``
+.. code-block:: sh
 
-.. code-block:: json
-
-    {
+    $ curl -XPATCH 'http://localhost:6543/api/<collection>/<id>' -d '{
         "<list_field_name>": [<item_to_add>,-<item_to_remove>]
     }
+    '
 
 Listfields can be emptied by setting their value to "" or null.
 
-PATCH ``/api/<collection>/<id>``
+.. code-block:: sh
 
-.. code-block:: json
-
-    {
+    $ curl -XPATCH 'http://localhost:6543/api/<collection>/<id>' -d '{
         "<list_field_name>": ""
     }
+    '
 
 
 Updating collections
@@ -73,21 +70,22 @@ Updating collections
 
 If update_many() is defined in your view, you will be able to update a single field across an entire collection or a filtered collection. E.g.
 
-PATCH `/api/<collection>?q=<keywords>`
+.. code-block:: sh
 
-.. code-block:: json
-
-    {
+    $ curl -XPATCH 'http://localhost:6543/api/<collection>?q=<keywords>' -d '{
         "<field_name>": "<new_value>"
     }
+    '
 
 
 Deleting collections
 --------------------
 
-Similarly, if delete_many() is defined, you will be able to delete whole collections or filtered collections. E.g.
+Similarly, if delete_many() is defined, you will be able to delete entire collections or filtered collections. E.g.
 
-DELETE `/api/<collection>?_missing_=<field_name>`
+.. code-block:: sh
+
+    $ curl -XDELETE 'http://localhost:6543/api/<collection>?_missing_=<field_name>'
 
 
 .. [#] To update listfields and dictfields, you can use the following syntax: ``_m=PATCH&<listfield>.<value>&<dictfield>.<key>=<value>``

@@ -15,6 +15,55 @@ It is recommended that your views reside in a package. In this case, each module
 * ``update_many()`` called upon ``PATCH`` request to a collection or filtered collection, e.g. ``/collection?_exists_=<field>``
 * ``delete_many()`` called upon ``DELETE`` request to a collection or filtered collection
 
+E.g.
+
+.. code-block:: python
+
+    from nefertari.view import BaseView
+    from example_api.models import Story
+
+
+    class StoriesView(BaseView):
+        Model = Story
+
+        def index(self):
+            return self.get_collection_es()
+
+        def show(self, **kwargs):
+            return self.context
+
+        def create(self):
+            story = self.Model(**self._json_params)
+            return story.save(self.request)
+
+        def update(self, **kwargs):
+            story = self.Model.get_resource(
+                id=kwargs.pop('story_id'), **kwargs)
+            return story.update(self._json_params, self.request)
+
+        def replace(self, **kwargs):
+            return self.update(**kwargs)
+
+        def delete(self, **kwargs):
+            story = self.Model.get_resource(
+                id=kwargs.pop('story_id'), **kwargs)
+            story.delete(self.request)
+
+        def delete_many(self):
+            es_stories = self.get_collection_es()
+            stories = self.Model.filter_objects(es_stories)
+
+            if self.needs_confirmation():
+                return stories
+
+            return self.Model._delete_many(stories, self.request)
+
+        def update_many(self):
+            es_stories = self.get_collection_es()
+            stories = self.Model.filter_objects(es_stories)
+
+            return self.Model._update_many(
+                stories, self._json_params, self.request)
 
 Polymorphic Views
 -----------------
