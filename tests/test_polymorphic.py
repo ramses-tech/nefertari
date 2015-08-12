@@ -178,7 +178,7 @@ class TestAddUrlPolymorphicWrapper(object):
     def test_get_models_map(self, mock_coll, mock_res):
         mock_coll.return_value = ['stories', 'users']
         resource1 = Mock()
-        resource1.view.Model = Mock(_type='Story')
+        resource1.view.Model = Mock(__name__='Story')
         mock_res.return_value = [resource1]
         wrapper = polymorphic.add_url_polymorphic(None)
         model_resources = wrapper.get_models_map()
