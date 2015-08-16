@@ -1,10 +1,13 @@
 Authentication & Security
 =========================
 
-Authentication Mechanism
-------------------------
+In order to enable authentication, add the ``auth`` paramer to your .ini file:
 
-Set ``auth = true`` in you .ini file to turn enable authentication. Nefertari currently uses the default Pyramid "auth ticket" cookie mechanism.
+.. code-block:: ini
+
+    auth = true
+
+Nefertari currently uses the default Pyramid "auth ticket" cookie mechanism.
 
 
 Custom User Model
@@ -25,7 +28,7 @@ When authentication is enabled, Nefertari uses its own `User` model. This model 
         last_name = eng.StringField(max_length=50, default='')
 
 
-Visible fields in views
+Visible Fields in Views
 -----------------------
 
 You can control which fields to display to both authenticated users and unauthenticated users by defining `_auth_fields` and `_public_fields` respectively in your models.

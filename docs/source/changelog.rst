@@ -1,6 +1,19 @@
 Changelog
 =========
 
+* :release:`0.5.0 <2015-08-x>`
+* :feature:`-` Renamed field `self` to `_self`
+* :feature:`-` Refactored authentication
+* :feature:`-` Added the ability to apply processors on 'Relationship' fields and their backrefs
+* :bug:`- major` Fixed sorting by 'id' when two ES-based models have two different 'id' field types
+* :bug:`- major` Fixed bug with full-text search (`?q=`) when used in combination with field search (`&<field>=`)
+* :bug:`- major` Fixed 40x error responses returning html, now all responses are json-formatted
+* :bug:`- major` Fixed formatting error when using `_fields` query parameter
+* :bug:`- major` Fixed duplicate records when querying ES aggregations by '_type'
+* :bug:`- major` Fixed 400 error returned when querying resources with id in another format than the id field used in URL schema, e.g. ``/api/<collection>/<string_instead_of_integer>``, it now returns 404
+* :bug:`- major` Fixed `_count` querying not respecting ``public_max_limit`` .ini setting
+* :bug:`- major` Fixed error response when aggregating hidden fields with ``auth = true``, it now returns 403
+
 * :release:`0.4.1 <2015-07-07>`
 * :bug:`-` Fixed a bug when setting ``cors.allow_origins = *``
 * :bug:`-` Fixed errors in http methods HEAD/OPTIONS response
@@ -14,7 +27,7 @@ Changelog
 * :feature:`-` Added ability to empty listfields by setting them to "" or null
 
 * :release:`0.3.4 <2015-06-09>`
-* :bug:`-` Fixed bug whereby _count would throw exception when authentication was enabled
+* :bug:`-` Fixed bug whereby `_count` would throw exception when authentication was enabled
 
 * :release:`0.3.3 <2015-06-05>`
 * :bug:`-` Fixed bug with posting multiple new relations at the same time
@@ -25,7 +38,7 @@ Changelog
 
 * :release:`0.3.1 <2015-05-27>`
 * :bug:`-` Fixed PUT to replace all fields and PATCH to update some
-* :bug:`-` Fixed posting to singular resources e.d. /api/users/<username>/profile
+* :bug:`-` Fixed posting to singular resources e.g. ``/api/users/<username>/profile``
 * :bug:`-` Fixed ES mapping error when values of field were all null
 
 * :release:`0.3.0 <2015-05-18>`
