@@ -105,7 +105,7 @@ class apply_request_privacy(object):
     """
     def __init__(self, model_cls, request_data):
         """
-        :param model_cls: Model class which is being affected by request.
+        :param model_cls: Model class affected by request.
         :param request_data: Request data.
         """
         self.model_cls = model_cls
