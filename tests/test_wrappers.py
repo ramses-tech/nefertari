@@ -9,6 +9,7 @@ from pyramid.testing import DummyRequest
 
 from nefertari import wrappers
 from nefertari.utils import dictset
+from nefertari.json_httpexceptions import JHTTPForbidden
 
 
 class TestWrappers(unittest.TestCase):
@@ -170,6 +171,29 @@ class TestWrappers(unittest.TestCase):
         wrapper._is_singular = None
         assert wrapper.is_singular
         assert wrapper._is_singular
+
+    @patch('nefertari.utils.validate_data_privacy')
+    def test_apply_update_privacy_valid(self, mock_validate):
+        request = Mock(json={'zoo': 1})
+        wrapper = wrappers.apply_update_privacy(Mock(__name__='Foo'))
+        try:
+            wrapper(request=request)
+        except Exception:
+            raise Exception('Unexpected error')
+        mock_validate.assert_called_once_with(
+            request, {'zoo': 1, '_type': 'Foo'})
+
+    @patch('nefertari.utils.validate_data_privacy')
+    def test_apply_update_privacy_invalid(self, mock_validate):
+        mock_validate.side_effect = wrappers.ValidationError('boo')
+        request = Mock(json={'zoo': 1})
+        wrapper = wrappers.apply_update_privacy(Mock(__name__='Foo'))
+        with pytest.raises(JHTTPForbidden) as ex:
+            wrapper(request=request)
+        expected = 'Not enough permissions to update fields: boo'
+        assert str(ex.value) == expected
+        mock_validate.assert_called_once_with(
+            request, {'zoo': 1, '_type': 'Foo'})
 
     def test_apply_privacy_no_data(self):
         assert wrappers.apply_privacy(None)(result={}) == {}
