@@ -4,6 +4,7 @@ import json
 
 import six
 from pyramid.settings import asbool
+from nefertari.utils import drop_reserved_params
 
 log = logging.getLogger(__name__)
 
@@ -35,11 +36,6 @@ def get_tunneling(handler, registry):
     purposes.
     """
     log.info('get_tunneling enabled')
-
-    def drop_reserved_params(params):
-        from nefertari import RESERVED_PARAMS
-        return {key: val for key, val in params.items()
-                if key not in RESERVED_PARAMS}
 
     def get_tunneling(request):
         if request.method == 'GET':

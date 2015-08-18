@@ -151,3 +151,9 @@ class TestUtils(object):
     def test_str2dict_separator(self):
         assert utils.str2dict('foo:bar', value=2, separator=':') == {
             'foo': {'bar': 2}}
+
+    def test_drop_reserved_params(self):
+        from nefertari import RESERVED_PARAMS
+        reserved_param = RESERVED_PARAMS[0]
+        result = utils.drop_reserved_params({reserved_param: 1, 'foo': 2})
+        assert result == {'foo': 2}

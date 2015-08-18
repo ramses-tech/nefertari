@@ -167,3 +167,10 @@ def str2dict(dotted_str, value=None, separator='.'):
         if value is not None:
             prev[part] = value
     return dict_
+
+
+def drop_reserved_params(params):
+    """ Drops reserved params """
+    from nefertari import RESERVED_PARAMS
+    return {key: val for key, val in params.items()
+            if key not in RESERVED_PARAMS}
