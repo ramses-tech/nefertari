@@ -14,23 +14,13 @@ class TestPolymorphicHelperMixin(object):
     def test_get_resources(self):
         mixin = polymorphic.PolymorphicHelperMixin()
         mixin.request = Mock()
-        resource1 = Mock(collection_name='stories', is_singular=False)
-        mixin.request.registry._resources_map = {
+        resource1 = Mock(collection_name='stories')
+        resource2 = Mock(collection_name='foo')
+        mixin.request.registry._model_collections = {
             'bar': resource1,
+            'baz': resource2,
         }
         resources = mixin.get_resources(['stories'])
-        assert resources == set([resource1])
-
-    def test_get_resources_singular_dropped(self):
-        mixin = polymorphic.PolymorphicHelperMixin()
-        mixin.request = Mock()
-        resource1 = Mock(collection_name='stories', is_singular=False)
-        resource2 = Mock(collection_name='users', is_singular=True)
-        mixin.request.registry._resources_map = {
-            'bar': resource1,
-            'foo': resource2,
-        }
-        resources = mixin.get_resources(['stories', 'users'])
         assert resources == set([resource1])
 
 
@@ -132,18 +122,6 @@ class TestPolymorphicESView(object):
         mock_wraps.assert_called_once_with()
         mock_lims.assert_called_once_with()
 
-    @patch.object(polymorphic.PolymorphicESView, 'determine_types')
-    def test_setup_default_wrappers(self, mock_det):
-        view = self._dummy_view()
-        view._auth_enabled = False
-        view.setup_default_wrappers()
-        assert list(view._after_calls.keys()) == ['index']
-        assert len(view._after_calls['index']) == 4
-        view._auth_enabled = True
-        view.setup_default_wrappers()
-        assert list(view._after_calls.keys()) == ['index']
-        assert len(view._after_calls['index']) == 5
-
     @patch.object(polymorphic.PolymorphicESView, 'get_resources')
     @patch.object(polymorphic.PolymorphicESView, 'get_collections')
     def test_determine_types(self, mock_coll, mock_res):
@@ -169,46 +147,3 @@ class TestPolymorphicESView(object):
         mock_get.assert_called_once_with()
         assert response == mock_get()
         assert view._query_params['_limit'] == 20
-
-
-class TestAddUrlPolymorphicWrapper(object):
-
-    @patch.object(polymorphic.add_url_polymorphic, 'get_resources')
-    @patch.object(polymorphic.add_url_polymorphic, 'get_collections')
-    def test_get_models_map(self, mock_coll, mock_res):
-        mock_coll.return_value = ['stories', 'users']
-        resource1 = Mock()
-        resource1.view.Model = Mock(__name__='Story')
-        mock_res.return_value = [resource1]
-        wrapper = polymorphic.add_url_polymorphic(None)
-        model_resources = wrapper.get_models_map()
-        assert model_resources == {'Story': resource1}
-        mock_coll.assert_called_once_with()
-        mock_res.assert_called_once_with(['stories', 'users'])
-
-    def test_set_object_self(self):
-        wrapper = polymorphic.add_url_polymorphic(None)
-        wrapper.request = Mock()
-        wrapper.request.route_url.return_value = 'foobar'
-        resource1 = Mock(uid='mystories', id_name='story_id')
-        wrapper.model_resources = {'Story': resource1}
-        obj = {'_type': 'Story', '_pk': 4}
-        wrapper._set_object_self(obj)
-        assert obj == {'_type': 'Story', '_pk': 4, '_self': 'foobar'}
-        wrapper.request.route_url.assert_called_once_with(
-            'mystories', story_id=4)
-
-    @patch.object(polymorphic.add_url_polymorphic, 'get_models_map')
-    def test_call(self, mock_map):
-        resource1 = Mock(uid='mystories', id_name='story_id')
-        mock_map.return_value = {'Story': resource1}
-        wrapper = polymorphic.add_url_polymorphic(None)
-        wrapper.request = Mock()
-        wrapper.request.route_url.return_value = 'foobar'
-        obj = {'_type': 'Story', '_pk': 4}
-        assert wrapper(result=obj) == {
-            '_type': 'Story', '_pk': 4, '_self': 'foobar'}
-
-        obj = {'data': [{'_type': 'Story', '_pk': 4}]}
-        assert wrapper(result=obj) == {
-            'data': [{'_type': 'Story', '_pk': 4, '_self': 'foobar'}]}

@@ -25,6 +25,9 @@ def includeme(config):
         config.registry._root_resources = {}
     if not hasattr(config.registry, '_resources_map'):
         config.registry._resources_map = {}
+    # Map of {ModelName: model_collection_resource}
+    if not hasattr(config.registry, '_model_collections'):
+        config.registry._model_collections = {}
 
     config.add_request_method(get_resource_map, 'resource_map', reify=True)
 
