@@ -74,8 +74,16 @@ It is recommended that your views reside in a package:
 For singular resources:
     there is no need to define ``index()``
 
-When using SQLA, each view must define the following property:
-    *Model*: model being served by the current view
+Each view must define the following property:
+    *Model*: model being served by the current view. Must be set at class definition for features to work properly. E.g.:
+
+.. code-block:: python
+
+    from nefertari.view import BaseView
+    from example_api.models import Story
+
+    class StoriesView(BaseView):
+        Model = Story
 
 Optional properties:
     *_json_encoder*: encoder to encode objects to JSON. Database-specific encoders are available at ``nefertari.engine.JSONEncoder``
