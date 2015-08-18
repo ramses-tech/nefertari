@@ -9,6 +9,17 @@ __version__ = _DIST.version
 
 log = logging.getLogger(__name__)
 
+RESERVED_PARAMS = [
+    '_start',
+    '_limit',
+    '_page',
+    '_fields',
+    '_count',
+    '_sort',
+    '_search_fields',
+    '_refresh_index',
+]
+
 
 def includeme(config):
     from nefertari.resource import get_root_resource, get_resource_map

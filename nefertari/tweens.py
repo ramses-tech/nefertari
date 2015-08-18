@@ -31,11 +31,15 @@ def request_timing(handler, registry):
 
 
 def get_tunneling(handler, registry):
+    """ Allows all methods to be tunneled via GET for dev/debuging
+    purposes.
     """
-    This allows all methods to be tunneled via GET for dev/debuging purposes.
-    """
-
     log.info('get_tunneling enabled')
+
+    def drop_reserved_params(params):
+        from nefertari import RESERVED_PARAMS
+        return {key: val for key, val in params.items()
+                if key not in RESERVED_PARAMS}
 
     def get_tunneling(request):
         if request.method == 'GET':
@@ -43,9 +47,10 @@ def get_tunneling(handler, registry):
             request.method = method
 
             if method in ['POST', 'PUT', 'PATCH']:
-                request.body = six.b(json.dumps(request.GET.mixed()))
+                get_params = request.GET.mixed()
+                valid_params = drop_reserved_params(get_params)
+                request.body = six.b(json.dumps(valid_params))
                 request.content_type = 'application/json'
-                # request.POST.update(request.GET)
 
         return handler(request)
 
