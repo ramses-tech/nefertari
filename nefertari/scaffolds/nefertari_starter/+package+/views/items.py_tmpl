@@ -20,12 +20,12 @@ class ItemsView(BaseView):
 
     def create(self):
         item = self.Model(**self._json_params)
-        return item.save(self._query_params)
+        return item.save(self.request)
 
     def update(self, **kwargs):
         item = self.Model.get_resource(
             id=kwargs.pop('item_id'), **kwargs)
-        return item.update(self._json_params, self._query_params)
+        return item.update(self._json_params, self.request)
 
     def replace(self, **kwargs):
         return self.update(**kwargs)
@@ -33,7 +33,7 @@ class ItemsView(BaseView):
     def delete(self, **kwargs):
         item = self.Model.get_resource(
             id=kwargs.pop('item_id'), **kwargs)
-        item.delete(self._query_params)
+        item.delete(self.request)
 
     def delete_many(self):
         es_items = self.get_collection_es()
@@ -42,11 +42,11 @@ class ItemsView(BaseView):
         if self.needs_confirmation():
             return items
 
-        return self.Model._delete_many(items, self._query_params)
+        return self.Model._delete_many(items, self.request)
 
     def update_many(self):
         es_items = self.get_collection_es()
         items = self.Model.filter_objects(es_items)
 
         return self.Model._update_many(
-            items, self._json_params, self._query_params)
+            items, self._json_params, self.request)
