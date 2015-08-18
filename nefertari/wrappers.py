@@ -227,8 +227,6 @@ class add_object_url(object):
     For each object in `result['data']` adds a uri which points
     to current object
     """
-    _is_singular = None
-
     def __init__(self, request):
         self.request = request
         self.model_collections = self.request.registry._model_collections
