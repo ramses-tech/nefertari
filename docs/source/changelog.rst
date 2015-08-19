@@ -1,7 +1,7 @@
 Changelog
 =========
 
-* :release:`0.5.0 <2015-08-x>`
+* :release:`0.5.0 <2015-08-19>`
 * :feature:`-` Renamed field 'self' to '_self'
 * :feature:`-` Refactored authentication
 * :feature:`-` Renamed setting `debug` to `enable_get_tunneling`
