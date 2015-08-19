@@ -119,6 +119,9 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
                         **kwargs)
         config.commit()
 
+    if collection_name == member_name:
+        collection_name = collection_name + '_collection'
+
     if collection_name:
         add_route_and_view(
             config, 'index', name_prefix + collection_name, path,

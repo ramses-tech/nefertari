@@ -1,7 +1,7 @@
 Getting started
 ===============
 
-Create your project in a virtualenv directory (see the `pyramid documentation <http://docs.pylonsproject.org/docs/pyramid/en/latest/narr/project.html>`_ if you've never done that before)
+Create your project in a virtualenv directory (see the `virtualenv documentation <https://virtualenv.pypa.io>`_)
 
 .. code-block:: shell
 
@@ -11,6 +11,15 @@ Create your project in a virtualenv directory (see the `pyramid documentation <h
     $ pcreate -s nefertari_starter my_project
     $ cd my_project
     $ pserve local.ini
+
+
+Requirements
+------------
+
+* Python 2.7, 3.3 or 3.4
+* Elasticsearch for ElasticSearch-powered resources (see :any:`models <models>` and :any:`requests <making_requests>`)
+* Postgres or Mongodb
+
 
 Tutorials
 ---------
