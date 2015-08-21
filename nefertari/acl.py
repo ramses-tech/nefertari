@@ -39,7 +39,9 @@ class BaseACL(CopyACLMixin, SelfParamMixin):
         * all collection and item access to admins.
     """
     __context_class__ = None
-    __item_acl__ = [(Allow, 'g:admin', ALL_PERMISSIONS)]
+    __item_acl__ = (
+        (Allow, 'g:admin', ALL_PERMISSIONS),
+    )
 
     def __init__(self, request):
         self.__acl__ = [(Allow, 'g:admin', ALL_PERMISSIONS)]
@@ -90,10 +92,10 @@ class GuestACL(BaseACL):
 
     Gives read permissions to everyone.
     """
-    __item_acl__ = [
+    __item_acl__ = (
         (Allow, 'g:admin', ALL_PERMISSIONS),
         (Allow, Everyone, ['show', 'item_options']),
-    ]
+    )
 
     def __init__(self, request):
         super(GuestACL, self).__init__(request)
@@ -106,10 +108,10 @@ class AuthenticatedReadACL(BaseACL):
     Gives read access to all Authenticated users.
     Gives delete, create, update access to admin only.
     """
-    __item_acl__ = [
+    __item_acl__ = (
         (Allow, 'g:admin', ALL_PERMISSIONS),
         (Allow, Authenticated, ['show', 'item_options']),
-    ]
+    )
 
     def __init__(self, request):
         super(AuthenticatedReadACL, self).__init__(request)

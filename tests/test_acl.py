@@ -11,8 +11,8 @@ class TestACLsUnit(object):
         acl_obj = acl.BaseACL(request='foo')
         assert acl_obj.request == 'foo'
         assert acl_obj.__acl__ == [(Allow, 'g:admin', ALL_PERMISSIONS)]
-        assert acl_obj.__item_acl__ == [
-            (Allow, 'g:admin', ALL_PERMISSIONS)]
+        assert acl_obj.__item_acl__ == (
+            (Allow, 'g:admin', ALL_PERMISSIONS),)
 
     def test_baseacl_acl_getter(self):
         acl_obj = acl.BaseACL(request='foo')
@@ -63,10 +63,10 @@ class TestACLsUnit(object):
             (Allow, 'g:admin', ALL_PERMISSIONS),
             (Allow, Everyone, ['index', 'collection_options'])
         ]
-        assert acl_obj.__item_acl__ == [
+        assert acl_obj.__item_acl__ == (
             (Allow, 'g:admin', ALL_PERMISSIONS),
             (Allow, Everyone, ['show', 'item_options']),
-        ]
+        )
 
     def test_authenticatedreadacl_acl(self):
         acl_obj = acl.AuthenticatedReadACL(request='foo')
@@ -74,10 +74,10 @@ class TestACLsUnit(object):
             (Allow, 'g:admin', ALL_PERMISSIONS),
             (Allow, Authenticated, ['index', 'collection_options'])
         ]
-        assert acl_obj.__item_acl__ == [
+        assert acl_obj.__item_acl__ == (
             (Allow, 'g:admin', ALL_PERMISSIONS),
             (Allow, Authenticated, ['show', 'item_options']),
-        ]
+        )
 
 
 class TestSelfParamMixin(object):
