@@ -513,9 +513,17 @@ class TestES(object):
 
     def test_build_search_params_no_limit(self):
         obj = es.ES('Foo', 'foondex')
-        with pytest.raises(JHTTPBadRequest) as ex:
-            obj.build_search_params({'foo': 1})
-        assert str(ex.value) == 'Missing _limit'
+        obj.api = Mock()
+        obj.api.count.return_value = {'count': 123}
+        params = obj.build_search_params({'foo': 1})
+        assert params == {
+            'body': {'query': {'query_string': {'query': 'foo:1'}}},
+            'doc_type': 'Foo',
+            'from_': 0,
+            'index': 'foondex',
+            'size': 123
+        }
+        obj.api.count.assert_called_once_with()
 
     def test_build_search_params_sort(self):
         obj = es.ES('Foo', 'foondex')
