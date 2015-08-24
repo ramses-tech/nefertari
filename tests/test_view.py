@@ -376,7 +376,6 @@ class TestBaseView(object):
         assert len(view._after_calls['create']) == 4
         assert len(view._after_calls['update']) == 4
         assert len(view._after_calls['replace']) == 4
-        assert len(view._after_calls['delete_many']) == 1
         assert wrap.apply_privacy.call_count == 5
 
     @patch('nefertari.view.wrappers')
@@ -389,7 +388,6 @@ class TestBaseView(object):
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete_many']) == 1
         assert not wrap.apply_privacy.called
 
     def test_defalt_wrappers_and_wrap_me(self):
@@ -419,7 +417,6 @@ class TestBaseView(object):
 
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete_many']) == 1
 
         assert view.index._before_calls == [before_call]
         assert view.index._after_calls == [after_call]

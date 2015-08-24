@@ -270,11 +270,6 @@ class BaseView(OptionsViewMixin):
             wrappers.add_object_url(self.request),
         ]
 
-        # Delete Many
-        self._after_calls['delete_many'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
         # Privacy wrappers
         if self._auth_enabled:
             for meth in ('index', 'show', 'create', 'update', 'replace'):
