@@ -179,7 +179,7 @@ class AuthUserMixin(AuthModelMethodsMixin):
         before_validation=[lower_strip])
     password = engine.StringField(
         min_length=3, required=True,
-        after_validation=[encrypt_password])
+        before_validation=[encrypt_password])
     groups = engine.ListField(
         item_type=engine.StringField,
         choices=['admin', 'user'], default=['user'])
