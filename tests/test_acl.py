@@ -1,127 +1,153 @@
 import pytest
 from mock import Mock
-from pyramid.security import ALL_PERMISSIONS, Allow, Everyone, Authenticated
+from pyramid.security import (
+    ALL_PERMISSIONS,
+    Allow,
+    Authenticated,
+    Deny,
+    Everyone,
+    )
 
 from nefertari import acl
 
 
 class TestACLsUnit(object):
 
-    def test_baseacl_init(self):
-        acl_obj = acl.BaseACL(request='foo')
-        assert acl_obj.request == 'foo'
-        assert acl_obj.__acl__ == [(Allow, 'g:admin', ALL_PERMISSIONS)]
-        assert acl_obj.__context_acl__ == [
-            (Allow, 'g:admin', ALL_PERMISSIONS)]
+    def test_no_acl(self):
+        obj = acl.ContainerACL(request='foo')
+        assert getattr(obj, '__acl__', None) is None
 
-    def test_baseacl_acl_getter(self):
-        acl_obj = acl.BaseACL(request='foo')
-        assert acl_obj.acl is acl_obj.__acl__
-        assert acl_obj.acl == [(Allow, 'g:admin', ALL_PERMISSIONS)]
+        child = acl.ContainerACL(request='foo')['name']
+        assert getattr(child, '__acl__', None) is None
 
-    def test_baseacl_acl_setter(self):
-        acl_obj = acl.BaseACL(request='foo')
-        assert acl_obj.acl == [(Allow, 'g:admin', ALL_PERMISSIONS)]
-        ace = (Allow, Everyone, ['index', 'show'])
-        with pytest.raises(AssertionError):
-            acl_obj.acl = [ace]
-        acl_obj.acl = ace
-        assert acl_obj.acl == [(Allow, 'g:admin', ALL_PERMISSIONS), ace]
+        obj = acl.ItemACL(request='foo', name='name', parent=None)
+        assert getattr(obj, '__acl__', None) is None
 
-    def test_baseacl_context_acl(self):
-        acl_obj = acl.BaseACL(request='foo')
-        assert acl_obj.context_acl(None) is acl_obj.__context_acl__
+    def test_inherit_acl(self):
+        obj = acl.ContainerACL(request='foo')
+        obj.__acl__ = ((Allow, Everyone, ALL_PERMISSIONS),)
+        child = obj['name']
+        assert child.__parent__.__acl__ == obj.__acl__
 
-    def test_baseacl_getitem_no_context_cls(self):
-        acl_obj = acl.BaseACL(request='foo')
-        assert acl_obj.__context_class__ is None
-        with pytest.raises(AssertionError):
-            acl_obj.__getitem__('foo')
+    def test_child_class(self):
+        class MyItem(acl.ItemACL):
+            __acl__ = ((Allow, Everyone, ALL_PERMISSIONS),)
+        class MyContainer(acl.ContainerACL):
+            __acl__ = ((Deny, Everyone, ALL_PERMISSIONS),)
+            child_class = MyItem
 
-    def test_baseacl_getitem(self):
-        acl_obj = acl.BaseACL(request='foo')
-        clx_cls = Mock()
-        clx_cls.pk_field.return_value = 'storyname'
-        acl_obj.__context_class__ = clx_cls
-        obj = acl_obj.__getitem__('foo')
-        clx_cls.pk_field.assert_called_once_with()
-        clx_cls.get.assert_called_once_with(
-            __raise=True, storyname='foo')
-        assert obj.__acl__ == acl_obj.__context_acl__
-        assert obj.__parent__ == acl_obj
-        assert obj.__name__ == 'foo'
+        obj = MyContainer(request='foo')
+        child = obj['name']
+        assert child.__acl__ == ((Allow, Everyone, ALL_PERMISSIONS),)
+        assert child.__parent__.__acl__ != child.__acl__
+
+    def test_custom_acl(self):
+        class MyItem(acl.ItemACL):
+            def custom_acl(self):
+                return ((Allow, self.__name__, 'update'),)
+        class MyContainer(acl.ContainerACL):
+            child_class = MyItem
+
+        obj = MyContainer(request='foo')
+        child = obj['name']
+        assert child.__acl__ == ((Allow, 'name', 'update'),)
 
     def test_rootacl(self):
         acl_obj = acl.RootACL(request='foo')
-        assert acl_obj.__acl__ == [(Allow, 'g:admin', ALL_PERMISSIONS)]
+        assert acl_obj.__acl__ == ((Allow, 'g:admin', ALL_PERMISSIONS),)
         assert acl_obj.request == 'foo'
 
     def test_adminacl(self):
         acl_obj = acl.AdminACL(request='foo')
-        assert isinstance(acl_obj, acl.BaseACL)
-        assert acl_obj['foo'] == 1
-        assert acl_obj['qweoo'] == 1
+        #assert isinstance(acl_obj, acl.BaseACL)
+        #assert acl_obj['foo'] == 1
+        #assert acl_obj['qweoo'] == 1
 
     def test_guestacl_acl(self):
         acl_obj = acl.GuestACL(request='foo')
-        assert acl_obj.acl == [
+        assert acl_obj.__acl__ == (
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['index', 'show', 'collection_options',
-                               'item_options'])
-        ]
+            (Allow, Everyone, ('view', 'options'))
+        )
 
     def test_guestacl_context_acl(self):
         acl_obj = acl.GuestACL(request='foo')
-        assert acl_obj.context_acl('asdasd') == [
+        child = acl_obj['name']
+        assert getattr(child, '__acl__', None) is None
+        assert child.__parent__.__acl__ == (
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Everyone, ['index', 'show', 'collection_options',
-                               'item_options']),
-        ]
+            (Allow, Everyone, ('view', 'options')),
+        )
 
     def test_authenticatedreadacl_acl(self):
         acl_obj = acl.AuthenticatedReadACL(request='foo')
-        assert acl_obj.acl == [
+        assert acl_obj.__acl__ == (
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, ['index', 'collection_options'])
-        ]
+            (Allow, Authenticated, ('view', 'options'))
+        )
 
     def test_authenticatedreadacl_context_acl(self):
         acl_obj = acl.AuthenticatedReadACL(request='foo')
-        assert acl_obj.context_acl('asdasd') == [
+        child =  acl_obj['asdasd']
+        assert getattr(child, '__acl__', None) is None
+        assert child.__parent__.__acl__ == (
             (Allow, 'g:admin', ALL_PERMISSIONS),
-            (Allow, Authenticated, ['show', 'item_options']),
-        ]
+            (Allow, Authenticated, ('view', 'options')),
+        )
 
 
-class TestSelfParamMixin(object):
 
-    def test_resolve_self_key_wrong_key(self):
-        obj = acl.SelfParamMixin()
-        assert obj.param_value == 'self'
-        assert obj.resolve_self_key('') == ''
-        assert obj.resolve_self_key('foo') == 'foo'
+class TestDBObject(object):
 
-    def test_resolve_self_key_user_not_logged_in(self):
-        obj = acl.SelfParamMixin()
-        obj.request = Mock(user=None)
-        assert obj.resolve_self_key('self') == 'self'
+    def test_no_db_class(self):
+        obj = acl.ItemACL(request=42, name='name', parent=None)
+        with pytest.raises(Exception) as e:
+            obj.db_object()
+        assert str(e.value) == 'No db class is defined'
 
-    def test_resolve_self_key_no_model_Cls(self):
-        obj = acl.SelfParamMixin()
-        obj.__context_class__ = None
-        obj.request = Mock(user=1)
-        assert obj.resolve_self_key('self') == 'self'
+    def test_db_obj(self):
+        class DBClass(object):
+            @staticmethod
+            def pk_field():
+                return 'id'
+            @staticmethod
+            def get(id, **kw):
+                return id
+        class MyItem(acl.ItemACL):
+            db_class = DBClass
+        obj = MyItem(request=42, name='name', parent=None)
+        assert obj.db_object() == 'name'
 
-    def test_resolve_self_key_user_wrong_class(self):
-        obj = acl.SelfParamMixin()
-        obj.__context_class__ = dict
-        obj.request = Mock(user='a')
-        assert obj.resolve_self_key('self') == 'self'
+    def test_db_key(self):
+        class DBClass(object):
+            @staticmethod
+            def pk_field():
+                return 'id'
+            @staticmethod
+            def get(id, **kw):
+                return id
+        class MyItem(acl.ItemACL):
+            db_class = DBClass
+            def db_key(self, key):
+                return key.capitalize()
+        obj = MyItem(request=42, name='name', parent=None)
+        assert obj.db_object() == 'Name'
 
-    def test_resolve_self_key(self):
-        obj = acl.SelfParamMixin()
-        obj.__context_class__ = Mock
+    def test_self_db_key(self):
+        from nefertari.acl import authenticated_userid
+        class DBClass(object):
+            @staticmethod
+            def pk_field():
+                return 'id'
+            @staticmethod
+            def get(id, **kw):
+                return id
+        class MyItem(acl.ItemACL):
+            db_class = DBClass
+            def db_key(self, key):
+                return authenticated_userid(self.request)
         user = Mock(username='user12')
         user.pk_field.return_value = 'username'
-        obj.request = Mock(user=user)
-        assert obj.resolve_self_key('self') == 'user12'
+        req = Mock(user=user)
+        obj = MyItem(request=req, name='self', parent=None)
+        assert obj.db_object() == 'user12'
