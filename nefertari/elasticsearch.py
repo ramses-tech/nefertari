@@ -333,7 +333,7 @@ class ES(object):
         else:
             log.warning('Empty body')
 
-    def index(self, documents, request=None):
+    def index(self, documents, request=None, **kwargs):
         """ Reindex all `document`s. """
         self._bulk('index', documents, request)
 
@@ -632,8 +632,8 @@ class ES(object):
         return self.get_resource(**kw)
 
     @classmethod
-    def index_relations(cls, db_obj, request=None):
-        for model_cls, documents in db_obj.get_related_documents():
+    def index_relations(cls, db_obj, request=None, **kwargs):
+        for model_cls, documents in db_obj.get_related_documents(**kwargs):
             if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(
                     to_dicts(documents), request=request)
