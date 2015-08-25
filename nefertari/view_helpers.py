@@ -1,6 +1,6 @@
 import six
 
-from nefertari.utils import dictset
+from nefertari.utils import dictset, validate_data_privacy
 from nefertari import wrappers
 from nefertari.json_httpexceptions import JHTTPForbidden
 
@@ -185,14 +185,12 @@ class ESAggregator(object):
         fields_dict = dictset.fromkeys(fields)
         fields_dict['_type'] = self.view.Model.__name__
 
-        wrapper = wrappers.apply_privacy(self.view.request)
-        allowed_fields = set(wrapper(result=fields_dict).keys())
-        not_allowed_fields = set(fields) - set(allowed_fields)
-
-        if not_allowed_fields:
-            err = 'Not enough permissions to aggregate on fields: {}'.format(
-                ','.join(not_allowed_fields))
-            raise JHTTPForbidden(err)
+        try:
+            validate_data_privacy(self.view.request, fields_dict)
+        except wrappers.ValidationError as ex:
+            raise JHTTPForbidden(
+                'Not enough permissions to aggregate on '
+                'fields: {}'.format(ex))
 
     def aggregate(self):
         """ Perform aggregation and return response. """

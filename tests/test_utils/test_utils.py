@@ -1,5 +1,5 @@
 import pytest
-from mock import patch, call
+from mock import patch, call, Mock
 
 from nefertari.utils import utils
 
@@ -151,3 +151,31 @@ class TestUtils(object):
     def test_str2dict_separator(self):
         assert utils.str2dict('foo:bar', value=2, separator=':') == {
             'foo': {'bar': 2}}
+
+    @patch('nefertari.wrappers.apply_privacy')
+    def test_validate_data_privacy_valid(self, mock_wrapper):
+        from nefertari import wrappers
+        wrapper = Mock()
+        wrapper.return_value = {'foo': 1, 'bar': 2}
+        mock_wrapper.return_value = wrapper
+        data = {'foo': None, '_type': 'ASD'}
+        try:
+            utils.validate_data_privacy(None, data)
+        except wrappers.ValidationError:
+            raise Exception('Unexpected error')
+        mock_wrapper.assert_called_once_with(None)
+        wrapper.assert_called_once_with(result=data)
+
+    @patch('nefertari.wrappers.apply_privacy')
+    def test_validate_data_privacy_invalid(self, mock_wrapper):
+        from nefertari import wrappers
+        wrapper = Mock()
+        wrapper.return_value = {'foo': 1, 'bar': 2}
+        mock_wrapper.return_value = wrapper
+        data = {'qoo': None, '_type': 'ASD'}
+        with pytest.raises(wrappers.ValidationError) as ex:
+            utils.validate_data_privacy(None, data)
+
+        assert str(ex.value) == 'qoo'
+        mock_wrapper.assert_called_once_with(None)
+        wrapper.assert_called_once_with(result=data)

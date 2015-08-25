@@ -97,8 +97,36 @@ class obj2dict(object):
         return result
 
 
+class apply_request_privacy(object):
+    """ Apply privacy rules to request data.
+
+    If request data contains fields user does not have access to,
+    JHTTPForbidden exception is raised listing all forbidden fields.
+    """
+    def __init__(self, model_cls, request_data):
+        """
+        :param model_cls: Model class affected by request.
+        :param request_data: Request data.
+        """
+        self.model_cls = model_cls
+        self.request_data = request_data
+
+    def __call__(self, **kwargs):
+        from nefertari.utils import validate_data_privacy, dictset
+        from nefertari.json_httpexceptions import JHTTPForbidden
+        request = kwargs.pop('request')
+        request_data = dictset(self.request_data)
+        request_data['_type'] = self.model_cls.__name__
+
+        try:
+            validate_data_privacy(request, request_data)
+        except ValidationError as ex:
+            raise JHTTPForbidden(
+                'Not enough permissions to update fields: {}'.format(ex))
+
+
 class apply_privacy(object):
-    """ Apply privacy rules to a JSON output.
+    """ Apply privacy rules to a JSON response.
 
     Passed 'result' kwarg's value may be a dictset or a collection JSON
     output which contains objects' data under 'data' key as a sequence of
@@ -141,7 +169,6 @@ class apply_privacy(object):
             # User not authenticated
             else:
                 fields &= public_fields
-
 
         fields.update(['_type', '_pk', '_self'])
         return data.subset(fields)
