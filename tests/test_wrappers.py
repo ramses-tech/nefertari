@@ -100,77 +100,53 @@ class TestWrappers(unittest.TestCase):
         result = wrappers.add_meta(request=request)(result=result)
         assert result['count'] == 1
 
-    @patch('nefertari.wrappers.urllib')
-    def test_add_meta_type_error(self, mock_lib):
-        mock_lib.parse.quote.side_effect = TypeError
+    def test_add_meta_type_error(self):
         result = {'data': [{'id': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         result = wrappers.add_meta(request=request)(result=result)
         assert result['count'] == 1
         assert result['data'][0] == {'id': 4}
 
-    def test_add_object_url_collection(self):
+    def test_add_object_url_collection_not_found_resource(self):
+        result = {'data': [{'_pk': 4, '_type': 'User'}]}
+        environ = {'QUERY_STRING': '_limit=100'}
+        request = DummyRequest(path='http://example.com', environ=environ)
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper.model_collections = {'Story': 123}
+        result = wrapper(result=result)
+        assert result['data'][0]['_self'] == 'http://example.com'
+
+    def test_add_object_url_collection_no_type(self):
         result = {'data': [{'_pk': 4}]}
         request = DummyRequest(path='http://example.com', environ={})
         wrapper = wrappers.add_object_url(request=request)
-        wrapper._is_singular = False
+        wrapper.model_collections = {'Story': 123}
         result = wrapper(result=result)
-        assert result['data'][0]['_self'] == 'http://example.com/4'
+        assert '_self' not in result['data'][0]
 
-        environ = {'QUERY_STRING': '_limit=100'}
-        request = DummyRequest(path='http://example.com?_limit=100',
-                               environ=environ)
-        assert request.path == 'http://example.com?_limit=100'
-        result = wrappers.add_object_url(request=request)(result=result)
-        assert result['data'][0]['_self'] == 'http://example.com/4'
+    def test_add_object_url_collection(self):
+        result = {'data': [{'_pk': 4, '_type': 'Story'}]}
+        request = Mock()
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper.model_collections = {
+            'Story': Mock(uid='stories_resource', id_name='story_id'),
+        }
+        result = wrapper(result=result)
+        request.route_url.assert_called_once_with(
+            'stories_resource', story_id=4)
+        assert result['data'][0]['_self'] == request.route_url()
 
     def test_add_object_url_item(self):
-        result = {'_pk': 4}
-        request = DummyRequest(path='http://example.com', environ={})
+        result = {'_pk': 4, '_type': 'Story'}
+        request = Mock()
         wrapper = wrappers.add_object_url(request=request)
-        wrapper._is_singular = False
+        wrapper.model_collections = {
+            'Story': Mock(uid='stories_resource', id_name='story_id'),
+        }
         result = wrapper(result=result)
-        assert result == {'_pk': 4, '_self': 'http://example.com/4'}
-
-    def test_add_object_url_contains_id(self):
-        result = {'_pk': 4}
-        request = DummyRequest(path='http://example.com/4', environ={})
-        wrapper = wrappers.add_object_url(request=request)
-        wrapper._is_singular = False
-        result = wrapper(result=result)
-        assert result == {'_pk': 4, '_self': 'http://example.com/4'}
-
-    @patch('nefertari.wrappers.urllib')
-    def test_add_object_url_type_error(self, mock_lib):
-        mock_lib.parse.quote.side_effect = TypeError
-        result = {'data': [{'_pk': 4}]}
-        request = DummyRequest(path='http://example.com', environ={})
-        wrapper = wrappers.add_object_url(request=request)
-        wrapper._is_singular = False
-        result = wrapper(result=result)
-        assert result['data'][0] == {'_pk': 4}
-
-    def test_add_object_url_singular_resource(self):
-        result = {'_pk': 4}
-        request = DummyRequest(path='http://example.com', environ={})
-        wrapper = wrappers.add_object_url(request=request)
-        wrapper._is_singular = True
-        result = wrapper(result=result)
-        assert result == {'_pk': 4, '_self': 'http://example.com'}
-
-    def test_add_object_url_is_singular_property(self):
-        route = Mock()
-        route.name = 'foo'
-        registry = Mock(_resources_map={'foo': Mock(is_singular=False)})
-        request = Mock(matched_route=route, registry=registry)
-        wrapper = wrappers.add_object_url(request=request)
-        wrapper._is_singular = None
-        assert not wrapper.is_singular
-        assert not wrapper._is_singular
-        wrapper.request.registry._resources_map['foo'].is_singular = True
-        wrapper._is_singular = None
-        assert wrapper.is_singular
-        assert wrapper._is_singular
+        request.route_url.assert_called_once_with(
+            'stories_resource', story_id=4)
+        assert result['_self'] == request.route_url()
 
     @patch('nefertari.utils.validate_data_privacy')
     def test_apply_request_privacy_valid(self, mock_validate):

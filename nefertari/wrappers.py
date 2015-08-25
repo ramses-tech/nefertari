@@ -2,7 +2,6 @@ import logging
 from hashlib import md5
 
 import six
-from six.moves import urllib
 from nefertari import engine
 
 
@@ -256,28 +255,23 @@ class add_object_url(object):
     For each object in `result['data']` adds a uri which points
     to current object
     """
-    _is_singular = None
-
     def __init__(self, request):
         self.request = request
-
-    @property
-    def is_singular(self):
-        if self._is_singular is None:
-            route_name = self.request.matched_route.name
-            resource = self.request.registry._resources_map[route_name]
-            self._is_singular = resource.is_singular
-        return self._is_singular
+        self.model_collections = self.request.registry._model_collections
 
     def _set_object_self(self, obj):
         """ Add '_self' key value to :obj: dict. """
+        from nefertari.elasticsearch import ES
         location = self.request.path_url
         try:
-            obj_pk = urllib.parse.quote(str(obj['_pk']))
+            type_, obj_pk = obj['_type'], obj['_pk']
         except KeyError:
             return
-        if not self.is_singular and not location.endswith(obj_pk):
-            location += '/{}'.format(obj_pk)
+        resource = (self.model_collections.get(type_) or
+                    self.model_collections.get(ES.src2type(type_)))
+        if resource is not None:
+            location = self.request.route_url(
+                resource.uid, **{resource.id_name: obj_pk})
         obj.setdefault('_self', location)
 
     def __call__(self, **kwargs):
