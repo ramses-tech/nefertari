@@ -8,7 +8,7 @@ from elasticsearch import helpers
 import six
 
 from nefertari.utils import (
-    dictset, dict2obj, process_limit, split_strip)
+    dictset, dict2obj, process_limit, split_strip, to_dicts)
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, exception_response)
 from nefertari import engine
@@ -636,4 +636,4 @@ class ES(object):
         for model_cls, documents in db_obj.get_related_documents():
             if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(
-                    documents, request=request)
+                    to_dicts(documents), request=request)
