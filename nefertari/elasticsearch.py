@@ -633,7 +633,7 @@ class ES(object):
 
     @classmethod
     def index_relations(cls, db_obj, request=None):
-        for model_cls, documents in db_obj.get_reference_documents():
+        for model_cls, documents in db_obj.get_related_documents():
             if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(
                     documents, request=request)

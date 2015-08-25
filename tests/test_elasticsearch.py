@@ -803,7 +803,7 @@ class TestES(object):
 
         docs = [Foo()]
         db_obj = Mock()
-        db_obj.get_reference_documents.return_value = [(Foo, docs)]
+        db_obj.get_related_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
         es.ES.index_relations(db_obj)
         mock_ind.assert_called_once_with(docs, request=None)
@@ -816,7 +816,7 @@ class TestES(object):
 
         docs = [Foo()]
         db_obj = Mock()
-        db_obj.get_reference_documents.return_value = [(Foo, docs)]
+        db_obj.get_related_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
         es.ES.index_relations(db_obj)
         assert not mock_ind.called
