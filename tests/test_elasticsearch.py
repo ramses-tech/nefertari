@@ -797,7 +797,7 @@ class TestES(object):
 
     @patch('nefertari.elasticsearch.ES.settings')
     @patch('nefertari.elasticsearch.ES.index')
-    def test_index_refs(self, mock_ind, mock_settings):
+    def test_index_relations(self, mock_ind, mock_settings):
         class Foo(object):
             _index_enabled = True
 
@@ -805,12 +805,12 @@ class TestES(object):
         db_obj = Mock()
         db_obj.get_reference_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
-        es.ES.index_refs(db_obj)
+        es.ES.index_relations(db_obj)
         mock_ind.assert_called_once_with(docs, request=None)
 
     @patch('nefertari.elasticsearch.ES.settings')
     @patch('nefertari.elasticsearch.ES.index')
-    def test_index_refs_index_disabled(self, mock_ind, mock_settings):
+    def test_index_relations_index_disabled(self, mock_ind, mock_settings):
         class Foo(object):
             _index_enabled = False
 
@@ -818,5 +818,5 @@ class TestES(object):
         db_obj = Mock()
         db_obj.get_reference_documents.return_value = [(Foo, docs)]
         mock_settings.index_name = 'foo'
-        es.ES.index_refs(db_obj)
+        es.ES.index_relations(db_obj)
         assert not mock_ind.called
