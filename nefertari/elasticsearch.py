@@ -11,20 +11,9 @@ from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, exception_response)
-from nefertari import engine
+from nefertari import engine, RESERVED_PARAMS
 
 log = logging.getLogger(__name__)
-
-RESERVED = [
-    '_start',
-    '_limit',
-    '_page',
-    '_fields',
-    '_count',
-    '_sort',
-    '_search_fields',
-    '_refresh_index',
-]
 
 
 class IndexNotFoundException(Exception):
@@ -454,7 +443,7 @@ class ES(object):
         _raw_terms = params.pop('q', '')
 
         if 'body' not in params:
-            query_string = build_qs(params.remove(RESERVED), _raw_terms)
+            query_string = build_qs(params.remove(RESERVED_PARAMS), _raw_terms)
             if query_string:
                 _params['body'] = {
                     'query': {

@@ -65,6 +65,27 @@ class TestTweens(object):
         assert request.content_type == 'application/json'
         assert request.body == six.b('{"foo": "bar"}')
 
+    def test_get_tunneling_reserved_params_dropped(self):
+        from nefertari import RESERVED_PARAMS
+
+        class GET(dict):
+            def mixed(self):
+                return self
+
+        reserved = RESERVED_PARAMS[0]
+        get_data = GET({
+            '_m': 'POST',
+            'foo': 'bar',
+            reserved: 'boo',
+        })
+        request = Mock(GET=get_data, method='GET')
+        get_tunneling = tweens.get_tunneling(lambda x: x, None)
+        get_tunneling(request)
+        assert request.GET == {'foo': 'bar', reserved: 'boo'}
+        assert request.method == 'POST'
+        assert request.content_type == 'application/json'
+        assert request.body == six.b('{"foo": "bar"}')
+
     def test_get_tunneling_not_allowed_method(self):
         class GET(dict):
             def mixed(self):
