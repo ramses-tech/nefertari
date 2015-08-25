@@ -2,7 +2,6 @@ import logging
 from hashlib import md5
 
 import six
-from six.moves import urllib
 from nefertari import engine
 
 
@@ -97,8 +96,36 @@ class obj2dict(object):
         return result
 
 
+class apply_request_privacy(object):
+    """ Apply privacy rules to request data.
+
+    If request data contains fields user does not have access to,
+    JHTTPForbidden exception is raised listing all forbidden fields.
+    """
+    def __init__(self, model_cls, request_data):
+        """
+        :param model_cls: Model class affected by request.
+        :param request_data: Request data.
+        """
+        self.model_cls = model_cls
+        self.request_data = request_data
+
+    def __call__(self, **kwargs):
+        from nefertari.utils import validate_data_privacy, dictset
+        from nefertari.json_httpexceptions import JHTTPForbidden
+        request = kwargs.pop('request')
+        request_data = dictset(self.request_data)
+        request_data['_type'] = self.model_cls.__name__
+
+        try:
+            validate_data_privacy(request, request_data)
+        except ValidationError as ex:
+            raise JHTTPForbidden(
+                'Not enough permissions to update fields: {}'.format(ex))
+
+
 class apply_privacy(object):
-    """ Apply privacy rules to a JSON output.
+    """ Apply privacy rules to a JSON response.
 
     Passed 'result' kwarg's value may be a dictset or a collection JSON
     output which contains objects' data under 'data' key as a sequence of
@@ -141,7 +168,6 @@ class apply_privacy(object):
             # User not authenticated
             else:
                 fields &= public_fields
-
 
         fields.update(['_type', '_pk', '_self'])
         return data.subset(fields)
@@ -229,28 +255,23 @@ class add_object_url(object):
     For each object in `result['data']` adds a uri which points
     to current object
     """
-    _is_singular = None
-
     def __init__(self, request):
         self.request = request
-
-    @property
-    def is_singular(self):
-        if self._is_singular is None:
-            route_name = self.request.matched_route.name
-            resource = self.request.registry._resources_map[route_name]
-            self._is_singular = resource.is_singular
-        return self._is_singular
+        self.model_collections = self.request.registry._model_collections
 
     def _set_object_self(self, obj):
         """ Add '_self' key value to :obj: dict. """
+        from nefertari.elasticsearch import ES
         location = self.request.path_url
         try:
-            obj_pk = urllib.parse.quote(str(obj['_pk']))
+            type_, obj_pk = obj['_type'], obj['_pk']
         except KeyError:
             return
-        if not self.is_singular and not location.endswith(obj_pk):
-            location += '/{}'.format(obj_pk)
+        resource = (self.model_collections.get(type_) or
+                    self.model_collections.get(ES.src2type(type_)))
+        if resource is not None:
+            location = self.request.route_url(
+                resource.uid, **{resource.id_name: obj_pk})
         obj.setdefault('_self', location)
 
     def __call__(self, **kwargs):

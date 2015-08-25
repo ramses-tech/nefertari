@@ -10,8 +10,6 @@ Im particular:
         ACLs of all the collections requested.
     * PolymorphicESView: View that handles polymorphic collection read
         requests.
-    * add_url_polymorphic: Wrapper class that is used instead of default
-        `nefertari.wrappers.add_object_url`.
 
 To use this module, simply include it in your `main()` after
 Pyramid ACLAuthorizationPolicy is set up and nefertari is included.
@@ -34,7 +32,6 @@ from pyramid.security import DENY_ALL, Allow, ALL_PERMISSIONS
 from nefertari.view import BaseView
 from nefertari.acl import ContainerACL
 from nefertari.utils import dictset
-from nefertari import wrappers
 
 
 def includeme(config):
@@ -51,7 +48,6 @@ class PolymorphicHelperMixin(object):
     """ Helper mixin class that contains methods used by:
         * PolymorphicACL
         * PolymorphicESView
-        * add_url_polymorphic wrapper
     """
     def get_collections(self):
         """ Get names of collections from request matchdict.
@@ -72,10 +68,9 @@ class PolymorphicHelperMixin(object):
         :return: Gathered resources
         :rtype: list of Resource instances
         """
-        res_map = self.request.registry._resources_map
+        res_map = self.request.registry._model_collections
         resources = [res for res in res_map.values()
-                     if res.collection_name in collections
-                     and not res.is_singular]
+                     if res.collection_name in collections]
         resources = [res for res in resources if res]
         return set(resources)
 
@@ -157,18 +152,6 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
         self.setup_default_wrappers()
         self.set_public_limits()
 
-    def setup_default_wrappers(self):
-        self._after_calls['index'] = [
-            wrappers.wrap_in_dict(self.request),
-            wrappers.add_meta(self.request),
-            add_url_polymorphic(self.request),
-            wrappers.add_etag(self.request),
-        ]
-        if self._auth_enabled:
-            self._after_calls['index'] += [
-                wrappers.apply_privacy(self.request),
-            ]
-
     def determine_types(self):
         """ Determine ES type names from request data.
 
@@ -192,35 +175,3 @@ class PolymorphicESView(PolymorphicHelperMixin, BaseView):
         """
         self._query_params.process_int_param('_limit', 20)
         return self.get_collection_es()
-
-
-class add_url_polymorphic(PolymorphicHelperMixin, wrappers.add_object_url):
-    """ Wrapper that adds '_self' to each object in results
-
-    For each object in `result['data']` adds a uri which points
-    to current object
-    """
-    def get_models_map(self):
-        """ Get map of {model_name: resource} for each collection
-        requested by request.
-        """
-        collections = self.get_collections()
-        resources = self.get_resources(collections)
-        return {res.view.Model.__name__: res for res in resources}
-
-    def _set_object_self(self, obj):
-        """ Override to generate urls instead of just concatenating.
-
-        '_self' key is not set for singular resources.
-        """
-        try:
-            type_, obj_pk = obj['_type'], obj['_pk']
-        except KeyError:
-            return
-        resource = self.model_resources[type_]
-        obj['_self'] = self.request.route_url(
-            resource.uid, **{resource.id_name: obj_pk})
-
-    def __call__(self, **kwargs):
-        self.model_resources = self.get_models_map()
-        return super(add_url_polymorphic, self).__call__(**kwargs)

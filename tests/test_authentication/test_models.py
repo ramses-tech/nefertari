@@ -14,12 +14,24 @@ class TestModelHelpers(object):
 
     def test_encrypt_password(self, engine_mock):
         from nefertari.authentication import models
+        field = Mock(params={'min_length': 1})
         encrypted = models.encrypt_password(
-            instance=None, new_value='foo')
+            instance=None, new_value='foo',
+            field=field)
         assert models.crypt.match(encrypted)
         assert encrypted != 'foo'
         assert encrypted == models.encrypt_password(
-            instance=None, new_value=encrypted)
+            instance=None, new_value=encrypted, field=field)
+
+    def test_encrypt_password_failed(self, engine_mock):
+        from nefertari.authentication import models
+        field = Mock(params={'min_length': 10})
+        field.name = 'q'
+        with pytest.raises(ValueError) as ex:
+            models.encrypt_password(
+                instance=None, new_value='foo',
+                field=field)
+        assert str(ex.value) == '`q`: Value length must be more than 10'
 
     @patch('nefertari.authentication.models.uuid.uuid4')
     def test_create_apikey_token(self, mock_uuid, engine_mock):

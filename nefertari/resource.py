@@ -238,6 +238,8 @@ class Resource(object):
 
     ancestors = property(get_ancestors)
     resource_map = property(lambda self: self.config.registry._resources_map)
+    model_collections = property(
+        lambda self: self.config.registry._model_collections)
     is_root = property(lambda self: not self.member_name)
     is_singular = property(
         lambda self: not self.is_root and not self.collection_name)
@@ -347,6 +349,18 @@ class Resource(object):
         self.resource_map.update(dict.fromkeys(
             list(new_resource.action_route_map.values()),
             new_resource))
+
+        # Store resources in {modelName: resource} map if:
+        #   * Its view has Model defined
+        #   * It's not singular
+        #   * Its parent is root or it's not already stored
+        model = new_resource.view.Model
+        is_collection = model is not None and not new_resource.is_singular
+        if is_collection:
+            is_needed = (model.__name__ not in self.model_collections or
+                         new_resource.parent is root_resource)
+            if is_needed:
+                self.model_collections[model.__name__] = new_resource
 
         parent.children.append(new_resource)
         view._resource = new_resource

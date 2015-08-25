@@ -167,7 +167,7 @@ class TestESAggregator(object):
         result = sorted(ESAggregator.get_aggregations_fields(params))
         assert result == sorted(['foo', 'bar', 'baz'])
 
-    @patch('nefertari.view.wrappers.apply_privacy')
+    @patch('nefertari.wrappers.apply_privacy')
     def test_check_aggregations_privacy_all_allowed(self, mock_privacy):
         view = self.DemoView()
         view.request = 1
@@ -186,7 +186,7 @@ class TestESAggregator(object):
         wrapper.assert_called_once_with(
             result={'_type': 'Zoo', 'foo': None, 'bar': None})
 
-    @patch('nefertari.view.wrappers.apply_privacy')
+    @patch('nefertari.wrappers.apply_privacy')
     def test_check_aggregations_privacy_not_allowed(self, mock_privacy):
         view = self.DemoView()
         view.request = 1
