@@ -179,3 +179,9 @@ class TestUtils(object):
         assert str(ex.value) == 'qoo'
         mock_wrapper.assert_called_once_with(None)
         wrapper.assert_called_once_with(result=data)
+
+    def test_drop_reserved_params(self):
+        from nefertari import RESERVED_PARAMS
+        reserved_param = RESERVED_PARAMS[0]
+        result = utils.drop_reserved_params({reserved_param: 1, 'foo': 2})
+        assert result == {'foo': 2}
