@@ -30,7 +30,7 @@ endpoint supports: query, search, filter, sort, aggregation, etc.
 from pyramid.security import DENY_ALL, Allow, ALL_PERMISSIONS
 
 from nefertari.view import BaseView
-from nefertari.acl import ContainerACL
+from nefertari.acl import CollectionACL
 from nefertari.utils import dictset
 
 
@@ -75,7 +75,7 @@ class PolymorphicHelperMixin(object):
         return set(resources)
 
 
-class PolymorphicACL(PolymorphicHelperMixin, ContainerACL):
+class PolymorphicACL(PolymorphicHelperMixin, CollectionACL):
     """ ACL used by PolymorphicESView.
 
     Generates ACEs checking whether current request user has 'index'

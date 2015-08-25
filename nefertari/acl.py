@@ -18,65 +18,52 @@ class Contained(object):
         self.__parent__ = parent
 
 
-class ItemACL(Contained):
-    """Collection item Resource.
-
-    Override ``db_class`` to specify a db class. Only necessary if you need
-     to consult the db object to deterimine a custom acl.
-
-    Override ``custom_acl`` to provide a custom acl per instance. You will
-    most likely want to use the ``db_object`` method in your implementation
-    of this method. If you don't override this method, then the class's
-    ``__acl__`` is used. If the class doesn't define a ``__acl__``, then it
-    inherits its parent acl.
-    """
-    db_class = None
-
-    def __init__(self, request, name, parent):
-        super(ItemACL, self).__init__(request, name, parent)
-        acl = self.custom_acl()
-        if acl is not None:
-            self.__acl__ = acl
-
-    def custom_acl(self):
-        """Returns a custom __acl__ for this instance. Returns None if this
-        instance doesn't need a custom acl.
-        """
-        return None
-
-    def db_key(self, key):
-        """Override this method to transform the db key, e.g. to support
-        ``self`` as a key on user collections.
-        """
-        return key
-
-    def db_object(self):
-        """Get db object corresponding to this resource"""
-        if self.db_class == None:
-            raise Exception('No db class is defined')
-        pk_field = self.db_class.pk_field()
-        key = self.db_key(self.__name__)
-        return self.db_class.get(
-            __raise=True,
-            **{pk_field: key}
-            )
-
-
-class ContainerACL(Contained):
+class CollectionACL(Contained):
     """Collection resource.
+
+    You must specify the ``item_model``. It should be a nefertari.engine
+    document class. It is the model class for collection items.
 
     Define a ``__acl__`` attribute on this class to define the container's
     permissions, and default child permissions. Inherits its acl from the
     root, if no acl is set.
 
-    Override ``child_class`` to specify a different class for child resources.
-    This is only necessary if items need to have a different acl from the
-    collection.
+    Override the `item_acl` method if you wish to provide custom acls for
+    collection items.
+
+    Override the `item_db_id` method if you wish to transform the collection
+    item db id, e.g. to support a ``self`` item on a user collection.
     """
-    child_class = ItemACL
+
+    __acl__ = (
+        (Allow, 'g:admin', ALL_PERMISSIONS),
+    )
+
+    item_model = None
 
     def __getitem__(self, key):
-        return self.child_class(self.request, key, self)
+        db_id = self.item_db_id(key)
+        pk_field = self.item_model.pk_field()
+        try:
+            item = self.item_model.get(
+                __raise=True, **{pk_field: db_id}
+                )
+        except AttributeError:
+            # strangely we get an AttributeError when the item isn't found
+            raise KeyError(key)
+        acl = self.item_acl(item)
+        if acl is not None:
+            item.__acl__ = acl
+        item.__parent__ = self
+        item.__name__ = key
+        return item
+
+    def item_acl(self, item):
+        return None
+
+    def item_db_id(self, key):
+        return key
+
 
 def authenticated_userid(request):
     """Helper function that can be used in ``db_key`` to support `self`
@@ -87,7 +74,7 @@ def authenticated_userid(request):
     return getattr(user, key)
 
 
-# Example ACL classes
+# Example ACL classes and base classes
 #
 
 class RootACL(Contained):
@@ -95,18 +82,9 @@ class RootACL(Contained):
         (Allow, 'g:admin', ALL_PERMISSIONS),
     )
 
-class AdminACL(ContainerACL):
-    """Admin level ACL. Gives all access to all actions to admin.
 
-    May be used as a default factory for root resource.
-    """
-    __acl__ = (
-        (Allow, 'g:admin', ALL_PERMISSIONS),
-    )
-
-
-class GuestACL(ContainerACL):
-    """Guest level ACL.
+class GuestACL(CollectionACL):
+    """Guest level ACL base class
 
     Gives read permissions to everyone.
     """
@@ -116,8 +94,8 @@ class GuestACL(ContainerACL):
     )
 
 
-class AuthenticatedReadACL(ContainerACL):
-    """ Authenticated users' ACL.
+class AuthenticatedReadACL(CollectionACL):
+    """ Authenticated users ACL base class
 
     Gives read access to all Authenticated users.
     Gives delete, create, update access to admin only.
@@ -128,7 +106,7 @@ class AuthenticatedReadACL(ContainerACL):
     )
 
 
-class AuthenticationACL(ContainerACL):
+class AuthenticationACL(Contained):
     """ Special ACL factory to be used with authentication views
     (login, logout, register, etc.)
 
