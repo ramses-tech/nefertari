@@ -92,6 +92,7 @@ class TestACLsUnit(object):
 
     def test_item_404(self):
         class NotFoundModel(DummyModel):
+            @staticmethod
             def get(id, **kw):
                 raise AttributeError()
         class DummyACL(acl.CollectionACL):
