@@ -5,7 +5,6 @@ from collections import defaultdict
 
 import six
 from six.moves import urllib
-from pyramid.settings import asbool
 from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (

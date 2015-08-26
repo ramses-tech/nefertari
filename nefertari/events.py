@@ -12,7 +12,8 @@ class IRequestEvent(Interface):
 
 @implementer(IRequestEvent)
 class RequestEvent(object):
-    def __init__(self, request, model=None):
+    """ Nefertari request event. """
+    def __init__(self, request, model):
         self.request = request
         self.model = model
 
@@ -99,6 +100,10 @@ class after_collection_options(RequestEvent):
 
 class ModelClassIs(object):
     """ Subscriber predicate to check event.model is the right model. """
+
+    #
+    # TODO: This should always return True if model predicate is not used
+    #
     def __init__(self, model, config):
         self.model = model
 
@@ -108,4 +113,6 @@ class ModelClassIs(object):
     phash = text
 
     def __call__(self, event):
-        return event.model is self.model
+        if self.model is not None:
+            return event.model is self.model
+        return True
