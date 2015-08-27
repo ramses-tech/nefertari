@@ -94,3 +94,43 @@ def obj2dict(obj, classkey=None):
         return data
     else:
         return obj
+
+
+class FieldData(object):
+    """ Keeps field data in a generic format.
+
+    Is passed to field processors.
+    """
+    def __init__(self, name, new_value, params=None):
+        """
+        :param name: Name of field.
+        :param new_value: New value of field.
+        :param params: Dict containing DB field init params.
+            E.g. min_length, required.
+        """
+        self.name = name
+        self.new_value = new_value
+        self.params = params
+
+    def __repr__(self):
+        return '<FieldData: {}>'.format(self.name)
+
+    @classmethod
+    def from_dict(cls, data, model):
+        """ Generate map of `fieldName: clsInstance` from dict.
+
+        :param data: Dict where keys are field names and values are
+            new values of field.
+        :param model: Model class to which fields from :data: belong.
+        """
+        model_provided = model is not None
+        result = {}
+        for name, new_value in data.items():
+            kwargs = {
+                'name': name,
+                'new_value': new_value,
+            }
+            if model_provided:
+                kwargs['params'] = model.get_field_params(name)
+            result[name] = cls(**kwargs)
+        return result

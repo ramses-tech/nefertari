@@ -8,14 +8,19 @@ from zope.interface import implementer
 class IRequestEvent(Interface):
     request = Attribute('Current Pyramid request object')
     model = Attribute('Model class affected by the request')
+    fields = Attribute(
+        'Dict of all fields from request.json. Keys are fields names and'
+        'values are nefertari.utils.FieldData instances. If request does '
+        'not have JSON body, value will be an empty dict.')
 
 
 @implementer(IRequestEvent)
 class RequestEvent(object):
     """ Nefertari request event. """
-    def __init__(self, request, model):
+    def __init__(self, request, model, fields=None):
         self.request = request
         self.model = model
+        self.fields = fields
 
 
 class before_index(RequestEvent):
