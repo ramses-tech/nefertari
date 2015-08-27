@@ -34,6 +34,15 @@ class ViewMapper(object):
             matchdict.pop('action', None)
             matchdict.pop('traverse', None)
 
+            request_json = request.json if request.body else {}
+            event_kwargs = {
+                'request': request,
+                'model': view.Model,
+                'fields': FieldData.from_dict(request_json, view.Model)
+            }
+            before_event = getattr(events, 'before_{}'.format(action_name))
+            request.registry.notify(before_event(**event_kwargs))
+
             # instance of BaseView (or child of)
             view_obj = view(context, request)
             action = getattr(view_obj, action_name)
@@ -55,15 +64,6 @@ class ViewMapper(object):
             except wrappers.ResourceNotFound as e:
                 log.error('resource not found: %s', e)
                 raise JHTTPNotFound()
-
-            event_kwargs = {
-                'request': request,
-                'model': view_obj.Model,
-                'fields': FieldData.from_dict(
-                    view_obj._json_params, view_obj.Model),
-            }
-            before_event = getattr(events, 'before_{}'.format(action_name))
-            request.registry.notify(before_event(**event_kwargs))
 
             response = action(**matchdict)
 
