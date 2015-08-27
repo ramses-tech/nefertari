@@ -12,15 +12,21 @@ class IRequestEvent(Interface):
         'Dict of all fields from request.json. Keys are fields names and'
         'values are nefertari.utils.FieldData instances. If request does '
         'not have JSON body, value will be an empty dict.')
+    field = Attribute(
+        'Changed field name. This field is set/changed in FieldIsChanged '
+        'subscriber predicate. Do not use this field to determine what '
+        'event was triggered when same event handler was registered with '
+        'and without field predicate.')
 
 
 @implementer(IRequestEvent)
 class RequestEvent(object):
     """ Nefertari request event. """
-    def __init__(self, request, model, fields=None):
+    def __init__(self, request, model, fields=None, field=None):
         self.request = request
         self.model = model
         self.fields = fields
+        self.field = field
 
 
 # 'Before' events
@@ -128,10 +134,11 @@ class ModelClassIs(object):
 
 
 class FieldIsChanged(object):
-    """ Subscriber predicate to check event.model is changed. """
+    """ Subscriber predicate to check particular field is changed. """
 
     def __init__(self, field, config):
         self.field = field
+        self.config = config
 
     def text(self):
         return 'Field `%s` is changed' % (self.field,)
@@ -140,6 +147,6 @@ class FieldIsChanged(object):
 
     def __call__(self, event):
         if self.field in event.fields:
-            event.fields = {self.field: event.fields[self.field]}
+            event.field = event.fields[self.field]
             return True
         return False
