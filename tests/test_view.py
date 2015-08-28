@@ -279,12 +279,12 @@ class TestBaseView(object):
         assert result == mock_es().get_collection()
 
     @patch('nefertari.elasticsearch.ES')
-    def test_get_collection_es_acl_filtering(self, mock_es):
-        mock_es.settings.asbool.return_value = True
+    def test_get_collection_es_auth_enabled(self, mock_es):
         request = Mock(content_type='', method='', accept=[''])
         view = BaseView(
             context={}, request=request,
             _query_params={'foo': 'bar'})
+        view._auth_enabled = True
         view.Model = Mock(__name__='MyModel')
         view._query_params['q'] = 'movies'
         view.request.effective_principals = [3, 4, 5]
@@ -294,8 +294,6 @@ class TestBaseView(object):
             q='movies', foo='bar',
             _identifiers=[3, 4, 5])
         assert result == mock_es().get_collection()
-        mock_es.settings.asbool.assert_called_once_with(
-            'acl_filtering')
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_fill_null_values(self, run):

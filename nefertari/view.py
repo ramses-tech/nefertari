@@ -5,7 +5,6 @@ from collections import defaultdict
 
 import six
 from six.moves import urllib
-from pyramid.settings import asbool
 from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
@@ -178,7 +177,7 @@ class BaseView(OptionsViewMixin):
         from nefertari.elasticsearch import ES
         params = self._query_params.copy()
 
-        if ES.settings.asbool('acl_filtering'):
+        if self._auth_enabled:
             params['_identifiers'] = self.request.effective_principals
 
         return ES(self.Model.__name__).get_collection(**params)
