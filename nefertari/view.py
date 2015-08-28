@@ -363,7 +363,7 @@ class BaseView(OptionsViewMixin):
             self._json_params[name] = ids if ids is None else _get_object(ids)
 
 
-class ACLFilterBaseView(BaseView):
+class ACLFilterViewMixin(object):
     """ Base view class that applies ACL filtering. """
 
     def get_collection_es(self):

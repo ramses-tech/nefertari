@@ -5,7 +5,7 @@ from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
     BaseView, error_view, key_error_view, value_error_view,
-    ACLFilterBaseView)
+    ACLFilterViewMixin)
 from nefertari.utils import dictset
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
@@ -626,11 +626,14 @@ class TestBaseView(object):
         assert str(ex.value) == 'id2obj: Object 1 not found'
 
 
-class TestACLFilterBaseView(object):
+class TestACLFilterViewMixin(object):
     @patch('nefertari.elasticsearch.ES')
     def test_get_collection_es_auth_enabled(self, mock_es):
+        class View(ACLFilterViewMixin, BaseView):
+            pass
+
         request = Mock(content_type='', method='', accept=[''])
-        view = ACLFilterBaseView(
+        view = View(
             context={}, request=request,
             _query_params={'foo': 'bar'})
         view._auth_enabled = True
