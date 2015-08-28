@@ -4,7 +4,8 @@ import pytest
 from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
-    BaseView, error_view, key_error_view, value_error_view)
+    BaseView, error_view, key_error_view, value_error_view,
+    ACLFilterBaseView)
 from nefertari.utils import dictset
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
@@ -276,23 +277,6 @@ class TestBaseView(object):
         mock_es.assert_called_once_with('MyModel')
         mock_es().get_collection.assert_called_once_with(
             foo='bar', q='movies')
-        assert result == mock_es().get_collection()
-
-    @patch('nefertari.elasticsearch.ES')
-    def test_get_collection_es_auth_enabled(self, mock_es):
-        request = Mock(content_type='', method='', accept=[''])
-        view = BaseView(
-            context={}, request=request,
-            _query_params={'foo': 'bar'})
-        view._auth_enabled = True
-        view.Model = Mock(__name__='MyModel')
-        view._query_params['q'] = 'movies'
-        view.request.effective_principals = [3, 4, 5]
-        result = view.get_collection_es()
-        mock_es.assert_called_once_with('MyModel')
-        mock_es().get_collection.assert_called_once_with(
-            q='movies', foo='bar',
-            _identifiers=[3, 4, 5])
         assert result == mock_es().get_collection()
 
     @patch('nefertari.view.BaseView._run_init_actions')
@@ -641,6 +625,25 @@ class TestBaseView(object):
         with pytest.raises(JHTTPBadRequest) as ex:
             view.id2obj(name='user', model=model)
         assert str(ex.value) == 'id2obj: Object 1 not found'
+
+
+class TestACLFilterBaseView(object):
+    @patch('nefertari.elasticsearch.ES')
+    def test_get_collection_es_auth_enabled(self, mock_es):
+        request = Mock(content_type='', method='', accept=[''])
+        view = ACLFilterBaseView(
+            context={}, request=request,
+            _query_params={'foo': 'bar'})
+        view._auth_enabled = True
+        view.Model = Mock(__name__='MyModel')
+        view._query_params['q'] = 'movies'
+        view.request.effective_principals = [3, 4, 5]
+        result = view.get_collection_es()
+        mock_es.assert_called_once_with('MyModel')
+        mock_es().get_collection.assert_called_once_with(
+            q='movies', foo='bar',
+            _identifiers=[3, 4, 5])
+        assert result == mock_es().get_collection()
 
 
 class TestViewHelpers(object):
