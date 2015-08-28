@@ -158,9 +158,9 @@ class TestHelperFunctions(object):
     def test_build_acl_bool_terms(self, mock_eng):
         from pyramid.security import Allow
         mock_eng.ACLField.stringify_acl.return_value = [
-            {'identifier': 'user', 'permission': 'show'},
+            {'identifier': 'user', 'permission': 'view'},
             {'identifier': 'admin', 'permission': 'create'},
-            {'identifier': 'admin', 'permission': 'show'},
+            {'identifier': 'admin', 'permission': 'view'},
         ]
         mock_eng.ACLField._stringify_action.return_value = 'allow'
         terms = es._build_acl_bool_terms('zoo', Allow)
@@ -169,14 +169,14 @@ class TestHelperFunctions(object):
         assert len(terms) == 3
         assert {'term': {'_acl.action': 'allow'}} in terms
         assert {'terms': {'_acl.identifier': ['admin', 'user']}} in terms
-        assert {'terms': {'_acl.permission': ['create', 'show']}} in terms
+        assert {'terms': {'_acl.permission': ['create', 'view']}} in terms
 
     def test_build_acl_from_identifiers(self):
         from pyramid.security import Deny, ALL_PERMISSIONS
         acl = es._build_acl_from_identifiers(['admin', 'user'], Deny)
-        assert (Deny, 'user', 'show') in acl
+        assert (Deny, 'user', 'view') in acl
         assert (Deny, 'user', ALL_PERMISSIONS) in acl
-        assert (Deny, 'admin', 'show') in acl
+        assert (Deny, 'admin', 'view') in acl
         assert (Deny, 'admin', ALL_PERMISSIONS) in acl
 
     @patch('nefertari.elasticsearch._build_acl_bool_terms')

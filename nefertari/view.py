@@ -286,6 +286,11 @@ class BaseView(OptionsViewMixin):
                 self._after_calls[meth] += [
                     wrappers.apply_privacy(self.request),
                 ]
+            for meth in ('update', 'replace', 'update_many'):
+                self._before_calls[meth] += [
+                    wrappers.apply_request_privacy(
+                        self.Model, self._json_params),
+                ]
 
     def __getattr__(self, attr):
         if attr in ACTIONS:

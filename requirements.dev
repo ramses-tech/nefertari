@@ -1,9 +1,9 @@
+mock
 pytest
 pytest-cov
-mock
-webtest
-Sphinx
-sphinxcontrib-fulltoc
 releases
+sphinx
+sphinxcontrib-fulltoc
+webtest
 
 -e .

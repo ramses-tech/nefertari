@@ -11,20 +11,9 @@ from nefertari.utils import (
     dictset, dict2obj, process_limit, split_strip)
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, exception_response)
-from nefertari import engine
+from nefertari import engine, RESERVED_PARAMS
 
 log = logging.getLogger(__name__)
-
-RESERVED = [
-    '_start',
-    '_limit',
-    '_page',
-    '_fields',
-    '_count',
-    '_sort',
-    '_search_fields',
-    '_refresh_index',
-]
 
 
 class IndexNotFoundException(Exception):
@@ -183,7 +172,7 @@ def _build_acl_bool_terms(acl, action_obj):
 
 
 def _build_acl_from_identifiers(identifiers, action_obj):
-    """ Build ACL with 'all' and 'show' permissions for which
+    """ Build ACL with 'all' and 'view' permissions for which
     of :identifiers: controlled by :action_obj:.
 
     :param identifiers: List of valid Pyramid ACL identifiers for
@@ -197,18 +186,18 @@ def _build_acl_from_identifiers(identifiers, action_obj):
     for ident in identifiers:
         acl += [
             (action_obj, ident, ALL_PERMISSIONS),
-            (action_obj, ident, 'show'),
+            (action_obj, ident, 'view'),
         ]
     return acl
 
 
 def build_acl_query(identifiers):
     """ Build ES query to filter collection by only getting items
-    for which user has 'show' or 'all' permission and does not have
+    for which user has 'view' or 'all' permission and does not have
     any of these permissions denied.
 
-    Object is shown when its ACL allows 'all' or 'show' permissions
-    to any one of identifiers and doesn't deny 'all' or 'show' permissions
+    Object is shown when its ACL allows 'all' or 'view' permissions
+    to any one of identifiers and doesn't deny 'all' or 'view' permissions
     to any one of identifiers.
     Order of ACEs in ACL doesn't affect filtering results.
 
@@ -535,7 +524,7 @@ class ES(object):
         _identifiers = params.pop('_identifiers', None)
 
         if 'body' not in params:
-            query_string = build_qs(params.remove(RESERVED), _raw_terms)
+            query_string = build_qs(params.remove(RESERVED_PARAMS), _raw_terms)
             if query_string:
                 _params['body'] = {
                     'query': {

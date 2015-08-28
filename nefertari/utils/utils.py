@@ -167,3 +167,32 @@ def str2dict(dotted_str, value=None, separator='.'):
         if value is not None:
             prev[part] = value
     return dict_
+
+
+def validate_data_privacy(request, data):
+    """ Validate :data: contains only data allowed by privacy settings.
+
+    :param request: Pyramid Request instance
+    :param data: Dict containing request/response data which should be
+        validated
+    """
+    from nefertari import wrappers
+    wrapper = wrappers.apply_privacy(request)
+    allowed_fields = wrapper(result=data).keys()
+    data = data.copy()
+    data.pop('_type', None)
+    not_allowed_fields = set(data.keys()) - set(allowed_fields)
+
+    if not_allowed_fields:
+        raise wrappers.ValidationError(', '.join(not_allowed_fields))
+
+
+def drop_reserved_params(params):
+    """ Drops reserved params """
+    from nefertari import RESERVED_PARAMS
+    params = params.copy()
+    for reserved_param in RESERVED_PARAMS:
+        if reserved_param in params:
+            params.pop(reserved_param)
+    return params
+

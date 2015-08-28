@@ -15,7 +15,7 @@ Table of Content
 
    getting_started
    views
-   database_backends
+   models
    auth
    making_requests
    development_tools
