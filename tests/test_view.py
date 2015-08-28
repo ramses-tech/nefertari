@@ -266,7 +266,6 @@ class TestBaseView(object):
 
     @patch('nefertari.elasticsearch.ES')
     def test_get_collection_es(self, mock_es):
-        mock_es.settings.asbool.return_value = False
         request = Mock(content_type='', method='', accept=[''])
         view = DummyBaseView(
             context={}, request=request,
