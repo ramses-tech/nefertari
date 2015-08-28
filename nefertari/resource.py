@@ -7,6 +7,18 @@ log = logging.getLogger(__name__)
 ACTIONS = ['index', 'show', 'create', 'update',
            'delete', 'update_many', 'delete_many',
            'replace']
+PERMISSIONS = {
+    'index': 'view',
+    'show': 'view',
+    'create': 'create',
+    'update': 'update',
+    'update_many': 'update',
+    'delete': 'delete',
+    'delete_many': 'delete',
+    'replace': 'update',
+    'collection_options': 'options',
+    'item_options': 'options',
+    }
 DEFAULT_ID_NAME = 'id'
 
 
@@ -103,9 +115,13 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
 
         action_route[action] = route_name
 
+        if _auth:
+            permission = PERMISSIONS[action]
+        else:
+            permission = None
         config.add_view(view=view, attr=action, route_name=route_name,
                         request_method=request_method,
-                        permission=action if _auth else None,
+                        permission=permission,
                         **kwargs)
         config.commit()
 
