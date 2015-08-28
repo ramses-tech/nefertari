@@ -5,6 +5,7 @@ from collections import defaultdict
 
 import six
 from six.moves import urllib
+from pyramid.settings import asbool
 from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
@@ -175,8 +176,7 @@ class BaseView(OptionsViewMixin):
         results for default response renderers to work properly.
         """
         from nefertari.elasticsearch import ES
-        params = self._query_params.copy()
-        return ES(self.Model.__name__).get_collection(**params)
+        return ES(self.Model.__name__).get_collection(**self._query_params)
 
     def fill_null_values(self, model_cls=None):
         """ Fill missing model fields in JSON with {key: null value}.
