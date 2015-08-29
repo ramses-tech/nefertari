@@ -10,7 +10,7 @@ class DataProxy(object):
     def to_dict(self, **kwargs):
         _dict = dictset()
         _keys = kwargs.pop('_keys', [])
-        __depth = kwargs.pop('__depth', 10)
+        __depth = kwargs.pop('__depth', 1)
 
         data = dictset(self._data).subset(_keys) if _keys else self._data
 
