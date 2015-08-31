@@ -22,7 +22,7 @@ does not have the above requirement, it's up to you to decide when to set up
 the db.
 
 The specified engine module is also `config.include`d here, thus running the
-engine's `icludeme` function and allowing setting up required state,
+engine's `includeme` function and allowing setting up required state,
 performing some actions, etc.
 
 The engine specified may be either a module or a package.

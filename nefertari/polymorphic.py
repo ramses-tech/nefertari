@@ -27,10 +27,10 @@ endpoint would be available at '/users,stories' and '/stories,users'.
 Polymorphic endpoints support all the read functionality regular ES
 endpoint supports: query, search, filter, sort, aggregation, etc.
 """
-from pyramid.security import DENY_ALL, Allow
+from pyramid.security import DENY_ALL, Allow, ALL_PERMISSIONS
 
 from nefertari.view import BaseView
-from nefertari.acl import BaseACL
+from nefertari.acl import CollectionACL
 from nefertari.utils import dictset
 
 
@@ -75,7 +75,7 @@ class PolymorphicHelperMixin(object):
         return set(resources)
 
 
-class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
+class PolymorphicACL(PolymorphicHelperMixin, CollectionACL):
     """ ACL used by PolymorphicESView.
 
     Generates ACEs checking whether current request user has 'index'
@@ -118,14 +118,15 @@ class PolymorphicACL(PolymorphicHelperMixin, BaseACL):
         DENY_ALL is added to ACL to make sure no access rules are
         inherited.
         """
-        self.__acl__ = []
+        acl = [(Allow, 'g:admin', ALL_PERMISSIONS)]
         collections = self.get_collections()
         resources = self.get_resources(collections)
         aces = self._get_least_permissions_aces(resources)
         if aces is not None:
             for ace in aces:
-                self.acl = ace
-        self.acl = DENY_ALL
+                acl.append(ace)
+        acl.append(DENY_ALL)
+        self.__acl__ = tuple(acl)
 
 
 class PolymorphicESView(PolymorphicHelperMixin, BaseView):
