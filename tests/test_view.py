@@ -4,8 +4,7 @@ import pytest
 from mock import Mock, MagicMock, patch, call, PropertyMock
 
 from nefertari.view import (
-    BaseView, error_view, key_error_view, value_error_view,
-    ACLFilterViewMixin)
+    BaseView, error_view, key_error_view, value_error_view)
 from nefertari.utils import dictset
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
@@ -624,28 +623,6 @@ class TestBaseView(object):
         with pytest.raises(JHTTPBadRequest) as ex:
             view.id2obj(name='user', model=model)
         assert str(ex.value) == 'id2obj: Object 1 not found'
-
-
-class TestACLFilterViewMixin(object):
-    @patch('nefertari.elasticsearch.ES')
-    def test_get_collection_es_auth_enabled(self, mock_es):
-        class View(ACLFilterViewMixin, BaseView):
-            pass
-
-        request = Mock(content_type='', method='', accept=[''])
-        view = View(
-            context={}, request=request,
-            _query_params={'foo': 'bar'})
-        view._auth_enabled = True
-        view.Model = Mock(__name__='MyModel')
-        view._query_params['q'] = 'movies'
-        view.request.effective_principals = [3, 4, 5]
-        result = view.get_collection_es()
-        mock_es.assert_called_once_with('MyModel')
-        mock_es().get_collection.assert_called_once_with(
-            q='movies', foo='bar',
-            _identifiers=[3, 4, 5])
-        assert result == mock_es().get_collection()
 
 
 class TestViewHelpers(object):

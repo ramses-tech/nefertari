@@ -363,22 +363,6 @@ class BaseView(OptionsViewMixin):
             self._json_params[name] = ids if ids is None else _get_object(ids)
 
 
-class ACLFilterViewMixin(object):
-    """ Base view class that applies ACL filtering. """
-
-    def get_collection_es(self):
-        """ Override method to apply ACL filtering when authentication
-        is enabled.
-        """
-        from nefertari.elasticsearch import ES
-        params = self._query_params.copy()
-
-        if self._auth_enabled:
-            params['_identifiers'] = self.request.effective_principals
-
-        return ES(self.Model.__name__).get_collection(**params)
-
-
 def key_error_view(context, request):
     return JHTTPBadRequest("Bad or missing param '%s'" % context.args[0])
 
