@@ -1,3 +1,5 @@
+from mock import Mock
+
 from nefertari.utils import data as dutils
 
 
@@ -115,3 +117,29 @@ class TestDataUtils(object):
         assert dutils.obj2dict(1) == 1
         assert dutils.obj2dict('foo') == 'foo'
         assert dutils.obj2dict(None) is None
+
+
+class TestFieldData(object):
+
+    def test_init(self):
+        obj = dutils.FieldData(name='foo', new_value=1, params={})
+        assert obj.name == 'foo'
+        assert obj.new_value == 1
+        assert obj.params == {}
+
+    def test_repr(self):
+        obj = dutils.FieldData(name='foo', new_value=1, params={})
+        assert str(obj) == '<FieldData: foo>'
+
+    def test_from_dict_model_provided(self):
+        model = Mock()
+        model.get_field_params.return_value = {'foo': 1}
+        data = {'username': 'admin'}
+        result = dutils.FieldData.from_dict(data, model)
+        assert list(result.keys()) == ['username']
+        field = result['username']
+        assert isinstance(field, dutils.FieldData)
+        assert field.name == 'username'
+        assert field.new_value == 'admin'
+        assert field.params == {'foo': 1}
+        model.get_field_params.assert_called_once_with('username')

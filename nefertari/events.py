@@ -144,7 +144,6 @@ class FieldIsChanged(object):
 
     def __init__(self, field, config):
         self.field = field
-        self.config = config
 
     def text(self):
         return 'Field `%s` is changed' % (self.field,)

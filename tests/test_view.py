@@ -18,6 +18,38 @@ class DummyBaseView(BaseView):
 
 class TestViewMapper(object):
 
+    @patch('nefertari.view.events')
+    @patch('nefertari.view.FieldData.from_dict')
+    def test_events_fireg(self, mock_from, mock_events):
+        from nefertari.view import ViewMapper
+        mock_from.return_value = {'q': 1}
+
+        class MyView(object):
+            Model = 'foo'
+
+            def __init__(self, ctx, req):
+                self._before_calls = {}
+                self._after_calls = {}
+
+            def index(self):
+                return ['thing']
+
+        request = MagicMock(
+            json={'username': 'admin'},
+            body='{"username":"admin"}')
+        resource = MagicMock(actions=['index'])
+
+        wrapper = ViewMapper(**{'attr': 'index'})(MyView)
+        wrapper(resource, request)
+        mock_events.before_index.assert_called_once_with(
+            fields={'q': 1}, model='foo', request=request)
+        mock_events.after_index.assert_called_once_with(
+            fields={'q': 1}, model='foo', request=request)
+        request.registry.notify.assert_has_calls([
+            call(mock_events.before_index()),
+            call(mock_events.after_index()),
+        ])
+
     @patch('nefertari.view.FieldData.from_dict')
     def test_viewmapper(self, mock_from):
         from nefertari.view import ViewMapper
