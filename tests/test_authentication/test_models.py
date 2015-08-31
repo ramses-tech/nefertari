@@ -3,34 +3,60 @@ from mock import Mock, patch
 
 from .fixtures import engine_mock
 from nefertari.json_httpexceptions import JHTTPBadRequest
+from nefertari.utils import FieldData
 
 
 class TestModelHelpers(object):
 
-    def test_lower_strip(self, engine_mock):
+    def test_lower_strip_with_value(self, engine_mock):
+        from nefertari import events
         from nefertari.authentication import models
-        assert models.lower_strip(instance=None, new_value='Foo   ') == 'foo'
-        assert models.lower_strip(instance=None, new_value=None) == ''
+        field = FieldData(name='username', new_value='Foo            ')
+        request = Mock(json={'username': 'boo'})
+        event = events.before_create(
+            request=request, model=None, fields={}, field=field)
+        models.lower_strip(event)
+        assert request.json == {'username': 'foo'}
+
+    def test_lower_strip_without_value(self, engine_mock):
+        from nefertari import events
+        from nefertari.authentication import models
+        field = FieldData(name='username', new_value=None)
+        request = Mock(json={'username': 'boo'})
+        event = events.before_create(
+            request=request, model=None, fields={}, field=field)
+        models.lower_strip(event)
+        assert request.json == {'username': ''}
 
     def test_encrypt_password(self, engine_mock):
+        from nefertari import events
         from nefertari.authentication import models
-        field = Mock(params={'min_length': 1})
-        encrypted = models.encrypt_password(
-            instance=None, new_value='foo',
-            field=field)
+        field = FieldData(
+            name='password', new_value='foo',
+            params={'min_length': 1})
+        request = Mock(json={'password': 'boo'})
+        event = events.before_create(
+            request=request, model=None, fields={}, field=field)
+
+        models.encrypt_password(event)
+        encrypted = event.request.json['password']
         assert models.crypt.match(encrypted)
         assert encrypted != 'foo'
-        assert encrypted == models.encrypt_password(
-            instance=None, new_value=encrypted, field=field)
+        models.encrypt_password(event)
+        assert encrypted == event.request.json['password']
 
     def test_encrypt_password_failed(self, engine_mock):
+        from nefertari import events
         from nefertari.authentication import models
-        field = Mock(params={'min_length': 10})
-        field.name = 'q'
+        field = FieldData(
+            name='q', new_value='foo',
+            params={'min_length': 10})
+        request = Mock(json={'password': 'boo'})
+        event = events.before_create(
+            request=request, model=None, fields={}, field=field)
+
         with pytest.raises(ValueError) as ex:
-            models.encrypt_password(
-                instance=None, new_value='foo',
-                field=field)
+            models.encrypt_password(event)
         assert str(ex.value) == '`q`: Value length must be more than 10'
 
     @patch('nefertari.authentication.models.uuid.uuid4')

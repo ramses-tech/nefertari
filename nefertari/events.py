@@ -130,7 +130,13 @@ class ModelClassIs(object):
     phash = text
 
     def __call__(self, event):
-        return event.model is self.model
+        """ Check whether one of following is true:
+
+        * event.model is the same class as self.model
+        * event.model is subclass of self.model
+        """
+        return (event.model is self.model or
+                issubclass(event.model, self.model))
 
 
 class FieldIsChanged(object):

@@ -18,14 +18,18 @@ class DummyBaseView(BaseView):
 
 class TestViewMapper(object):
 
-    def test_viewmapper(self):
+    @patch('nefertari.view.FieldData.from_dict')
+    def test_viewmapper(self, mock_from):
         from nefertari.view import ViewMapper
+        mock_from.return_value = {}
 
         bc1 = Mock()
         bc3 = Mock()
         bc2 = Mock()
 
         class MyView(object):
+            Model = 'foo'
+
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1], 'show': [bc3]}
                 self._after_calls = {'show': [bc2]}
@@ -48,12 +52,16 @@ class TestViewMapper(object):
         assert not bc2.called
         assert not bc3.called
 
-    def test_viewmapper_bad_request(self):
+    @patch('nefertari.view.FieldData.from_dict')
+    def test_viewmapper_bad_request(self, mock_from):
         from nefertari.view import ViewMapper
+        mock_from.return_value = {}
 
         bc1 = Mock(side_effect=ValidationError)
 
         class MyView(object):
+            Model = 'foo'
+
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1]}
                 self._after_calls = {}
@@ -67,12 +75,15 @@ class TestViewMapper(object):
         with pytest.raises(JHTTPBadRequest):
             wrapper(resource, request)
 
-    def test_viewmapper_not_found(self):
+    @patch('nefertari.view.FieldData.from_dict')
+    def test_viewmapper_not_found(self, mock_from):
         from nefertari.view import ViewMapper
-
+        mock_from.return_value = {}
         bc1 = Mock(side_effect=ResourceNotFound)
 
         class MyView(object):
+            Model = 'foo'
+
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1]}
                 self._after_calls = {}
