@@ -8,7 +8,7 @@ from elasticsearch import helpers
 import six
 
 from nefertari.utils import (
-    dictset, dict2obj, process_limit, split_strip)
+    dictset, dict2obj, process_limit, split_strip, to_dicts)
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, exception_response)
 from nefertari import engine, RESERVED_PARAMS
@@ -401,7 +401,7 @@ class ES(object):
         else:
             log.warning('Empty body')
 
-    def index(self, documents, request=None):
+    def index(self, documents, request=None, **kwargs):
         """ Reindex all `document`s. """
         self._bulk('index', documents, request)
 
@@ -713,8 +713,8 @@ class ES(object):
         return self.get_resource(**kw)
 
     @classmethod
-    def index_refs(cls, db_obj, request=None):
-        for model_cls, documents in db_obj.get_reference_documents():
+    def index_relations(cls, db_obj, request=None, **kwargs):
+        for model_cls, documents in db_obj.get_related_documents(**kwargs):
             if getattr(model_cls, '_index_enabled', False) and documents:
                 cls(model_cls.__name__).index(
-                    documents, request=request)
+                    to_dicts(documents), request=request)
