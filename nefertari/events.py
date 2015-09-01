@@ -6,8 +6,12 @@ from zope.interface import implementer
 
 
 class IRequestEvent(Interface):
-    request = Attribute('Current Pyramid request object')
     model = Attribute('Model class affected by the request')
+    view = Attribute(
+        'View instance which will process the request. Some useful '
+        'attributes are: request, _json_params, _query_params. Change '
+        '_json_params to edit data used to create/update objects and '
+        '_query_params to edit data used to query database.')
     fields = Attribute(
         'Dict of all fields from request.json. Keys are fields names and'
         'values are nefertari.utils.FieldData instances. If request does '
@@ -17,16 +21,22 @@ class IRequestEvent(Interface):
         'subscriber predicate. Do not use this field to determine what '
         'event was triggered when same event handler was registered with '
         'and without field predicate.')
+    instance = Attribute(
+        'Object instance affected by request. Used in item requests '
+        'only. Should be used to read data only. Changes to the instance '
+        'may result in database data inconsistency.')
 
 
 @implementer(IRequestEvent)
 class RequestEvent(object):
     """ Nefertari request event. """
-    def __init__(self, request, model, fields=None, field=None):
-        self.request = request
+    def __init__(self, model, view,
+                 fields=None, field=None, instance=None):
         self.model = model
+        self.view = view
         self.fields = fields
         self.field = field
+        self.instance = instance
 
 
 # 'Before' events

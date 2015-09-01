@@ -12,21 +12,22 @@ class TestModelHelpers(object):
         from nefertari import events
         from nefertari.authentication import models
         field = FieldData(name='username', new_value='Foo            ')
-        request = Mock(json={'username': 'boo'})
+        view = Mock(_json_params={})
         event = events.before_create(
-            request=request, model=None, fields={}, field=field)
+            view=view, model=None, fields={},
+            field=field)
         models.lower_strip(event)
-        assert request.json == {'username': 'foo'}
+        assert view._json_params == {'username': 'foo'}
 
     def test_lower_strip_without_value(self, engine_mock):
         from nefertari import events
         from nefertari.authentication import models
         field = FieldData(name='username', new_value=None)
-        request = Mock(json={'username': 'boo'})
+        view = Mock(_json_params={})
         event = events.before_create(
-            request=request, model=None, fields={}, field=field)
+            view=view, model=None, fields={}, field=field)
         models.lower_strip(event)
-        assert request.json == {'username': ''}
+        assert view._json_params == {'username': ''}
 
     def test_encrypt_password(self, engine_mock):
         from nefertari import events
@@ -34,16 +35,16 @@ class TestModelHelpers(object):
         field = FieldData(
             name='password', new_value='foo',
             params={'min_length': 1})
-        request = Mock(json={'password': 'boo'})
+        view = Mock(_json_params={'password': 'boo'})
         event = events.before_create(
-            request=request, model=None, fields={}, field=field)
+            view=view, model=None, fields={}, field=field)
 
         models.encrypt_password(event)
-        encrypted = event.request.json['password']
+        encrypted = event.view._json_params['password']
         assert models.crypt.match(encrypted)
         assert encrypted != 'foo'
         models.encrypt_password(event)
-        assert encrypted == event.request.json['password']
+        assert encrypted == event.view._json_params['password']
 
     def test_encrypt_password_failed(self, engine_mock):
         from nefertari import events
@@ -51,9 +52,9 @@ class TestModelHelpers(object):
         field = FieldData(
             name='q', new_value='foo',
             params={'min_length': 10})
-        request = Mock(json={'password': 'boo'})
+        view = Mock(_json_params={'password': 'boo'})
         event = events.before_create(
-            request=request, model=None, fields={}, field=field)
+            view=view, model=None, fields={}, field=field)
 
         with pytest.raises(ValueError) as ex:
             models.encrypt_password(event)

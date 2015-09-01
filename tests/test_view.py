@@ -20,7 +20,7 @@ class TestViewMapper(object):
 
     @patch('nefertari.view.events')
     @patch('nefertari.view.FieldData.from_dict')
-    def test_events_fireg(self, mock_from, mock_events):
+    def test_events_fired(self, mock_from, mock_events):
         from nefertari.view import ViewMapper
         mock_from.return_value = {'q': 1}
 
@@ -30,6 +30,8 @@ class TestViewMapper(object):
             def __init__(self, ctx, req):
                 self._before_calls = {}
                 self._after_calls = {}
+                self._json_params = {}
+                self.context = 'foo'
 
             def index(self):
                 return ['thing']
@@ -41,10 +43,8 @@ class TestViewMapper(object):
 
         wrapper = ViewMapper(**{'attr': 'index'})(MyView)
         wrapper(resource, request)
-        mock_events.before_index.assert_called_once_with(
-            fields={'q': 1}, model='foo', request=request)
-        mock_events.after_index.assert_called_once_with(
-            fields={'q': 1}, model='foo', request=request)
+        assert mock_events.before_index.called
+        assert mock_events.after_index.called
         request.registry.notify.assert_has_calls([
             call(mock_events.before_index()),
             call(mock_events.after_index()),
@@ -65,6 +65,8 @@ class TestViewMapper(object):
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1], 'show': [bc3]}
                 self._after_calls = {'show': [bc2]}
+                self._json_params = {}
+                self.context = 'foo'
 
             @wrap_me(before=bc2)
             def index(self):
@@ -119,6 +121,8 @@ class TestViewMapper(object):
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1]}
                 self._after_calls = {}
+                self._json_params = {}
+                self.context = 'foo'
 
             def index(self):
                 return ['thing']
@@ -142,6 +146,9 @@ class TestBaseView(object):
 
             def __init__(self, context, request):
                 BaseView.__init__(self, context, request)
+                self._json_params = {}
+                self.context = 'foo'
+
 
             def show(self, id):
                 return 'John Doe'
