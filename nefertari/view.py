@@ -319,9 +319,6 @@ class BaseView(OptionsViewMixin):
 
         return self.request.invoke_subrequest(req)
 
-    def needs_confirmation(self):
-        return '__confirmation' not in self._query_params
-
     def id2obj(self, name, model, pk_field=None, setdefault=None):
         if name not in self._json_params:
             return

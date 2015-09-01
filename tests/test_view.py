@@ -510,16 +510,6 @@ class TestBaseView(object):
         json.dumps.assert_called_once_with({'par': 'val'})
 
     @patch('nefertari.view.BaseView._run_init_actions')
-    def test_needs_confirmation(self, run):
-        request = self.get_common_mock_request()
-        view = DummyBaseView(
-            context={}, request=request, _query_params={'foo': 'bar'})
-        view._query_params['__confirmation'] = ''
-        assert not view.needs_confirmation()
-        view._query_params.pop('__confirmation')
-        assert view.needs_confirmation()
-
-    @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj(self, run):
         model = Mock()
         model.pk_field.return_value = 'idname'
