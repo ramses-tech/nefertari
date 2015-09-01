@@ -18,11 +18,9 @@ class DummyBaseView(BaseView):
 
 class TestViewMapper(object):
 
-    @patch('nefertari.view.events')
-    @patch('nefertari.view.FieldData.from_dict')
-    def test_events_fired(self, mock_from, mock_events):
+    @patch('nefertari.view.trigger_events')
+    def test_trigger_events_called(self, mock_manager):
         from nefertari.view import ViewMapper
-        mock_from.return_value = {'q': 1}
 
         class MyView(object):
             Model = 'foo'
@@ -43,17 +41,10 @@ class TestViewMapper(object):
 
         wrapper = ViewMapper(**{'attr': 'index'})(MyView)
         wrapper(resource, request)
-        assert mock_events.before_index.called
-        assert mock_events.after_index.called
-        request.registry.notify.assert_has_calls([
-            call(mock_events.before_index()),
-            call(mock_events.after_index()),
-        ])
+        assert mock_manager.called
 
-    @patch('nefertari.view.FieldData.from_dict')
-    def test_viewmapper(self, mock_from):
+    def test_viewmapper(self):
         from nefertari.view import ViewMapper
-        mock_from.return_value = {}
 
         bc1 = Mock()
         bc3 = Mock()
@@ -67,6 +58,7 @@ class TestViewMapper(object):
                 self._after_calls = {'show': [bc2]}
                 self._json_params = {}
                 self.context = 'foo'
+                self.request = Mock(action='index')
 
             @wrap_me(before=bc2)
             def index(self):
@@ -86,10 +78,8 @@ class TestViewMapper(object):
         assert not bc2.called
         assert not bc3.called
 
-    @patch('nefertari.view.FieldData.from_dict')
-    def test_viewmapper_bad_request(self, mock_from):
+    def test_viewmapper_bad_request(self):
         from nefertari.view import ViewMapper
-        mock_from.return_value = {}
 
         bc1 = Mock(side_effect=ValidationError)
 
@@ -109,10 +99,8 @@ class TestViewMapper(object):
         with pytest.raises(JHTTPBadRequest):
             wrapper(resource, request)
 
-    @patch('nefertari.view.FieldData.from_dict')
-    def test_viewmapper_not_found(self, mock_from):
+    def test_viewmapper_not_found(self):
         from nefertari.view import ViewMapper
-        mock_from.return_value = {}
         bc1 = Mock(side_effect=ResourceNotFound)
 
         class MyView(object):
@@ -123,6 +111,7 @@ class TestViewMapper(object):
                 self._after_calls = {}
                 self._json_params = {}
                 self.context = 'foo'
+                self.request = Mock(action='index')
 
             def index(self):
                 return ['thing']
@@ -148,7 +137,7 @@ class TestBaseView(object):
                 BaseView.__init__(self, context, request)
                 self._json_params = {}
                 self.context = 'foo'
-
+                self.request = Mock(action='index')
 
             def show(self, id):
                 return 'John Doe'

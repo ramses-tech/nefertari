@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from zope.interface import (
     Attribute,
     Interface,
@@ -165,3 +167,32 @@ class FieldIsChanged(object):
             event.field = event.fields[self.field]
             return True
         return False
+
+
+@contextmanager
+def trigger_events(view_obj):
+    """ Trigger before_ and after_ CRUD events.
+
+    :param view_obj: Instance of nefertari.view.BaseView subclass created
+        by nefertari.view.ViewMapper.
+    """
+    from nefertari.utils import FieldData
+    _globals = globals()
+    request = view_obj.request
+    event_kwargs = {
+        'view': view_obj,
+        'model': view_obj.Model,
+        'fields': FieldData.from_dict(
+            view_obj._json_params,
+            view_obj.Model)
+    }
+    if hasattr(view_obj.context, 'pk_field'):
+        event_kwargs['instance'] = view_obj.context
+
+    before_event = _globals['before_{}'.format(request.action)]
+    request.registry.notify(before_event(**event_kwargs))
+
+    yield
+
+    after_event = _globals['after_{}'.format(request.action)]
+    request.registry.notify(after_event(**event_kwargs))

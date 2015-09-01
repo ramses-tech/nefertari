@@ -9,11 +9,11 @@ from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
     JHTTPBadRequest, JHTTPNotFound, JHTTPMethodNotAllowed)
-from nefertari.utils import dictset, merge_dicts, str2dict, FieldData
+from nefertari.utils import dictset, merge_dicts, str2dict
 from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
 from nefertari.view_helpers import OptionsViewMixin, ESAggregator
-from nefertari import events
+from nefertari.events import trigger_events
 
 
 log = logging.getLogger(__name__)
@@ -56,24 +56,8 @@ class ViewMapper(object):
                 log.error('resource not found: %s', e)
                 raise JHTTPNotFound()
 
-            event_kwargs = {
-                'view': view_obj,
-                'model': view_obj.Model,
-                'fields': FieldData.from_dict(
-                    view_obj._json_params, view_obj.Model)
-            }
-            if hasattr(view_obj.context, 'pk_field'):
-                event_kwargs['instance'] = view_obj.context
-
-            before_event = getattr(events, 'before_{}'.format(action_name))
-            request.registry.notify(before_event(**event_kwargs))
-
-            response = action(**matchdict)
-
-            after_event = getattr(events, 'after_{}'.format(action_name))
-            request.registry.notify(after_event(**event_kwargs))
-
-            return response
+            with trigger_events(view_obj):
+                return action(**matchdict)
 
         return view_mapper_wrapper
 
