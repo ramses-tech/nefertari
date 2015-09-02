@@ -18,16 +18,16 @@ ACTIONS = [
     'item_options',         # Item OPTIONS
 ]
 PERMISSIONS = {
-    'index': 'view',
-    'show': 'view',
-    'create': 'create',
-    'update': 'update',
-    'update_many': 'update',
-    'delete': 'delete',
-    'delete_many': 'delete',
-    'replace': 'update',
-    'collection_options': 'options',
-    'item_options': 'options',
+    'index':                'view',
+    'show':                 'view',
+    'create':               'create',
+    'update':               'update',
+    'update_many':          'update',
+    'replace':              'update',
+    'delete':               'delete',
+    'delete_many':          'delete',
+    'collection_options':   'options',
+    'item_options':         'options',
     }
 DEFAULT_ID_NAME = 'id'
 
