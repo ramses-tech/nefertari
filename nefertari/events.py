@@ -1,37 +1,26 @@
 from contextlib import contextmanager
 
-from zope.interface import (
-    Attribute,
-    Interface,
-)
-from zope.interface import implementer
 
-
-class IRequestEvent(Interface):
-    model = Attribute('Model class affected by the request')
-    view = Attribute(
-        'View instance which will process the request. Some useful '
-        'attributes are: request, _json_params, _query_params. Change '
-        '_json_params to edit data used to create/update objects and '
-        '_query_params to edit data used to query database.')
-    fields = Attribute(
-        'Dict of all fields from request.json. Keys are fields names and'
-        'values are nefertari.utils.FieldData instances. If request does '
-        'not have JSON body, value will be an empty dict.')
-    field = Attribute(
-        'Changed field name. This field is set/changed in FieldIsChanged '
-        'subscriber predicate. Do not use this field to determine what '
-        'event was triggered when same event handler was registered with '
-        'and without field predicate.')
-    instance = Attribute(
-        'Object instance affected by request. Used in item requests '
-        'only. Should be used to read data only. Changes to the instance '
-        'may result in database data inconsistency.')
-
-
-@implementer(IRequestEvent)
 class RequestEvent(object):
-    """ Nefertari request event. """
+    """ Nefertari request event.
+
+    Attributes:
+    :param model: Model class affected by the request
+    :param view: View instance which will process the request. Some
+        useful attributes are: request, _json_params, _query_params.
+        Change _json_params to edit data used to create/update objects
+        and _query_params to edit data used to query database.
+    :param fields: Dict of all fields from request.json. Keys are fields
+        names and values are nefertari.utils.FieldData instances. If
+        request does not have JSON body, value will be an empty dict.
+    :param field: Changed field name. This field is set/changed in
+        FieldIsChanged subscriber predicate. Do not use this field to
+        determine what event was triggered when same event handler was
+        registered with and without field predicate.
+    :param instance: Object instance affected by request. Used in item
+        requests  only. Should be used to read data only. Changes to the
+        instance may result in database data inconsistency.
+    """
     def __init__(self, model, view,
                  fields=None, field=None, instance=None):
         self.model = model
