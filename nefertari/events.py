@@ -49,86 +49,112 @@ class RequestEvent(object):
 
 # 'Before' events
 
-class before_index(RequestEvent):
+class BeforeIndex(RequestEvent):
     pass
 
 
-class before_show(RequestEvent):
+class BeforeShow(RequestEvent):
     pass
 
 
-class before_create(RequestEvent):
+class BeforeCreate(RequestEvent):
     pass
 
 
-class before_update(RequestEvent):
+class BeforeUpdate(RequestEvent):
     pass
 
 
-class before_replace(RequestEvent):
+class BeforeReplace(RequestEvent):
     pass
 
 
-class before_delete(RequestEvent):
+class BeforeDelete(RequestEvent):
     pass
 
 
-class before_update_many(RequestEvent):
+class BeforeUpdateMany(RequestEvent):
     pass
 
 
-class before_delete_many(RequestEvent):
+class BeforeDeleteMany(RequestEvent):
     pass
 
 
-class before_item_options(RequestEvent):
+class BeforeItemOptions(RequestEvent):
     pass
 
 
-class before_collection_options(RequestEvent):
+class BeforeCollectionOptions(RequestEvent):
     pass
 
 
 # 'After' events
 
-class after_index(RequestEvent):
+class AfterIndex(RequestEvent):
     pass
 
 
-class after_show(RequestEvent):
+class AfterShow(RequestEvent):
     pass
 
 
-class after_create(RequestEvent):
+class AfterCreate(RequestEvent):
     pass
 
 
-class after_update(RequestEvent):
+class AfterUpdate(RequestEvent):
     pass
 
 
-class after_replace(RequestEvent):
+class AfterReplace(RequestEvent):
     pass
 
 
-class after_delete(RequestEvent):
+class AfterDelete(RequestEvent):
     pass
 
 
-class after_update_many(RequestEvent):
+class AfterUpdateMany(RequestEvent):
     pass
 
 
-class after_delete_many(RequestEvent):
+class AfterDeleteMany(RequestEvent):
     pass
 
 
-class after_item_options(RequestEvent):
+class AfterItemOptions(RequestEvent):
     pass
 
 
-class after_collection_options(RequestEvent):
+class AfterCollectionOptions(RequestEvent):
     pass
+
+
+BEFORE_EVENTS = {
+    'index': BeforeIndex,
+    'show': BeforeShow,
+    'create': BeforeCreate,
+    'update': BeforeUpdate,
+    'replace': BeforeReplace,
+    'delete': BeforeDelete,
+    'update_many': BeforeUpdateMany,
+    'delete_many': BeforeDeleteMany,
+    'item_options': BeforeItemOptions,
+    'collection_options': BeforeCollectionOptions,
+}
+AFTER_EVENTS = {
+    'index': AfterIndex,
+    'show': AfterShow,
+    'create': AfterCreate,
+    'update': AfterUpdate,
+    'replace': AfterReplace,
+    'delete': AfterDelete,
+    'update_many': AfterUpdateMany,
+    'delete_many': AfterDeleteMany,
+    'item_options': AfterItemOptions,
+    'collection_options': AfterCollectionOptions,
+}
 
 
 # Subscriber predicates
@@ -183,7 +209,6 @@ def trigger_events(view_obj):
         by nefertari.view.ViewMapper.
     """
     from nefertari.utils import FieldData
-    _globals = globals()
     request = view_obj.request
     event_kwargs = {
         'view': view_obj,
@@ -195,12 +220,12 @@ def trigger_events(view_obj):
     if hasattr(view_obj.context, 'pk_field'):
         event_kwargs['instance'] = view_obj.context
 
-    before_event = _globals['before_{}'.format(request.action)]
+    before_event = BEFORE_EVENTS[request.action]
     request.registry.notify(before_event(**event_kwargs))
 
     yield
 
-    after_event = _globals['after_{}'.format(request.action)]
+    after_event = AFTER_EVENTS[request.action]
     request.registry.notify(after_event(**event_kwargs))
 
 

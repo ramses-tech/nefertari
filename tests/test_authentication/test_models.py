@@ -13,7 +13,7 @@ class TestModelHelpers(object):
         from nefertari.authentication import models
         field = FieldData(name='username', new_value='Foo            ')
         view = Mock(_json_params={})
-        event = events.before_create(
+        event = events.BeforeCreate(
             view=view, model=None, fields={},
             field=field)
         models.lower_strip(event)
@@ -24,7 +24,7 @@ class TestModelHelpers(object):
         from nefertari.authentication import models
         field = FieldData(name='username', new_value=None)
         view = Mock(_json_params={})
-        event = events.before_create(
+        event = events.BeforeCreate(
             view=view, model=None, fields={}, field=field)
         models.lower_strip(event)
         assert view._json_params == {'username': ''}
@@ -36,7 +36,7 @@ class TestModelHelpers(object):
             name='password', new_value='foo',
             params={'min_length': 1})
         view = Mock(_json_params={'password': 'boo'})
-        event = events.before_create(
+        event = events.BeforeCreate(
             view=view, model=None, fields={}, field=field)
 
         models.encrypt_password(event)
@@ -53,7 +53,7 @@ class TestModelHelpers(object):
             name='q', new_value='foo',
             params={'min_length': 10})
         view = Mock(_json_params={'password': 'boo'})
-        event = events.before_create(
+        event = events.BeforeCreate(
             view=view, model=None, fields={}, field=field)
 
         with pytest.raises(ValueError) as ex:

@@ -38,10 +38,10 @@ class TestEvents(object):
             event.set_field_value(2)
         assert 'Field name is not specified' in str(ex.value)
 
-    @patch.object(events, 'before_index')
-    @patch.object(events, 'after_index')
     @patch('nefertari.utils.FieldData.from_dict')
-    def test_trigger_events(self, mock_from, mock_after, mock_before):
+    def test_trigger_events(self, mock_from):
+        mock_after = Mock()
+        mock_before = Mock()
         mock_from.return_value = {'foo': 1}
         ctx = Mock(pk_field=2)
         view = Mock(
@@ -50,8 +50,10 @@ class TestEvents(object):
             _json_params={'bar': 1},
             context=ctx)
 
-        with events.trigger_events(view):
-            pass
+        with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
+            with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
+                with events.trigger_events(view):
+                    pass
 
         mock_after.assert_called_once_with(
             fields={'foo': 1}, model=1, instance=ctx, view=view)
@@ -67,7 +69,8 @@ class TestEvents(object):
 class TestHelperFunctions(object):
     def test_subscribe_to_events(self):
         config = Mock()
-        events.subscribe_to_events(config, 'foo', [1, 2], model=3, field=4)
+        events.subscribe_to_events(
+            config, 'foo', [1, 2], model=3, field=4)
         config.add_subscriber.assert_has_calls([
             call('foo', 1, model=3, field=4),
             call('foo', 2, model=3, field=4)
@@ -80,7 +83,7 @@ class TestModelClassIs(object):
             pass
 
         predicate = events.ModelClassIs(model=A, config=None)
-        event = events.before_index(view=None, model=list)
+        event = events.BeforeIndex(view=None, model=list)
         assert not predicate(event)
 
     def test_correct_class(self):
@@ -88,7 +91,7 @@ class TestModelClassIs(object):
             pass
 
         predicate = events.ModelClassIs(model=A, config=None)
-        event = events.before_index(view=None, model=A)
+        event = events.BeforeIndex(view=None, model=A)
         assert predicate(event)
 
     def test_correct_subclass(self):
@@ -99,14 +102,14 @@ class TestModelClassIs(object):
             pass
 
         predicate = events.ModelClassIs(model=A, config=None)
-        event = events.before_index(view=None, model=B)
+        event = events.BeforeIndex(view=None, model=B)
         assert predicate(event)
 
 
 class TestFieldIsChanged(object):
     def test_field_changed(self):
         predicate = events.FieldIsChanged(field='username', config=None)
-        event = events.before_index(
+        event = events.BeforeIndex(
             view=None, model=None,
             fields={'username': 'asd'})
         assert event.field is None
@@ -115,7 +118,7 @@ class TestFieldIsChanged(object):
 
     def test_field_not_changed(self):
         predicate = events.FieldIsChanged(field='username', config=None)
-        event = events.before_index(
+        event = events.BeforeIndex(
             view=None, model=None,
             fields={'password': 'asd'})
         assert event.field is None

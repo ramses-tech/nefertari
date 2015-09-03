@@ -9,10 +9,10 @@ def includeme(config):
     from nefertari import events
 
     subscribe_to = (
-        events.before_create,
-        events.before_update,
-        events.before_replace,
-        events.before_update_many,
+        events.BeforeCreate,
+        events.BeforeUpdate,
+        events.BeforeReplace,
+        events.BeforeUpdateMany,
     )
 
     add_sub = config.subscribe_to_events
