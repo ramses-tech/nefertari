@@ -4,7 +4,6 @@ from contextlib import contextmanager
 class RequestEvent(object):
     """ Nefertari request event.
 
-    Attributes:
     :param model: Model class affected by the request
     :param view: View instance which will process the request. Some
         useful attributes are: request, _json_params, _query_params.
@@ -13,7 +12,7 @@ class RequestEvent(object):
     :param fields: Dict of all fields from request.json. Keys are fields
         names and values are nefertari.utils.FieldData instances. If
         request does not have JSON body, value will be an empty dict.
-    :param field: Changed field name. This field is set/changed in
+    :param field: Changed field object. This field is set/changed in
         FieldIsChanged subscriber predicate. Do not use this field to
         determine what event was triggered when same event handler was
         registered with and without field predicate.
@@ -32,7 +31,8 @@ class RequestEvent(object):
     def set_field_value(self, value, field_name=None):
         """ Set value of field named `field_name`.
 
-        Values are set on `view._json_params` dict.
+        Use this method to apply changes to object which is affected
+        by request. Values are set on `view._json_params` dict.
 
         :param value: Value to be set.
         :param field_name: Name of field value of which should be set.
@@ -173,7 +173,10 @@ AFTER_EVENTS = {
 # Subscriber predicates
 
 class ModelClassIs(object):
-    """ Subscriber predicate to check event.model is the right model. """
+    """ Subscriber predicate to check event.model is the right model.
+
+    Example: config.add_subscriber(func, event, model=ModelCls)
+    """
 
     def __init__(self, model, config):
         """
@@ -196,7 +199,10 @@ class ModelClassIs(object):
 
 
 class FieldIsChanged(object):
-    """ Subscriber predicate to check particular field is changed. """
+    """ Subscriber predicate to check particular field is changed.
+
+    Example: config.add_subscriber(func, event, field=field_name)
+    """
 
     def __init__(self, field, config):
         self.field = field
