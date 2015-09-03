@@ -131,6 +131,13 @@ class AfterCollectionOptions(RequestEvent):
     pass
 
 
+""" Events run before a particular event action happened.
+It's recommended to use these events to:
+    * Transform input
+    * Perform validation
+    * Apply changes to object that is being affected by request using
+        `event.set_field_value`.
+"""
 BEFORE_EVENTS = {
     'index': BeforeIndex,
     'show': BeforeShow,
@@ -143,6 +150,12 @@ BEFORE_EVENTS = {
     'item_options': BeforeItemOptions,
     'collection_options': BeforeCollectionOptions,
 }
+
+""" Events run after a particular event action happened.
+It's recommended to use these events to:
+    * Change DB objects which are not affected by request.
+    * Perform notifications/logging.
+"""
 AFTER_EVENTS = {
     'index': AfterIndex,
     'show': AfterShow,
