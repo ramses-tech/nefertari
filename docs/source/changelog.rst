@@ -1,6 +1,13 @@
 Changelog
 =========
 
+* :release:`0.5.1 <2015-09-02>`
+* :bug:`-` Fixed '_self' param for ``/api/users/self`` convience route
+* :bug:`-` Fixed a bug when using reserved query params with GET tunneling
+* :bug:`-` Fixed an error preventing RelationshipFields' backrefs to be set as _nested_relationships
+* :bug:`-` Fixed a bug allowing to update hidden fields
+* :bug:`-` Simplified ACLs (refactoring)
+
 * :release:`0.5.0 <2015-08-19>`
 * :feature:`-` Renamed field 'self' to '_self'
 * :feature:`-` Refactored authentication
