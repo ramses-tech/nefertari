@@ -1,3 +1,4 @@
+import pytest
 from mock import patch, Mock, call
 
 from nefertari import events
@@ -12,6 +13,30 @@ class TestEvents(object):
         assert obj.fields == 3
         assert obj.field == 4
         assert obj.instance == 5
+
+    def test_set_field_value_field_name_provided(self):
+        view = Mock(_json_params={})
+        event = events.RequestEvent(
+            view=view, model=None, field=None)
+        event.set_field_value(2, 'foo')
+        assert view._json_params == {'foo': 2}
+
+    def test_set_field_value_no_field_name(self):
+        from nefertari.utils import FieldData
+        field = FieldData(name='foo', new_value=1)
+        view = Mock(_json_params={})
+        event = events.RequestEvent(
+            view=view, model=None, field=field)
+        event.set_field_value(2)
+        assert view._json_params == {'foo': 2}
+
+    def test_set_field_value_no_field_name_no_field(self):
+        view = Mock(_json_params={})
+        event = events.RequestEvent(
+            view=view, model=None, field=None)
+        with pytest.raises(KeyError) as ex:
+            event.set_field_value(2)
+        assert 'Field name is not specified' in str(ex.value)
 
     @patch.object(events, 'before_index')
     @patch.object(events, 'after_index')
@@ -38,6 +63,8 @@ class TestEvents(object):
         ])
         mock_from.assert_called_once_with({'bar': 1}, 1)
 
+
+class TestHelperFunctions(object):
     def test_subscribe_to_events(self):
         config = Mock()
         events.subscribe_to_events(config, 'foo', [1, 2], model=3, field=4)

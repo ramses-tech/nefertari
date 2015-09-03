@@ -29,6 +29,23 @@ class RequestEvent(object):
         self.field = field
         self.instance = instance
 
+    def set_field_value(self, value, field_name=None):
+        """ Set value of field named `field_name`.
+
+        Values are set on `view._json_params` dict.
+
+        :param value: Value to be set.
+        :param field_name: Name of field value of which should be set.
+            Optional if `self.field` is set; in this case `self.field.name`
+            is used. If `self.field` is None and `field_name` is not
+            provided, KeyError is raised.
+        """
+        if field_name is None:
+            if self.field is None:
+                raise KeyError('Field name is not specified')
+            field_name = self.field.name
+        self.view._json_params[field_name] = value
+
 
 # 'Before' events
 

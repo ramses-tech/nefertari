@@ -149,15 +149,13 @@ class AuthModelMethodsMixin(object):
 
 
 def lower_strip(event):
-    field = event.field
-    value = (field.new_value or '').lower().strip()
-    event.view._json_params[field.name] = value
+    value = (event.field.new_value or '').lower().strip()
+    event.set_field_value(value)
 
 
 def random_uuid(event):
-    field = event.field
-    if not field.new_value:
-        event.view._json_params[field.name] = uuid.uuid4().hex
+    if not event.field.new_value:
+        event.set_field_value(uuid.uuid4().hex)
 
 
 def encrypt_password(event):
@@ -173,7 +171,7 @@ def encrypt_password(event):
     if new_value and not crypt.match(new_value):
         encrypted = str(crypt.encode(new_value))
         field.new_value = encrypted
-        event.view._json_params[field.name] = encrypted
+        event.set_field_value(encrypted)
 
 
 class AuthUserMixin(AuthModelMethodsMixin):
