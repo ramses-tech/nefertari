@@ -38,6 +38,14 @@ class TestEvents(object):
         ])
         mock_from.assert_called_once_with({'bar': 1}, 1)
 
+    def test_subscribe_to_events(self):
+        config = Mock()
+        events.subscribe_to_events(config, 'foo', [1, 2], model=3, field=4)
+        config.add_subscriber.assert_has_calls([
+            call('foo', 1, model=3, field=4),
+            call('foo', 2, model=3, field=4)
+        ])
+
 
 class TestModelClassIs(object):
     def test_wrong_class(self):

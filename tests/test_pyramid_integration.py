@@ -11,7 +11,7 @@ class TestPyramidIntegration(unittest.TestCase):
         config.registry.settings = {'auth': True}
         includeme(config)
 
-        self.assertEqual(1, config.add_directive.call_count)
+        self.assertEqual(2, config.add_directive.call_count)
         self.assertEqual(2, config.add_renderer.call_count)
         root = config.get_root_resource()
         assert root.auth

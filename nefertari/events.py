@@ -196,3 +196,22 @@ def trigger_events(view_obj):
 
     after_event = _globals['after_{}'.format(request.action)]
     request.registry.notify(after_event(**event_kwargs))
+
+
+def subscribe_to_events(config, subscriber, events, model=None, field=None):
+    """ Helper function to subscribe to group of events.
+
+    :param config: Pyramid contig instance.
+    :param subscriber: Event subscriber function.
+    :param events: Sequence of events to subscribe to.
+    :param model: Model predicate value.
+    :param field: Field predicate value.
+    """
+    kwargs = {}
+    if model is not None:
+        kwargs['model'] = model
+    if field is not None:
+        kwargs['field'] = field
+
+    for evt in events:
+        config.add_subscriber(subscriber, evt, **kwargs)
