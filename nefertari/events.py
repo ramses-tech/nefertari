@@ -179,8 +179,7 @@ class ModelClassIs(object):
         * event.model is the same class as self.model
         * event.model is subclass of self.model
         """
-        return (event.model is self.model or
-                issubclass(event.model, self.model))
+        return issubclass(event.model, self.model)
 
 
 class FieldIsChanged(object):
@@ -217,7 +216,7 @@ def trigger_events(view_obj):
             view_obj._json_params,
             view_obj.Model)
     }
-    if hasattr(view_obj.context, 'pk_field'):
+    if isinstance(view_obj.context, view_obj.Model):
         event_kwargs['instance'] = view_obj.context
 
     before_event = BEFORE_EVENTS[request.action]

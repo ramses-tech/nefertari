@@ -23,7 +23,7 @@ class TestViewMapper(object):
         from nefertari.view import ViewMapper
 
         class MyView(object):
-            Model = 'foo'
+            Model = Mock
 
             def __init__(self, ctx, req):
                 self._before_calls = {}
@@ -51,7 +51,7 @@ class TestViewMapper(object):
         bc2 = Mock()
 
         class MyView(object):
-            Model = 'foo'
+            Model = Mock
 
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1], 'show': [bc3]}
@@ -84,7 +84,7 @@ class TestViewMapper(object):
         bc1 = Mock(side_effect=ValidationError)
 
         class MyView(object):
-            Model = 'foo'
+            Model = Mock
 
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1]}
