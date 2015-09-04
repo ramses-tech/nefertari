@@ -270,11 +270,6 @@ class BaseView(OptionsViewMixin):
             wrappers.add_object_url(self.request),
         ]
 
-        # Delete Many
-        self._after_calls['delete_many'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
         # Privacy wrappers
         if self._auth_enabled:
             for meth in ('index', 'show', 'create', 'update', 'replace'):
@@ -328,9 +323,6 @@ class BaseView(OptionsViewMixin):
             req.body = json.dumps(params)
 
         return self.request.invoke_subrequest(req)
-
-    def needs_confirmation(self):
-        return '__confirmation' not in self._query_params
 
     def id2obj(self, name, model, pk_field=None, setdefault=None):
         if name not in self._json_params:

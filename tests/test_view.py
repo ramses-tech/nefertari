@@ -376,7 +376,6 @@ class TestBaseView(object):
         assert len(view._after_calls['create']) == 4
         assert len(view._after_calls['update']) == 4
         assert len(view._after_calls['replace']) == 4
-        assert len(view._after_calls['delete_many']) == 1
         assert wrap.apply_privacy.call_count == 5
 
     @patch('nefertari.view.wrappers')
@@ -389,7 +388,6 @@ class TestBaseView(object):
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete_many']) == 1
         assert not wrap.apply_privacy.called
 
     def test_defalt_wrappers_and_wrap_me(self):
@@ -419,7 +417,6 @@ class TestBaseView(object):
 
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete_many']) == 1
 
         assert view.index._before_calls == [before_call]
         assert view.index._after_calls == [after_call]
@@ -511,16 +508,6 @@ class TestBaseView(object):
             method='POST')
         view.request.invoke_subrequest.assert_called_once_with(req.blank())
         json.dumps.assert_called_once_with({'par': 'val'})
-
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_needs_confirmation(self, run):
-        request = self.get_common_mock_request()
-        view = DummyBaseView(
-            context={}, request=request, _query_params={'foo': 'bar'})
-        view._query_params['__confirmation'] = ''
-        assert not view.needs_confirmation()
-        view._query_params.pop('__confirmation')
-        assert view.needs_confirmation()
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj(self, run):

@@ -456,7 +456,7 @@ class ES(object):
                 _params['body'] = {"query": {"match_all": {}}}
 
         if '_limit' not in params:
-            raise JHTTPBadRequest('Missing _limit')
+            params['_limit'] = self.api.count()['count']
 
         _params['from_'], _params['size'] = process_limit(
             params.get('_start', None),
@@ -550,7 +550,7 @@ class ES(object):
 
         documents = _ESDocs()
         documents._nefertari_meta = dict(
-            start=_params['from_'],
+            start=_params.get('from_', 0),
             fields=fields)
 
         try:
