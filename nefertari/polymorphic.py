@@ -78,7 +78,7 @@ class PolymorphicHelperMixin(object):
 class PolymorphicACL(PolymorphicHelperMixin, CollectionACL):
     """ ACL used by PolymorphicESView.
 
-    Generates ACEs checking whether current request user has 'index'
+    Generates ACEs checking whether current request user has 'view'
     permissions in all of the requested collection views/contexts.
     """
     def __init__(self, request):
@@ -91,7 +91,7 @@ class PolymorphicACL(PolymorphicHelperMixin, CollectionACL):
 
         To have access to polymorph on N collections, user MUST have
         access to all of them. If this is true, ACEs are returned, that
-        allows 'index' permissions to current request principals.
+        allows 'view' permissions to current request principals.
 
         Otherwise None is returned thus blocking all permissions except
         those defined in `nefertari.acl.BaseACL`.
@@ -104,11 +104,11 @@ class PolymorphicACL(PolymorphicHelperMixin, CollectionACL):
         factories = [res.view._factory for res in resources]
         contexts = [factory(self.request) for factory in factories]
         for ctx in contexts:
-            if not self.request.has_permission('index', ctx):
+            if not self.request.has_permission('view', ctx):
                 return
         else:
             return [
-                (Allow, principal, 'index')
+                (Allow, principal, 'view')
                 for principal in self.request.effective_principals
             ]
 
