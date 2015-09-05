@@ -26,9 +26,12 @@ def includeme(config):
     from nefertari.renderers import (
         JsonRendererFactory, NefertariJsonRendererFactory)
     from nefertari.utils import dictset
+    from nefertari.events import (
+        ModelClassIs, FieldIsChanged, subscribe_to_events)
 
     log.info("%s %s" % (APP_NAME, __version__))
     config.add_directive('get_root_resource', get_root_resource)
+    config.add_directive('subscribe_to_events', subscribe_to_events)
     config.add_renderer('json', JsonRendererFactory)
     config.add_renderer('nefertari_json', NefertariJsonRendererFactory)
 
@@ -43,6 +46,9 @@ def includeme(config):
     config.add_request_method(get_resource_map, 'resource_map', reify=True)
 
     config.add_tween('nefertari.tweens.cache_control')
+
+    config.add_subscriber_predicate('model', ModelClassIs)
+    config.add_subscriber_predicate('field', FieldIsChanged)
 
     Settings = dictset(config.registry.settings)
     root = config.get_root_resource()

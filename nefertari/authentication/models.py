@@ -148,18 +148,20 @@ class AuthModelMethodsMixin(object):
             return cls.get_resource(username=username)
 
 
-def lower_strip(**kwargs):
-    return (kwargs['new_value'] or '').lower().strip()
+def lower_strip(event):
+    value = (event.field.new_value or '').lower().strip()
+    event.set_field_value(value)
 
 
-def random_uuid(**kwargs):
-    return kwargs['new_value'] or uuid.uuid4().hex
+def random_uuid(event):
+    if not event.field.new_value:
+        event.set_field_value(uuid.uuid4().hex)
 
 
-def encrypt_password(**kwargs):
+def encrypt_password(event):
     """ Crypt :new_value: if it's not crypted yet. """
-    new_value = kwargs['new_value']
-    field = kwargs['field']
+    field = event.field
+    new_value = field.new_value
     min_length = field.params['min_length']
     if len(new_value) < min_length:
         raise ValueError(
@@ -167,8 +169,9 @@ def encrypt_password(**kwargs):
                 field.name, field.params['min_length']))
 
     if new_value and not crypt.match(new_value):
-        new_value = str(crypt.encode(new_value))
-    return new_value
+        encrypted = str(crypt.encode(new_value))
+        field.new_value = encrypted
+        event.set_field_value(encrypted)
 
 
 class AuthUserMixin(AuthModelMethodsMixin):
@@ -179,14 +182,9 @@ class AuthUserMixin(AuthModelMethodsMixin):
     """
     username = engine.StringField(
         primary_key=True, unique=True,
-        min_length=1, max_length=50,
-        before_validation=[random_uuid, lower_strip])
-    email = engine.StringField(
-        unique=True, required=True,
-        before_validation=[lower_strip])
-    password = engine.StringField(
-        min_length=3, required=True,
-        before_validation=[encrypt_password])
+        min_length=1, max_length=50)
+    email = engine.StringField(unique=True, required=True)
+    password = engine.StringField(min_length=3, required=True)
     groups = engine.ListField(
         item_type=engine.StringField,
         choices=['admin', 'user'], default=['user'])

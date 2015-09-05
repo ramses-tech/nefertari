@@ -5,7 +5,6 @@ from collections import defaultdict
 
 import six
 from six.moves import urllib
-from pyramid.settings import asbool
 from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
@@ -14,6 +13,8 @@ from nefertari.utils import dictset, merge_dicts, str2dict
 from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
 from nefertari.view_helpers import OptionsViewMixin, ESAggregator
+from nefertari.events import trigger_events
+
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ class ViewMapper(object):
                 log.error('resource not found: %s', e)
                 raise JHTTPNotFound()
 
-            return action(**matchdict)
+            with trigger_events(view_obj):
+                return action(**matchdict)
 
         return view_mapper_wrapper
 
