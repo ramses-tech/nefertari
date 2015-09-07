@@ -5,7 +5,6 @@ from collections import defaultdict
 
 import six
 from six.moves import urllib
-from pyramid.settings import asbool
 from pyramid.request import Request
 
 from nefertari.json_httpexceptions import (
@@ -14,6 +13,8 @@ from nefertari.utils import dictset, merge_dicts, str2dict
 from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
 from nefertari.view_helpers import OptionsViewMixin, ESAggregator
+from nefertari.events import trigger_events
+
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ class ViewMapper(object):
                 log.error('resource not found: %s', e)
                 raise JHTTPNotFound()
 
-            return action(**matchdict)
+            with trigger_events(view_obj):
+                return action(**matchdict)
 
         return view_mapper_wrapper
 
@@ -270,11 +272,6 @@ class BaseView(OptionsViewMixin):
             wrappers.add_object_url(self.request),
         ]
 
-        # Delete Many
-        self._after_calls['delete_many'] = [
-            wrappers.add_confirmation_url(self.request)
-        ]
-
         # Privacy wrappers
         if self._auth_enabled:
             for meth in ('index', 'show', 'create', 'update', 'replace'):
@@ -328,9 +325,6 @@ class BaseView(OptionsViewMixin):
             req.body = json.dumps(params)
 
         return self.request.invoke_subrequest(req)
-
-    def needs_confirmation(self):
-        return '__confirmation' not in self._query_params
 
     def id2obj(self, name, model, pk_field=None, setdefault=None):
         if name not in self._json_params:

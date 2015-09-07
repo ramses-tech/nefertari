@@ -18,6 +18,31 @@ class DummyBaseView(BaseView):
 
 class TestViewMapper(object):
 
+    @patch('nefertari.view.trigger_events')
+    def test_trigger_events_called(self, mock_manager):
+        from nefertari.view import ViewMapper
+
+        class MyView(object):
+            Model = Mock
+
+            def __init__(self, ctx, req):
+                self._before_calls = {}
+                self._after_calls = {}
+                self._json_params = {}
+                self.context = 'foo'
+
+            def index(self):
+                return ['thing']
+
+        request = MagicMock(
+            json={'username': 'admin'},
+            body='{"username":"admin"}')
+        resource = MagicMock(actions=['index'])
+
+        wrapper = ViewMapper(**{'attr': 'index'})(MyView)
+        wrapper(resource, request)
+        assert mock_manager.called
+
     def test_viewmapper(self):
         from nefertari.view import ViewMapper
 
@@ -26,9 +51,14 @@ class TestViewMapper(object):
         bc2 = Mock()
 
         class MyView(object):
+            Model = Mock
+
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1], 'show': [bc3]}
                 self._after_calls = {'show': [bc2]}
+                self._json_params = {}
+                self.context = 'foo'
+                self.request = Mock(action='index')
 
             @wrap_me(before=bc2)
             def index(self):
@@ -54,6 +84,8 @@ class TestViewMapper(object):
         bc1 = Mock(side_effect=ValidationError)
 
         class MyView(object):
+            Model = Mock
+
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1]}
                 self._after_calls = {}
@@ -69,13 +101,17 @@ class TestViewMapper(object):
 
     def test_viewmapper_not_found(self):
         from nefertari.view import ViewMapper
-
         bc1 = Mock(side_effect=ResourceNotFound)
 
         class MyView(object):
+            Model = 'foo'
+
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1]}
                 self._after_calls = {}
+                self._json_params = {}
+                self.context = 'foo'
+                self.request = Mock(action='index')
 
             def index(self):
                 return ['thing']
@@ -99,6 +135,9 @@ class TestBaseView(object):
 
             def __init__(self, context, request):
                 BaseView.__init__(self, context, request)
+                self._json_params = {}
+                self.context = 'foo'
+                self.request = Mock(action='index')
 
             def show(self, id):
                 return 'John Doe'
@@ -376,7 +415,6 @@ class TestBaseView(object):
         assert len(view._after_calls['create']) == 4
         assert len(view._after_calls['update']) == 4
         assert len(view._after_calls['replace']) == 4
-        assert len(view._after_calls['delete_many']) == 1
         assert wrap.apply_privacy.call_count == 5
 
     @patch('nefertari.view.wrappers')
@@ -389,7 +427,6 @@ class TestBaseView(object):
         view.setup_default_wrappers()
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete_many']) == 1
         assert not wrap.apply_privacy.called
 
     def test_defalt_wrappers_and_wrap_me(self):
@@ -419,7 +456,6 @@ class TestBaseView(object):
 
         assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 3
-        assert len(view._after_calls['delete_many']) == 1
 
         assert view.index._before_calls == [before_call]
         assert view.index._after_calls == [after_call]
@@ -511,16 +547,6 @@ class TestBaseView(object):
             method='POST')
         view.request.invoke_subrequest.assert_called_once_with(req.blank())
         json.dumps.assert_called_once_with({'par': 'val'})
-
-    @patch('nefertari.view.BaseView._run_init_actions')
-    def test_needs_confirmation(self, run):
-        request = self.get_common_mock_request()
-        view = DummyBaseView(
-            context={}, request=request, _query_params={'foo': 'bar'})
-        view._query_params['__confirmation'] = ''
-        assert not view.needs_confirmation()
-        view._query_params.pop('__confirmation')
-        assert view.needs_confirmation()
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj(self, run):

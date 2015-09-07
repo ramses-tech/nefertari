@@ -41,7 +41,7 @@ class TestPolymorphicACL(object):
         assert acl._get_least_permissions_aces([resource]) is None
         resource.view._factory.assert_called_once_with(request)
         request.has_permission.assert_called_once_with(
-            'index', resource.view._factory())
+            'view', resource.view._factory())
 
     @patch.object(polymorphic.PolymorphicACL, 'set_collections_acl')
     def test_get_least_permissions_aces_allowed(self, mock_meth):
@@ -55,10 +55,10 @@ class TestPolymorphicACL(object):
         aces = acl._get_least_permissions_aces([resource])
         resource.view._factory.assert_called_once_with(request)
         request.has_permission.assert_called_once_with(
-            'index', resource.view._factory())
+            'view', resource.view._factory())
         assert len(aces) == 2
-        assert (Allow, 'user', 'index') in aces
-        assert (Allow, 'admin', 'index') in aces
+        assert (Allow, 'user', 'view') in aces
+        assert (Allow, 'admin', 'view') in aces
 
     @patch.object(polymorphic.PolymorphicACL, '_get_least_permissions_aces')
     @patch.object(polymorphic.PolymorphicACL, 'get_resources')
