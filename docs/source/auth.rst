@@ -78,6 +78,9 @@ ACL API
 
 For authorizing access to specific resources, Nefertari uses standard Pyramid access control lists. `See the documentation on Pyramid ACLs <http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/narr/security.html>`_ to understand how to extend and customize them.
 
+Note that an item will inherit its collection's permissions if item permissions are not specified in ACL class.
+
+
 .. automodule:: nefertari.acl
     :members:
 
