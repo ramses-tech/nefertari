@@ -85,6 +85,7 @@ class TestTweens(object):
         assert request.method == 'POST'
         assert request.content_type == 'application/json'
         assert request.body == six.b('{"foo": "bar"}')
+        assert request._tunneled_get
 
     def test_get_tunneling_not_allowed_method(self):
         class GET(dict):

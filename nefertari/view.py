@@ -39,6 +39,11 @@ class ViewMapper(object):
             action = getattr(view_obj, action_name)
             request.action = action_name
 
+            # Tunneled collection PATCH/PUT doesn't support query params
+            tunneled = getattr(request, '_tunneled_get', False)
+            if tunneled and action_name in ('update_many',):
+                view_obj._query_params = dictset()
+
             # we should not run "after_calls" here, so lets save them in
             # request as filters they will be ran in the renderer factory
             request.filters = view_obj._after_calls
@@ -103,25 +108,8 @@ class BaseView(OptionsViewMixin):
         """
         self.context = context
         self.request = request
-        self._query_params = dictset(_query_params or request.params.mixed())
-        self._json_params = dictset(_json_params)
 
-        ctype = request.content_type
-        if request.method in ['POST', 'PUT', 'PATCH']:
-            if ctype == 'application/json':
-                try:
-                    self._json_params.update(request.json)
-                except simplejson.JSONDecodeError:
-                    log.error(
-                        "Expecting JSON. Received: '{}'. "
-                        "Request: {} {}".format(
-                            request.body, request.method, request.url))
-
-            self._json_params = BaseView.convert_dotted(self._json_params)
-            self._query_params = BaseView.convert_dotted(self._query_params)
-
-        self._params = self._query_params.copy()
-        self._params.update(self._json_params)
+        self.prepare_request_params(_query_params, _json_params)
 
         # dict of the callables {'action':[callable1, callable2..]}
         # as name implies, before calls are executed before the action is
@@ -129,13 +117,7 @@ class BaseView(OptionsViewMixin):
         self._before_calls = defaultdict(list)
         self._after_calls = defaultdict(list)
 
-        # no accept headers, use default
-        if '' in request.accept:
-            request.override_renderer = self._default_renderer
-        elif 'application/json' in request.accept:
-            request.override_renderer = 'nefertari_json'
-        elif 'text/plain' in request.accept:
-            request.override_renderer = 'string'
+        self.set_override_rendered()
 
         root_resource = getattr(self, 'root_resource', None)
         self._auth_enabled = root_resource is not None and root_resource.auth
@@ -150,6 +132,39 @@ class BaseView(OptionsViewMixin):
         self.set_public_limits()
         if self.request.method == 'PUT':
             self.fill_null_values()
+
+    def prepare_request_params(self, _query_params, _json_params):
+        """ Prepare query and update params. """
+        self._query_params = dictset(
+            _query_params or self.request.params.mixed())
+        self._json_params = dictset(_json_params)
+
+        ctype = self.request.content_type
+        if self.request.method in ['POST', 'PUT', 'PATCH']:
+            if ctype == 'application/json':
+                try:
+                    self._json_params.update(self.request.json)
+                except simplejson.JSONDecodeError:
+                    log.error(
+                        "Expecting JSON. Received: '{}'. "
+                        "Request: {} {}".format(
+                            self.request.body, self.request.method,
+                            self.request.url))
+
+            self._json_params = BaseView.convert_dotted(self._json_params)
+            self._query_params = BaseView.convert_dotted(self._query_params)
+
+        self._params = self._query_params.copy()
+        self._params.update(self._json_params)
+
+    def set_override_rendered(self):
+        """ Set self.request.override_renderer if needed. """
+        if '' in self.request.accept:
+            self.request.override_renderer = self._default_renderer
+        elif 'application/json' in self.request.accept:
+            self.request.override_renderer = 'nefertari_json'
+        elif 'text/plain' in self.request.accept:
+            self.request.override_renderer = 'string'
 
     def _setup_aggregation(self):
         """ Wrap `self.index` method with ESAggregator.
