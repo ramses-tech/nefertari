@@ -51,7 +51,9 @@ class TestEvents(object):
             Model=A,
             request=Mock(action='index'),
             _json_params={'bar': 1},
-            context=ctx)
+            context=ctx,
+            _silent=False)
+        view.index._silent = False
 
         with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
             with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
@@ -68,6 +70,58 @@ class TestEvents(object):
         ])
         mock_from.assert_called_once_with({'bar': 1}, A)
 
+    @patch('nefertari.utils.FieldData.from_dict')
+    def test_trigger_events_silent_view(self, mock_from):
+        class A(object):
+            pass
+
+        mock_after = Mock()
+        mock_before = Mock()
+        ctx = A()
+        view = Mock(
+            Model=A,
+            request=Mock(action='index'),
+            _json_params={'bar': 1},
+            context=ctx,
+            _silent=True)
+        view.index._silent = False
+
+        with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
+            with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
+                with events.trigger_events(view):
+                    pass
+
+        assert not mock_after.called
+        assert not mock_before.called
+        assert not view.request.registry.notify.called
+        assert not mock_from.called
+
+    @patch('nefertari.utils.FieldData.from_dict')
+    def test_trigger_events_silent_view_method(self, mock_from):
+        class A(object):
+            pass
+
+        mock_after = Mock()
+        mock_before = Mock()
+        ctx = A()
+        view = Mock(
+            Model=A,
+            request=Mock(action='index'),
+            _json_params={'bar': 1},
+            context=ctx,
+            _silent=False)
+        view.index._silent = True
+
+        with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
+            with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
+                with events.trigger_events(view):
+                    pass
+
+        assert not mock_after.called
+        assert not mock_before.called
+        assert not view.request.registry.notify.called
+        assert not mock_from.called
+
 
 class TestHelperFunctions(object):
     def test_subscribe_to_events(self):
@@ -78,6 +132,19 @@ class TestHelperFunctions(object):
             call('foo', 1, model=3, field=4),
             call('foo', 2, model=3, field=4)
         ])
+
+    def test_silent_decorator(self):
+        @events.silent
+        def foo():
+            pass
+
+        assert foo._silent
+
+        @events.silent
+        class Foo(object):
+            pass
+
+        assert Foo._silent
 
 
 class TestModelClassIs(object):
