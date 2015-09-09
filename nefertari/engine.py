@@ -32,18 +32,26 @@ E.g. ``from your.package import BaseDocument``
 
 nefertari relies on 'nefertari.engine' being included when configuring the app.
 """
-
+import sys
 from zope.dottedname.resolve import resolve
+from pyramid.settings import aslist
 
 
 def includeme(config):
-    def _valid_global(g):
-        ignored = ('log', 'includeme')
-        return (not g.startswith('__') and g not in ignored)
+    engine_paths = aslist(config.registry.settings['nefertari.engine'])
+    for path in engine_paths:
+        config.include(path)
+    main_engine_module = engines(config)[0]
+    _import_public_names(main_engine_module)
 
-    engine_path = config.registry.settings['nefertari.engine']
-    config.include(engine_path)
-    engine_module = resolve(engine_path)
-    engine_globals = {k: v for k, v in engine_module.__dict__.items()
-                      if _valid_global(k)}
-    globals().update(engine_globals)
+
+def engines(config):
+    engine_paths = aslist(config.registry.settings['nefertari.engine'])
+    return [resolve(path) for path in engine_paths]
+
+
+def _import_public_names(module):
+    """Import public names from module into this module, like import *"""
+    self = sys.modules[__name__]
+    for name in module.__all__:
+        setattr(self, name, getattr(module, name))
