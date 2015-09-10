@@ -228,23 +228,31 @@ def trigger_events(view_obj):
     """
     from nefertari.utils import FieldData
     request = view_obj.request
-    event_kwargs = {
-        'view': view_obj,
-        'model': view_obj.Model,
-        'fields': FieldData.from_dict(
-            view_obj._json_params,
-            view_obj.Model)
-    }
-    if isinstance(view_obj.context, view_obj.Model):
-        event_kwargs['instance'] = view_obj.context
 
-    before_event = BEFORE_EVENTS[request.action]
-    request.registry.notify(before_event(**event_kwargs))
+    view_method = getattr(view_obj, request.action)
+    do_trigger = not (
+        getattr(view_method, '_silent', False) or
+        getattr(view_obj, '_silent', False))
+
+    if do_trigger:
+        event_kwargs = {
+            'view': view_obj,
+            'model': view_obj.Model,
+            'fields': FieldData.from_dict(
+                view_obj._json_params,
+                view_obj.Model)
+        }
+        if isinstance(view_obj.context, view_obj.Model):
+            event_kwargs['instance'] = view_obj.context
+
+        before_event = BEFORE_EVENTS[request.action]
+        request.registry.notify(before_event(**event_kwargs))
 
     yield
 
-    after_event = AFTER_EVENTS[request.action]
-    request.registry.notify(after_event(**event_kwargs))
+    if do_trigger:
+        after_event = AFTER_EVENTS[request.action]
+        request.registry.notify(after_event(**event_kwargs))
 
 
 def subscribe_to_events(config, subscriber, events, model=None, field=None):
@@ -264,3 +272,15 @@ def subscribe_to_events(config, subscriber, events, model=None, field=None):
 
     for evt in events:
         config.add_subscriber(subscriber, evt, **kwargs)
+
+
+def silent(obj):
+    """ Mark view method or class as "silent" so events won't be fired.
+
+    Should be used as decorator on view classes or methods.
+
+    :param obj: Any object that allows attributes assignment. Should be
+        either view method or view class.
+    """
+    obj._silent = True
+    return obj
