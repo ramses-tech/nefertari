@@ -47,6 +47,7 @@ def get_tunneling(handler, registry):
                 valid_params = drop_reserved_params(get_params)
                 request.body = six.b(json.dumps(valid_params))
                 request.content_type = 'application/json'
+                request._tunneled_get = True
 
         return handler(request)
 

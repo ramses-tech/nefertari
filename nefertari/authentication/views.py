@@ -4,6 +4,7 @@ from nefertari.json_httpexceptions import (
     JHTTPFound, JHTTPConflict, JHTTPUnauthorized, JHTTPNotFound, JHTTPOk,
     JHTTPBadRequest)
 from nefertari.view import BaseView
+from nefertari import events
 
 
 class TicketAuthViewMixin(object):
@@ -76,10 +77,12 @@ class TicketAuthLoginView(TicketAuthViewMixin, BaseView):
         root.add('login', view='path.to.TicketAuthLoginView',
                  factory='nefertari.acl.AuthenticationACL')
     """
+    @events.silent
     def create(self, *args, **kwargs):
         return self.login(*args, **kwargs)
 
 
+@events.silent
 class TicketAuthLogoutView(TicketAuthViewMixin, BaseView):
     """ Ticket auth logout view. Allows logout on GET and POST.
 
@@ -169,6 +172,7 @@ class TokenAuthClaimView(TokenAuthViewMixin, BaseView):
         root.add('token', view='path.to.TokenAuthClaimView',
                  factory='nefertari.acl.AuthenticationACL')
     """
+    @events.silent
     def create(self, *args, **kwargs):
         return self.claim_token(*args, **kwargs)
 
@@ -181,5 +185,6 @@ class TokenAuthResetView(TokenAuthViewMixin, BaseView):
         root.add('reset_token', view='path.to.TokenAuthResetView',
                  factory='nefertari.acl.AuthenticationACL')
     """
+    @events.silent
     def create(self, *args, **kwargs):
         return self.reset_token(*args, **kwargs)

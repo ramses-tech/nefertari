@@ -77,6 +77,26 @@ Utilities
 **nefertari.events.AFTER_EVENTS**
     Map of ``{view_method_name: EventClass}`` of "AFter" events. E.g. one of its elements is ``'index': AfterIndex``.
 
+**nefertari.events.silent**
+    Decorator which marks view class or view method as "silent". Silent view classes and methods don't fire events. In the example below, view ``ItemsView`` won't fire any CRUD events. ``UsersView`` won't fire ``BeforeIndex`` and ``AfterIndex`` events but ``BeforeShow`` and ``AfterShow`` events will be fired.
+
+.. code-block:: python
+
+    from nefertari import view, events
+
+    @events.silent
+    class ItemsView(view.BaseView):
+        ...
+
+
+    class UsersView(view.BaseView):
+
+        @events.silent
+        def index(self):
+            ...
+
+        def show(self):
+            ...
 
 
 Examples
@@ -157,3 +177,5 @@ API
 .. autofunction:: nefertari.events.trigger_events
 
 .. autofunction:: nefertari.events.subscribe_to_events
+
+.. autofunction:: nefertari.events.silent
