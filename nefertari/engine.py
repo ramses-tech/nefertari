@@ -41,17 +41,26 @@ def includeme(config):
     engine_paths = aslist(config.registry.settings['nefertari.engine'])
     for path in engine_paths:
         config.include(path)
-    main_engine_module = engines(config)[0]
+    _load_engines(config)
+    main_engine_module = engines[0]
     _import_public_names(main_engine_module)
 
 
-def engines(config):
+# replaced by registered engine modules during configuration
+engines = ()
+
+
+def _load_engines(config):
+    global engines
     engine_paths = aslist(config.registry.settings['nefertari.engine'])
-    return [resolve(path) for path in engine_paths]
+    engines = tuple([resolve(path) for path in engine_paths])
 
 
 def _import_public_names(module):
-    """Import public names from module into this module, like import *"""
+    "Import public names from module into this module, like import *"
     self = sys.modules[__name__]
     for name in module.__all__:
+        if hasattr(self, name):
+            # don't overwrite existing names
+            continue
         setattr(self, name, getattr(module, name))

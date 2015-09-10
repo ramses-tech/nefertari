@@ -10,7 +10,8 @@ class TestEngine(object):
         module.log = 1
         module.__testvar__ = 3
         module.another_var = 4
-        module.__all__ = ['another_var']
+        module.includeme = 42
+        module.__all__ = ['another_var', 'includeme']
         mock_resolve.return_value = module
         from nefertari import engine
         assert not hasattr(engine, 'log')
@@ -24,6 +25,7 @@ class TestEngine(object):
         assert not hasattr(engine, 'log')
         assert not hasattr(engine, '__testvar__')
         assert hasattr(engine, 'another_var')
+        assert engine.engines == (module, )
 
     @patch('nefertari.engine.resolve')
     def test_multiple_engines(self, mock_resolve):
@@ -45,3 +47,4 @@ class TestEngine(object):
         assert not hasattr(engine, 'four')
         assert hasattr(engine, 'one')
         assert hasattr(engine, 'two')
+        assert engine.engines == (foo, bar)
