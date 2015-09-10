@@ -64,11 +64,11 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
 
 def includeme(config):
     Settings = dictset(config.registry.settings)
-    ES.setup(Settings)
-    ES.create_index()
+    # ES.setup(Settings)
+    # ES.create_index()
 
-    if ES.settings.asbool('enable_polymorphic_query'):
-        config.include('nefertari.polymorphic')
+    # if ES.settings.asbool('enable_polymorphic_query'):
+    #     config.include('nefertari.polymorphic')
 
 
 def _bulk_body(documents_actions, request):
