@@ -31,13 +31,55 @@ When authentication is enabled, Nefertari uses its own `User` model. This model 
 Visible Fields in Views
 -----------------------
 
-You can control which fields to display to both authenticated users and unauthenticated users by defining `_auth_fields` and `_public_fields` respectively in your models.
+You can control which fields to display by defining following fields on your models:
+
+**_auth_fields**
+    Lists field names which should be displayed to authenticated users.
+
+**_public_fields**
+    Lists field names which should be displayed to all users including unauthenticated.
+
+
+Permissions
+-----------
+
+This section describes permissions used by nefertari, their relation to view methods and HTTP methods. These permissions should be used when defining ACLs.
+
+To make things easier to grasp, let's imagine we have an application that defines a view which handles all possible requests under ``/products`` route. We are going to use this example to make permissions description more obvious.
+
+Following lists nefertari permissions along with HTTP methods and view methods they correspond to:
+
+**view**
+    * Collection GET (``GET /products``). View method ``index``
+    * Item GET (``GET /products/1``) View method ``show``
+    * Collection HEAD (``HEAD /products``). View method ``index``
+    * Item HEAD (``HEAD /products/1``). View method ``show``
+
+**create**
+    * Collection POST (``POST /products``). View method ``create``
+
+**update**
+    * Collection PATCH (``PATCH /products``). View method ``update_many``
+    * Collection PUT (``PUT /products``). View method ``update_many``
+    * Item PATCH (``PATCH /products/1``). View method ``update``
+    * Item PUT (``PUT /products/1``) View method ``replace``
+
+**delete**
+    * Collection DELETE (``DELETE /products``). View method ``delete_many``
+    * Item DELETE (``DELETE /products/1``). View method ``delete``
+
+**options**
+    * Collection OPTIONS (``OPTIONS /products``). View method ``collection_options``
+    * Item OPTIONS (``OPTIONS /products/1``). View method ``item_options``
 
 
 ACL API
 -------
 
 For authorizing access to specific resources, Nefertari uses standard Pyramid access control lists. `See the documentation on Pyramid ACLs <http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/narr/security.html>`_ to understand how to extend and customize them.
+
+Note that an item will inherit its collection's permissions if item permissions are not specified in ACL class.
+
 
 .. automodule:: nefertari.acl
     :members:
