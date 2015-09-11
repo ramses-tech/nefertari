@@ -172,27 +172,27 @@ class ES(object):
 
     @classmethod
     def setup(cls, settings):
-        ES.settings = settings.mget('elasticsearch')
-        ES.settings.setdefault('chunk_size', 500)
+        cls.settings = settings.mget('elasticsearch')
+        cls.settings.setdefault('chunk_size', 500)
 
         try:
-            _hosts = ES.settings.hosts
+            _hosts = cls.settings.hosts
             hosts = []
             for (host, port) in [
                     split_strip(each, ':') for each in split_strip(_hosts)]:
                 hosts.append(dict(host=host, port=port))
 
             params = {}
-            if ES.settings.asbool('sniff'):
+            if cls.settings.asbool('sniff'):
                 params = dict(
                     sniff_on_start=True,
                     sniff_on_connection_fail=True
                 )
 
-            ES.api = elasticsearch.Elasticsearch(
+            cls.api = elasticsearch.Elasticsearch(
                 hosts=hosts, serializer=engine.ESJSONSerializer(),
                 connection_class=ESHttpConnection, **params)
-            log.info('Including ElasticSearch. %s' % ES.settings)
+            log.info('Including ElasticSearch. %s' % cls.settings)
 
         except KeyError as e:
             raise Exception(
@@ -200,18 +200,18 @@ class ES(object):
 
     def __init__(self, source='', index_name=None, chunk_size=None):
         self.doc_type = self.src2type(source)
-        self.index_name = index_name or ES.settings.index_name
+        self.index_name = index_name or self.settings.index_name
         if chunk_size is None:
-            chunk_size = ES.settings.asint('chunk_size')
+            chunk_size = self.settings.asint('chunk_size')
         self.chunk_size = chunk_size
 
     @classmethod
     def create_index(cls, index_name=None):
-        index_name = index_name or ES.settings.index_name
+        index_name = index_name or cls.settings.index_name
         try:
-            ES.api.indices.exists([index_name])
+            cls.api.indices.exists([index_name])
         except (IndexNotFoundException, JHTTPNotFound):
-            ES.api.indices.create(index_name)
+            cls.api.indices.create(index_name)
 
     @classmethod
     def setup_mappings(cls, force=False):
@@ -224,7 +224,7 @@ class ES(object):
         Use `force=True` to make subsequent calls perform mapping
         creation calls to ES.
         """
-        if getattr(ES, '_mappings_setup', False) and not force:
+        if getattr(cls, '_mappings_setup', False) and not force:
             log.debug('ES mappings have been already set up for currently '
                       'running application. Call `setup_mappings` with '
                       '`force=True` to perform mappings set up again.')
@@ -234,20 +234,20 @@ class ES(object):
         try:
             for model_name, model_cls in models.items():
                 if getattr(model_cls, '_index_enabled', False):
-                    es = ES(model_cls.__name__)
+                    es = cls(model_cls.__name__)
                     es.put_mapping(body=model_cls.get_es_mapping())
         except JHTTPBadRequest as ex:
             raise Exception(ex.json['extra']['data'])
-        ES._mappings_setup = True
+        cls._mappings_setup = True
 
     def delete_mapping(self):
-        ES.api.indices.delete_mapping(
+        self.api.indices.delete_mapping(
             index=self.index_name,
             doc_type=self.doc_type,
         )
 
     def put_mapping(self, body, **kwargs):
-        ES.api.indices.put_mapping(
+        self.api.indices.put_mapping(
             doc_type=self.doc_type,
             body=body,
             index=self.index_name,
@@ -345,7 +345,7 @@ class ES(object):
             body={'ids': [d['_pk'] for d in documents]},
         )
         try:
-            response = ES.api.mget(**query_kwargs)
+            response = self.api.mget(**query_kwargs)
         except IndexNotFoundException:
             indexed_ids = set()
         else:
@@ -403,7 +403,7 @@ class ES(object):
         )
 
         try:
-            data = ES.api.mget(**params)
+            data = self.api.mget(**params)
         except IndexNotFoundException:
             if __raise_on_empty:
                 raise JHTTPNotFound(
@@ -454,6 +454,8 @@ class ES(object):
                 }
             else:
                 _params['body'] = {"query": {"match_all": {}}}
+        else:
+            _params['body'] = params['body']
 
         if '_limit' not in params:
             params['_limit'] = self.api.count()['count']
@@ -474,6 +476,9 @@ class ES(object):
             search_fields.reverse()
             search_fields = [s + '^' + str(i) for i, s in
                              enumerate(search_fields, 1)]
+            current_qs = _params['body']['query']['query_string']
+            if isinstance(current_qs, str):
+                _params['body']['query']['query_string'] = {'query': current_qs}
             _params['body']['query']['query_string']['fields'] = search_fields
 
         return _params
@@ -484,7 +489,7 @@ class ES(object):
         params.pop('from_', None)
         params.pop('sort', None)
         try:
-            return ES.api.count(**params)['count']
+            return self.api.count(**params)['count']
         except IndexNotFoundException:
             return 0
 
@@ -520,7 +525,7 @@ class ES(object):
 
         log.debug('Performing aggregation: {}'.format(_aggregations_params))
         try:
-            response = ES.api.search(**search_params)
+            response = self.api.search(**search_params)
         except IndexNotFoundException:
             if __raise_on_empty:
                 raise JHTTPNotFound(
@@ -554,7 +559,7 @@ class ES(object):
             fields=fields)
 
         try:
-            data = ES.api.search(**_params)
+            data = self.api.search(**_params)
         except IndexNotFoundException:
             if __raise_on_empty:
                 raise JHTTPNotFound(
@@ -596,7 +601,7 @@ class ES(object):
             self.doc_type, params)
 
         try:
-            data = ES.api.get_source(**params)
+            data = self.api.get_source(**params)
         except IndexNotFoundException:
             if __raise_on_empty:
                 raise JHTTPNotFound("{} (Index does not exist)".format(

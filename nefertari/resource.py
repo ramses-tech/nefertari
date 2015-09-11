@@ -4,20 +4,30 @@ from nefertari.utils import snake2camel, maybe_dotted
 log = logging.getLogger(__name__)
 
 
-ACTIONS = ['index', 'show', 'create', 'update',
-           'delete', 'update_many', 'delete_many',
-           'replace']
+# All actions names(view method names) supported by nefertari
+ACTIONS = [
+    'index',                # Collection GET
+    'create',               # Collection POST
+    'update_many',          # Collection PATCH/PUT
+    'delete_many',          # Collection DELETE
+    'collection_options',   # Collection OPTIONS
+    'show',                 # Item GET
+    'update',               # Item PATCH
+    'replace',              # Item PUT
+    'delete',               # Item DELETE
+    'item_options',         # Item OPTIONS
+]
 PERMISSIONS = {
-    'index': 'view',
-    'show': 'view',
-    'create': 'create',
-    'update': 'update',
-    'update_many': 'update',
-    'delete': 'delete',
-    'delete_many': 'delete',
-    'replace': 'update',
-    'collection_options': 'options',
-    'item_options': 'options',
+    'index':                'view',
+    'show':                 'view',
+    'create':               'create',
+    'update':               'update',
+    'update_many':          'update',
+    'replace':              'update',
+    'delete':               'delete',
+    'delete_many':          'delete',
+    'collection_options':   'options',
+    'item_options':         'options',
     }
 DEFAULT_ID_NAME = 'id'
 
