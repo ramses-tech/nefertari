@@ -131,7 +131,7 @@ class ESAggregator(object):
 
         Should be called with view instance methods.
         """
-        six.wraps(func)
+        @six.wraps(func)
         def wrapper(*args, **kwargs):
             try:
                 return self.aggregate()
