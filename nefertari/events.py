@@ -242,7 +242,7 @@ def trigger_events(view_obj):
                 view_obj._json_params,
                 view_obj.Model)
         }
-        if isinstance(view_obj.context, view_obj.Model):
+        if hasattr(view_obj.context, 'pk_field'):
             event_kwargs['instance'] = view_obj.context
 
         before_event = BEFORE_EVENTS[request.action]
