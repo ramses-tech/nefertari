@@ -860,11 +860,11 @@ class TestES(object):
     def test_bulk_index_relations(self, mock_index, mock_settings):
         mock_settings.index_name = 'foo'
 
-        class Foo(object):
+        class Foo(int):
             _index_enabled = True
 
-        doc1 = Foo()
-        doc2 = Foo()
+        doc1 = Foo(1)
+        doc2 = Foo(2)
 
         db_object1 = Mock()
         db_object1.get_related_documents.return_value = [
@@ -874,4 +874,4 @@ class TestES(object):
             (Foo, [doc2])]
 
         es.ES.bulk_index_relations([db_object1, db_object2])
-        mock_index.assert_called_once_with([doc1, doc2], request=None)
+        mock_index.assert_called_once_with(sorted([doc1, doc2]), request=None)
