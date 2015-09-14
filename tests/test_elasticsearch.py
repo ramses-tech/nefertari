@@ -854,3 +854,24 @@ class TestES(object):
         mock_settings.index_name = 'foo'
         es.ES.index_relations(db_obj)
         assert not mock_ind.called
+
+    @patch('nefertari.elasticsearch.ES.settings')
+    @patch('nefertari.elasticsearch.ES.index')
+    def test_bulk_index_relations(self, mock_index, mock_settings):
+        mock_settings.index_name = 'foo'
+
+        class Foo(int):
+            _index_enabled = True
+
+        doc1 = Foo(1)
+        doc2 = Foo(2)
+
+        db_object1 = Mock()
+        db_object1.get_related_documents.return_value = [
+            (Foo, [doc1])]
+        db_object2 = Mock()
+        db_object2.get_related_documents.return_value = [
+            (Foo, [doc2])]
+
+        es.ES.bulk_index_relations([db_object1, db_object2])
+        mock_index.assert_called_once_with(sorted([doc1, doc2]), request=None)
