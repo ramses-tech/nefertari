@@ -215,7 +215,7 @@ class TestESAggregator(object):
 
     def test_wrap(self):
         view = self.DemoView()
-        view.index = Mock()
+        view.index = Mock(__name__='foo')
         aggregator = ESAggregator(view)
         aggregator.aggregate = Mock(side_effect=KeyError)
         func = aggregator.wrap(view.index)

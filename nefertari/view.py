@@ -166,7 +166,7 @@ class BaseView(OptionsViewMixin):
         elif 'text/plain' in self.request.accept:
             self.request.override_renderer = 'string'
 
-    def _setup_aggregation(self):
+    def _setup_aggregation(self, aggregator=None):
         """ Wrap `self.index` method with ESAggregator.
 
         This makes `self.index` to first try to run aggregation and only
@@ -174,6 +174,8 @@ class BaseView(OptionsViewMixin):
         defined and `elasticsearch.enable_aggregations` setting is true.
         """
         from nefertari.elasticsearch import ES
+        if aggregator is None:
+            aggregator = ESAggregator
         aggregations_enabled = (
             ES.settings and ES.settings.asbool('enable_aggregations'))
         if not aggregations_enabled:
@@ -183,7 +185,7 @@ class BaseView(OptionsViewMixin):
         index = getattr(self, 'index', None)
         index_defined = index and index != self.not_allowed_action
         if index_defined:
-            self.index = ESAggregator(self).wrap(self.index)
+            self.index = aggregator(self).wrap(self.index)
 
     def get_collection_es(self):
         """ Query ES collection and return results.

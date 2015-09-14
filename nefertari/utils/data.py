@@ -10,15 +10,15 @@ class DataProxy(object):
     def to_dict(self, **kwargs):
         _dict = dictset()
         _keys = kwargs.pop('_keys', [])
-        __depth = kwargs.pop('__depth', 1)
+        _depth = kwargs.pop('_depth', 1)
 
         data = dictset(self._data).subset(_keys) if _keys else self._data
 
         for attr, val in data.items():
             _dict[attr] = val
-            if __depth:
+            if _depth:
                 kw = kwargs.copy()
-                kw['__depth'] = __depth - 1
+                kw['_depth'] = _depth - 1
 
                 if hasattr(val, 'to_dict'):
                     _dict[attr] = val.to_dict(**kw)

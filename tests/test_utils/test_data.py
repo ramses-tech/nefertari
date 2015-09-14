@@ -35,7 +35,7 @@ class TestDataUtils(object):
     def test_data_proxy_model_no_depth(self):
         obj = DummyModel({'foo1': 'bar1'})
         proxy = dutils.DataProxy({'foo': obj})
-        data = proxy.to_dict(__depth=0)
+        data = proxy.to_dict(_depth=0)
         assert data == {'_type': 'DataProxy', 'foo': obj}
 
     def test_data_proxy_model_sequence(self):

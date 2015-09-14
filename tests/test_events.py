@@ -40,15 +40,11 @@ class TestEvents(object):
 
     @patch('nefertari.utils.FieldData.from_dict')
     def test_trigger_events(self, mock_from):
-        class A(object):
-            pass
-
         mock_after = Mock()
         mock_before = Mock()
         mock_from.return_value = {'foo': 1}
-        ctx = A()
+        ctx = Mock()
         view = Mock(
-            Model=A,
             request=Mock(action='index'),
             _json_params={'bar': 1},
             context=ctx,
@@ -61,14 +57,16 @@ class TestEvents(object):
                     pass
 
         mock_after.assert_called_once_with(
-            fields={'foo': 1}, model=A, instance=ctx, view=view)
+            fields={'foo': 1}, model=view.Model, instance=ctx,
+            view=view)
         mock_before.assert_called_once_with(
-            fields={'foo': 1}, model=A, instance=ctx, view=view)
+            fields={'foo': 1}, model=view.Model, instance=ctx,
+            view=view)
         view.request.registry.notify.assert_has_calls([
             call(mock_before()),
             call(mock_after()),
         ])
-        mock_from.assert_called_once_with({'bar': 1}, A)
+        mock_from.assert_called_once_with({'bar': 1}, view.Model)
 
     @patch('nefertari.utils.FieldData.from_dict')
     def test_trigger_events_silent_view(self, mock_from):
