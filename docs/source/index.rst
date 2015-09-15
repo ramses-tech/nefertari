@@ -16,7 +16,7 @@ Table of Content
    getting_started
    views
    models
-   crud_events
+   event_handlers
    auth
    making_requests
    development_tools

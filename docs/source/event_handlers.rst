@@ -1,11 +1,7 @@
-CRUD Events
-===========
+Event Handlers
+==============
 
-In order to allow users perform custom actions on CRUD request events, nefertari provides CRUD events and hepler functions.
-
-Nefertari CRUD events module includes a set of events, maps of events, subscriber predicates and helper function to connect it all together. Read further for mode detailed description.
-
-All the objects are contained in ``nefertari.events`` module. Nefertari CRUD events use Pyramid event system.
+Nefertari event handler module includes a set of events, maps of events, subscriber predicates and helper function to connect it all together. All the objects are contained in ``nefertari.events`` module. Nefertari event handlers use Pyramid event system.
 
 
 Events
@@ -13,9 +9,9 @@ Events
 
 ``nefertari.events`` defines a set of event classes inherited from ``nefertari.events.RequestEvent``.
 
-There are two types of nefertari CRUD events:
-* "Before" events, which are run after view class is instantiated, but before view method is run, thus before request is processed.
-* "After" events, which are run after view method was called.
+There are two types of nefertari events:
+    * "Before" events, which are run after view class is instantiated, but before view method is run, thus before request is processed.
+    * "After" events, which are run after view method was called.
 
 All events are named after camel-cased name of view method they are called around and prefixed with "Before" or "After" depending on the place event is triggered from (as described above). E.g. event classed for view method ``update_many`` are called ``BeforeUpdateMany`` and ``AfterUpdateMany``.
 
@@ -78,7 +74,7 @@ Utilities
     Map of ``{view_method_name: EventClass}`` of "AFter" events. E.g. one of its elements is ``'index': AfterIndex``.
 
 **nefertari.events.silent**
-    Decorator which marks view class or view method as "silent". Silent view classes and methods don't fire events. In the example below, view ``ItemsView`` won't fire any CRUD events. ``UsersView`` won't fire ``BeforeIndex`` and ``AfterIndex`` events but ``BeforeShow`` and ``AfterShow`` events will be fired.
+    Decorator which marks view class or view method as "silent". Silent view classes and methods don't fire events. In the example below, view ``ItemsView`` won't fire any event. ``UsersView`` won't fire ``BeforeIndex`` and ``AfterIndex`` events but ``BeforeShow`` and ``AfterShow`` events will be fired.
 
 .. code-block:: python
 
@@ -112,7 +108,7 @@ Having subscriber that logs request body:
     def log_request(event):
         log.debug(event.request.body)
 
-**Having access to configurator**, we can connect it to any of nefertari CRUD events. E.g. lets log all collection POST requests (view ``create`` method):
+**Having access to configurator**, we can connect it to any of Nefertari events. E.g. lets log all collection POST requests (view ``create`` method):
 
 .. code-block:: python
 
