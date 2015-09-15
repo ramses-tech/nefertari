@@ -15,7 +15,7 @@ There are two types of nefertari events:
 
 All events are named after camel-cased name of view method they are called around and prefixed with "Before" or "After" depending on the place event is triggered from (as described above). E.g. event classed for view method ``update_many`` are called ``BeforeUpdateMany`` and ``AfterUpdateMany``.
 
-Check API section for a full list of attributes/params events have.
+Check the API section for a full list of attributes/params events have.
 
 It's recommended to use ``before`` events to:
     * Transform input
