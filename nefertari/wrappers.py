@@ -3,6 +3,7 @@ from hashlib import md5
 
 import six
 from nefertari import engine
+from nefertari.utils import is_document, dictset
 
 
 log = logging.getLogger(__name__)
@@ -170,7 +171,25 @@ class apply_privacy(object):
                 fields &= public_fields
 
         fields.update(['_type', '_pk', '_self'])
-        return data.subset(fields)
+        if not isinstance(data, dictset):
+            data = dictset(data)
+        data = data.subset(fields)
+
+        return self._apply_nested_privacy(data)
+
+    def _apply_nested_privacy(self, data):
+        """ Apply privacy to nested documents.
+
+        :param data: Dict of data to which privacy is already applied.
+        """
+        kw = {'is_admin': self.is_admin}
+        for key, val in data.items():
+            if is_document(val):
+                data[key] = apply_privacy(self.request)(result=val, **kw)
+            elif isinstance(val, list) and val and is_document(val[0]):
+                data[key] = [apply_privacy(self.request)(result=doc, **kw)
+                             for doc in val]
+        return data
 
     def __call__(self, **kwargs):
         from nefertari.utils import issequence

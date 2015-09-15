@@ -171,172 +171,6 @@ class TestWrappers(unittest.TestCase):
         mock_validate.assert_called_once_with(
             4, {'zoo': 1, '_type': 'Foo'})
 
-    def test_apply_privacy_no_data(self):
-        assert wrappers.apply_privacy(None)(result={}) == {}
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_non_auth(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=None)
-        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'desc', 'name']
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_no_request(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-        filtered = wrappers.apply_privacy(None)(result=self.model_test_data)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_auth(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(
-            result=self.model_test_data, is_admin=False)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'id']
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_auth_calculated(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-
-        class User(object):
-            @classmethod
-            def is_admin(self, obj):
-                return False
-
-        request = Mock(user=User())
-        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'id']
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_admin(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(
-            result=self.model_test_data, is_admin=True)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
-        filtered['_type'] == 'foo'
-        filtered['desc'] == 'User 1 data'
-        filtered['id'] == 1
-        filtered['name'] == 'User1'
-        filtered['other_field'] == 123
-        filtered['_self'] == 'http://example.com/1'
-        mock_eng.get_document_cls.assert_called_once_with('foo')
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_no_type(self, mock_eng):
-        data = self.model_test_data.copy()
-        data.pop('_type')
-        request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(
-            result=data, is_admin=True)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', 'desc', 'id', 'name', 'other_field']
-        filtered['desc'] == 'User 1 data'
-        filtered['id'] == 1
-        filtered['name'] == 'User1'
-        filtered['other_field'] == 123
-        filtered['_self'] == 'http://example.com/1'
-        assert not mock_eng.get_document_cls.called
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_not_dict(self, mock_eng):
-        request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(
-            result='foo', is_admin=True)
-        assert filtered == 'foo'
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_nested_data_not_dict(self, mock_eng):
-        request = Mock(user=Mock())
-        assert wrappers.apply_privacy(request)(
-            result={'data': 'foo'}, is_admin=True) == {'data': 'foo'}
-        assert wrappers.apply_privacy(request)(
-            result={'data': 1}, is_admin=True) == {'data': 1}
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_admin_calculated(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-
-        class User(object):
-            @classmethod
-            def is_admin(self, obj):
-                return True
-
-        request = Mock(user=User())
-        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
-        filtered['_type'] == 'foo'
-        filtered['desc'] == 'User 1 data'
-        filtered['id'] == 1
-        filtered['name'] == 'User1'
-        filtered['other_field'] == 123
-        filtered['_self'] == 'http://example.com/1'
-        mock_eng.get_document_cls.assert_called_once_with('foo')
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_no_document_cls(self, mock_eng):
-        mock_eng.get_document_cls.side_effect = ValueError
-        request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(
-            result=self.model_test_data, is_admin=True)
-        assert list(sorted(filtered.keys())) == [
-            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_item_no_fields(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=[])
-        mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock())
-        filtered = wrappers.apply_privacy(request)(
-            result=self.model_test_data, is_admin=False)
-        assert list(sorted(filtered.keys())) == ['_pk', '_self', '_type']
-
-    @patch('nefertari.wrappers.engine')
-    def test_apply_privacy_collection(self, mock_eng):
-        document_cls = Mock(
-            _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
-        mock_eng.get_document_cls.return_value = document_cls
-        request = Mock(user=Mock())
-        result = {
-            'total': 1,
-            'count': 1,
-            'data': [self.model_test_data]
-        }
-        filtered = wrappers.apply_privacy(request)(
-            result=result, is_admin=False)
-        assert list(sorted(filtered.keys())) == ['count', 'data', 'total']
-        assert len(filtered['data']) == 1
-        data = filtered['data'][0]
-        assert list(sorted(data.keys())) == ['_pk', '_self', '_type', 'id']
-
     @patch('nefertari.wrappers.obj2dict')
     def test_wrap_in_dict_no_meta_dict(self, mock_obj):
         result = Mock(spec=[])
@@ -509,3 +343,236 @@ class TestWrappers(unittest.TestCase):
         assert wrapper(result=1) == 1
         assert wrapper(result=5) == 5
         assert wrapper(result=15) == 10
+
+
+class TestApplyPrivacy(object):
+    model_test_data = TestWrappers.model_test_data
+
+    def test_no_data(self):
+        assert wrappers.apply_privacy(None)(result={}) == {}
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_non_auth(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=None)
+        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'desc', 'name']
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_no_request(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        filtered = wrappers.apply_privacy(None)(result=self.model_test_data)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_auth(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=False)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'id']
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_auth_calculated(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+
+        class User(object):
+            @classmethod
+            def is_admin(self, obj):
+                return False
+
+        request = Mock(user=User())
+        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'id']
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_admin(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=True)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
+        filtered['_type'] == 'foo'
+        filtered['desc'] == 'User 1 data'
+        filtered['id'] == 1
+        filtered['name'] == 'User1'
+        filtered['other_field'] == 123
+        filtered['_self'] == 'http://example.com/1'
+        mock_eng.get_document_cls.assert_called_once_with('foo')
+
+    @patch('nefertari.wrappers.engine')
+    def test_no_type(self, mock_eng):
+        data = self.model_test_data.copy()
+        data.pop('_type')
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=data, is_admin=True)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', 'desc', 'id', 'name', 'other_field']
+        filtered['desc'] == 'User 1 data'
+        filtered['id'] == 1
+        filtered['name'] == 'User1'
+        filtered['other_field'] == 123
+        filtered['_self'] == 'http://example.com/1'
+        assert not mock_eng.get_document_cls.called
+
+    @patch('nefertari.wrappers.engine')
+    def test_not_dict(self, mock_eng):
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result='foo', is_admin=True)
+        assert filtered == 'foo'
+
+    @patch('nefertari.wrappers.engine')
+    def test_nested_data_not_dict(self, mock_eng):
+        request = Mock(user=Mock())
+        assert wrappers.apply_privacy(request)(
+            result={'data': 'foo'}, is_admin=True) == {'data': 'foo'}
+        assert wrappers.apply_privacy(request)(
+            result={'data': 1}, is_admin=True) == {'data': 1}
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_admin_calculated(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+
+        class User(object):
+            @classmethod
+            def is_admin(self, obj):
+                return True
+
+        request = Mock(user=User())
+        filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
+        filtered['_type'] == 'foo'
+        filtered['desc'] == 'User 1 data'
+        filtered['id'] == 1
+        filtered['name'] == 'User1'
+        filtered['other_field'] == 123
+        filtered['_self'] == 'http://example.com/1'
+        mock_eng.get_document_cls.assert_called_once_with('foo')
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_no_document_cls(self, mock_eng):
+        mock_eng.get_document_cls.side_effect = ValueError
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=True)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'desc', 'id', 'name', 'other_field']
+
+    @patch('nefertari.wrappers.engine')
+    def test_item_no_fields(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=[])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=False)
+        assert list(sorted(filtered.keys())) == ['_pk', '_self', '_type']
+
+    @patch('nefertari.wrappers.engine')
+    def test_collection(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        result = {
+            'total': 1,
+            'count': 1,
+            'data': [self.model_test_data]
+        }
+        filtered = wrappers.apply_privacy(request)(
+            result=result, is_admin=False)
+        assert list(sorted(filtered.keys())) == ['count', 'data', 'total']
+        assert len(filtered['data']) == 1
+        data = filtered['data'][0]
+        assert list(sorted(data.keys())) == ['_pk', '_self', '_type', 'id']
+
+    @patch('nefertari.wrappers.engine')
+    def test_apply_nested_privacy_dict(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        data = {'owner': self.model_test_data}
+        wrapper = wrappers.apply_privacy(request)
+        wrapper.is_admin = False
+        filtered = wrapper._apply_nested_privacy(data)
+        assert list(filtered.keys()) == ['owner']
+        owner = filtered['owner']
+        assert sorted(owner.keys()) == [
+            '_pk', '_self', '_type', 'id']
+
+    @patch('nefertari.wrappers.engine')
+    def test_apply_nested_privacy_list(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        data = {'owner': [self.model_test_data]}
+        wrapper = wrappers.apply_privacy(request)
+        wrapper.is_admin = False
+        filtered = wrapper._apply_nested_privacy(data)
+        assert list(filtered.keys()) == ['owner']
+        owner = filtered['owner'][0]
+        assert sorted(owner.keys()) == [
+            '_pk', '_self', '_type', 'id']
+
+    @patch('nefertari.wrappers.engine')
+    def test_simple_call_with_nested(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id', 'creator'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        data = {
+            'id': 1,
+            '_type': 'foo1',
+            'username': 'admin',
+            'creator': {
+                'id': 2,
+                '_type': 'foo2',
+                'creator': 'foo',
+                'address': 'adsasd',
+            }
+        }
+        filtered = wrappers.apply_privacy(request)(
+            result=data, is_admin=False)
+        assert filtered == {
+            '_type': 'foo1',
+            'id': 1,
+            'creator': {
+                '_type': 'foo2',
+                'creator': 'foo',
+                'id': 2
+            }
+
+        }
