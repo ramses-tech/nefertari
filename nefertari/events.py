@@ -221,7 +221,7 @@ class FieldIsChanged(object):
 
 @contextmanager
 def trigger_events(view_obj):
-    """ Trigger before_ and after_ CRUD events.
+    """ Trigger before and after CRUD events.
 
     :param view_obj: Instance of nefertari.view.BaseView subclass created
         by nefertari.view.ViewMapper.
