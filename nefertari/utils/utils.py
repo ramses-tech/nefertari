@@ -195,3 +195,13 @@ def drop_reserved_params(params):
         if reserved_param in params:
             params.pop(reserved_param)
     return params
+
+
+def is_document(data):
+    """ Determine whether :data: is a valid document.
+
+    To be considered valid, data must:
+        * Be an instance of dict
+        * Have '_type' key in it
+    """
+    return isinstance(data, dict) and '_type' in data

@@ -185,3 +185,9 @@ class TestUtils(object):
         reserved_param = RESERVED_PARAMS[0]
         result = utils.drop_reserved_params({reserved_param: 1, 'foo': 2})
         assert result == {'foo': 2}
+
+    def test_is_document(self):
+        assert not utils.is_document([1])
+        assert not utils.is_document('foo')
+        assert not utils.is_document({'id': 1})
+        assert utils.is_document({'id': 1, '_type': 'foo'})
