@@ -157,7 +157,8 @@ class TestWrappers(unittest.TestCase):
         except Exception:
             raise Exception('Unexpected error')
         mock_validate.assert_called_once_with(
-            4, {'zoo': 1, '_type': 'Foo'})
+            4, {'zoo': 1, '_type': 'Foo'},
+            wrapper_kw={'drop_hidden': False})
 
     @patch('nefertari.utils.validate_data_privacy')
     def test_apply_request_privacy_invalid(self, mock_validate):
@@ -169,7 +170,8 @@ class TestWrappers(unittest.TestCase):
         expected = 'Not enough permissions to update fields: boo'
         assert str(ex.value) == expected
         mock_validate.assert_called_once_with(
-            4, {'zoo': 1, '_type': 'Foo'})
+            4, {'zoo': 1, '_type': 'Foo'},
+            wrapper_kw={'drop_hidden': False})
 
     @patch('nefertari.wrappers.obj2dict')
     def test_wrap_in_dict_no_meta_dict(self, mock_obj):
@@ -355,7 +357,8 @@ class TestApplyPrivacy(object):
     def test_item_non_auth(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=None)
         filtered = wrappers.apply_privacy(request)(result=self.model_test_data)
@@ -366,7 +369,8 @@ class TestApplyPrivacy(object):
     def test_item_no_request(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         filtered = wrappers.apply_privacy(None)(result=self.model_test_data)
         assert list(sorted(filtered.keys())) == [
@@ -376,7 +380,8 @@ class TestApplyPrivacy(object):
     def test_item_auth(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(
@@ -388,7 +393,8 @@ class TestApplyPrivacy(object):
     def test_item_auth_calculated(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
 
         class User(object):
@@ -405,7 +411,8 @@ class TestApplyPrivacy(object):
     def test_item_admin(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(
@@ -455,7 +462,8 @@ class TestApplyPrivacy(object):
     def test_item_admin_calculated(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
 
         class User(object):
@@ -488,7 +496,8 @@ class TestApplyPrivacy(object):
     def test_item_no_fields(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=[])
+            _auth_fields=[],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         filtered = wrappers.apply_privacy(request)(
@@ -499,7 +508,8 @@ class TestApplyPrivacy(object):
     def test_collection(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         result = {
@@ -518,12 +528,14 @@ class TestApplyPrivacy(object):
     def test_apply_nested_privacy_dict(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         data = {'owner': self.model_test_data}
         wrapper = wrappers.apply_privacy(request)
         wrapper.is_admin = False
+        wrapper.drop_hidden = False
         filtered = wrapper._apply_nested_privacy(data)
         assert list(filtered.keys()) == ['owner']
         owner = filtered['owner']
@@ -534,12 +546,14 @@ class TestApplyPrivacy(object):
     def test_apply_nested_privacy_list(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id'])
+            _auth_fields=['id'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         data = {'owner': [self.model_test_data]}
         wrapper = wrappers.apply_privacy(request)
         wrapper.is_admin = False
+        wrapper.drop_hidden = False
         filtered = wrapper._apply_nested_privacy(data)
         assert list(filtered.keys()) == ['owner']
         owner = filtered['owner'][0]
@@ -550,7 +564,8 @@ class TestApplyPrivacy(object):
     def test_simple_call_with_nested(self, mock_eng):
         document_cls = Mock(
             _public_fields=['name', 'desc'],
-            _auth_fields=['id', 'creator'])
+            _auth_fields=['id', 'creator'],
+            _hidden_fields=[])
         mock_eng.get_document_cls.return_value = document_cls
         request = Mock(user=Mock())
         data = {
@@ -576,3 +591,31 @@ class TestApplyPrivacy(object):
             }
 
         }
+
+    @patch('nefertari.wrappers.engine')
+    def test_hidden_fields_drop(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id', 'name'],
+            _hidden_fields=['name'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=False,
+            drop_hidden=True)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'id']
+
+    @patch('nefertari.wrappers.engine')
+    def test_hidden_fields_not_drop(self, mock_eng):
+        document_cls = Mock(
+            _public_fields=['name', 'desc'],
+            _auth_fields=['id'],
+            _hidden_fields=['name'])
+        mock_eng.get_document_cls.return_value = document_cls
+        request = Mock(user=Mock())
+        filtered = wrappers.apply_privacy(request)(
+            result=self.model_test_data, is_admin=False,
+            drop_hidden=False)
+        assert list(sorted(filtered.keys())) == [
+            '_pk', '_self', '_type', 'id', 'name']
