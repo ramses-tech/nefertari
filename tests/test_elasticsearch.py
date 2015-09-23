@@ -781,53 +781,47 @@ class TestES(object):
         assert len(docs) == 0
 
     @patch('nefertari.elasticsearch.ES.api.get_source')
-    def test_get_resource(self, mock_get):
+    def test_get_item(self, mock_get):
         obj = es.ES('Foo', 'foondex')
         mock_get.return_value = {'foo': 'bar', 'id': 4, '_type': 'Story'}
-        story = obj.get_resource(name='foo')
+        story = obj.get_item(name='foo')
         assert story.id == 4
         assert story.foo == 'bar'
         mock_get.assert_called_once_with(
             name='foo', index='foondex', doc_type='Foo')
 
     @patch('nefertari.elasticsearch.ES.api.get_source')
-    def test_get_resource_no_index_raise(self, mock_get):
+    def test_get_item_no_index_raise(self, mock_get):
         obj = es.ES('Foo', 'foondex')
         mock_get.side_effect = es.IndexNotFoundException()
         with pytest.raises(JHTTPNotFound) as ex:
-            obj.get_resource(name='foo')
+            obj.get_item(name='foo')
         assert 'resource not found (Index does not exist)' in str(ex.value)
 
     @patch('nefertari.elasticsearch.ES.api.get_source')
-    def test_get_resource_no_index_not_raise(self, mock_get):
+    def test_get_item_no_index_not_raise(self, mock_get):
         obj = es.ES('Foo', 'foondex')
         mock_get.side_effect = es.IndexNotFoundException()
         try:
-            obj.get_resource(name='foo', __raise_on_empty=False)
+            obj.get_item(name='foo', __raise_on_empty=False)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
 
     @patch('nefertari.elasticsearch.ES.api.get_source')
-    def test_get_resource_not_found_raise(self, mock_get):
+    def test_get_item_not_found_raise(self, mock_get):
         obj = es.ES('Foo', 'foondex')
         mock_get.return_value = {}
         with pytest.raises(JHTTPNotFound):
-            obj.get_resource(name='foo')
+            obj.get_item(name='foo')
 
     @patch('nefertari.elasticsearch.ES.api.get_source')
-    def test_get_resource_not_found_not_raise(self, mock_get):
+    def test_get_item_not_found_not_raise(self, mock_get):
         obj = es.ES('Foo', 'foondex')
         mock_get.return_value = {}
         try:
-            obj.get_resource(name='foo', __raise_on_empty=False)
+            obj.get_item(name='foo', __raise_on_empty=False)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
-
-    @patch('nefertari.elasticsearch.ES.get_resource')
-    def test_get(self, mock_get):
-        obj = es.ES('Foo', 'foondex')
-        obj.get(__raise=True, foo=1)
-        mock_get.assert_called_once_with(__raise_on_empty=True, foo=1)
 
     @patch('nefertari.elasticsearch.ES.settings')
     @patch('nefertari.elasticsearch.ES.index')

@@ -45,7 +45,7 @@ class CollectionACL(Contained):
         db_id = self.item_db_id(key)
         pk_field = self.item_model.pk_field()
         try:
-            item = self.item_model.get(
+            item = self.item_model.get_item(
                 __raise=True, **{pk_field: db_id}
                 )
         except AttributeError:
