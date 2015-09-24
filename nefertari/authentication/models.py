@@ -148,20 +148,18 @@ class AuthModelMethodsMixin(object):
             return cls.get_resource(username=username)
 
 
-def lower_strip(event):
-    value = (event.field.new_value or '').lower().strip()
-    event.set_field_value(value)
+def lower_strip(**kwargs):
+    return (kwargs['new_value'] or '').lower().strip()
 
 
-def random_uuid(event):
-    if not event.field.new_value:
-        event.set_field_value(uuid.uuid4().hex)
+def random_uuid(**kwargs):
+    return kwargs['new_value'] or uuid.uuid4().hex
 
 
-def encrypt_password(event):
+def encrypt_password(**kwargs):
     """ Crypt :new_value: if it's not crypted yet. """
-    field = event.field
-    new_value = field.new_value
+    new_value = kwargs['new_value']
+    field = kwargs['field']
     min_length = field.params['min_length']
     if len(new_value) < min_length:
         raise ValueError(
@@ -169,9 +167,8 @@ def encrypt_password(event):
                 field.name, field.params['min_length']))
 
     if new_value and not crypt.match(new_value):
-        encrypted = str(crypt.encode(new_value))
-        field.new_value = encrypted
-        event.set_field_value(encrypted)
+        new_value = str(crypt.encode(new_value))
+    return new_value
 
 
 class AuthUserMixin(AuthModelMethodsMixin):

@@ -125,10 +125,10 @@ class TestHelperFunctions(object):
     def test_subscribe_to_events(self):
         config = Mock()
         events.subscribe_to_events(
-            config, 'foo', [1, 2], model=3, field=4)
+            config, 'foo', [1, 2], model=3)
         config.add_subscriber.assert_has_calls([
-            call('foo', 1, model=3, field=4),
-            call('foo', 2, model=3, field=4)
+            call('foo', 1, model=3),
+            call('foo', 2, model=3)
         ])
 
     def test_silent_decorator(self):
@@ -143,6 +143,34 @@ class TestHelperFunctions(object):
             pass
 
         assert Foo._silent
+
+    def test_add_field_processors(self):
+        event = Mock()
+        event.field.new_value = 'admin'
+        config = Mock()
+        processor = Mock(return_value='user12')
+
+        events.add_field_processors(
+            config, [processor, processor],
+            model='User', field='username')
+        assert config.add_subscriber.call_count == 4
+        assert not event.set_field_value.called
+        assert not processor.called
+
+        last_call = config.add_subscriber.mock_calls[0]
+        wrapper = last_call[1][0]
+        wrapper(event)
+        event.set_field_value.assert_called_once_with(
+            'user12', 'username')
+
+        processor.assert_has_calls([
+            call(new_value='admin', instance=event.instance,
+                 field=event.field, request=event.view.request,
+                 model=event.model),
+            call(new_value='user12', instance=event.instance,
+                 field=event.field, request=event.view.request,
+                 model=event.model),
+        ])
 
 
 class TestModelClassIs(object):

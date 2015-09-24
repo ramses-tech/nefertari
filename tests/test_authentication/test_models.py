@@ -8,56 +8,30 @@ from nefertari.utils import FieldData
 
 class TestModelHelpers(object):
 
-    def test_lower_strip_with_value(self, engine_mock):
-        from nefertari import events
+    def test_lower_strip(self, engine_mock):
         from nefertari.authentication import models
-        field = FieldData(name='username', new_value='Foo            ')
-        view = Mock(_json_params={})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={},
-            field=field)
-        models.lower_strip(event)
-        assert view._json_params == {'username': 'foo'}
-
-    def test_lower_strip_without_value(self, engine_mock):
-        from nefertari import events
-        from nefertari.authentication import models
-        field = FieldData(name='username', new_value=None)
-        view = Mock(_json_params={})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={}, field=field)
-        models.lower_strip(event)
-        assert view._json_params == {'username': ''}
+        assert models.lower_strip(instance=None, new_value='Foo   ') == 'foo'
+        assert models.lower_strip(instance=None, new_value=None) == ''
 
     def test_encrypt_password(self, engine_mock):
-        from nefertari import events
         from nefertari.authentication import models
-        field = FieldData(
-            name='password', new_value='foo',
-            params={'min_length': 1})
-        view = Mock(_json_params={'password': 'boo'})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={}, field=field)
-
-        models.encrypt_password(event)
-        encrypted = event.view._json_params['password']
+        field = Mock(params={'min_length': 1})
+        encrypted = models.encrypt_password(
+            instance=None, new_value='foo',
+            field=field)
         assert models.crypt.match(encrypted)
         assert encrypted != 'foo'
-        models.encrypt_password(event)
-        assert encrypted == event.view._json_params['password']
+        assert encrypted == models.encrypt_password(
+            instance=None, new_value=encrypted, field=field)
 
     def test_encrypt_password_failed(self, engine_mock):
-        from nefertari import events
         from nefertari.authentication import models
-        field = FieldData(
-            name='q', new_value='foo',
-            params={'min_length': 10})
-        view = Mock(_json_params={'password': 'boo'})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={}, field=field)
-
+        field = Mock(params={'min_length': 10})
+        field.name = 'q'
         with pytest.raises(ValueError) as ex:
-            models.encrypt_password(event)
+            models.encrypt_password(
+                instance=None, new_value='foo',
+                field=field)
         assert str(ex.value) == '`q`: Value length must be more than 10'
 
     @patch('nefertari.authentication.models.uuid.uuid4')

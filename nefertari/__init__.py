@@ -27,11 +27,13 @@ def includeme(config):
         JsonRendererFactory, NefertariJsonRendererFactory)
     from nefertari.utils import dictset
     from nefertari.events import (
-        ModelClassIs, FieldIsChanged, subscribe_to_events)
+        ModelClassIs, FieldIsChanged, subscribe_to_events,
+        add_field_processors)
 
     log.info("%s %s" % (APP_NAME, __version__))
     config.add_directive('get_root_resource', get_root_resource)
     config.add_directive('subscribe_to_events', subscribe_to_events)
+    config.add_directive('add_field_processors', add_field_processors)
     config.add_renderer('json', JsonRendererFactory)
     config.add_renderer('nefertari_json', NefertariJsonRendererFactory)
 

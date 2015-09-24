@@ -255,23 +255,69 @@ def trigger_events(view_obj):
         request.registry.notify(after_event(**event_kwargs))
 
 
-def subscribe_to_events(config, subscriber, events, model=None, field=None):
+def subscribe_to_events(config, subscriber, events, model=None):
     """ Helper function to subscribe to group of events.
 
     :param config: Pyramid contig instance.
     :param subscriber: Event subscriber function.
     :param events: Sequence of events to subscribe to.
     :param model: Model predicate value.
-    :param field: Field predicate value.
     """
     kwargs = {}
     if model is not None:
         kwargs['model'] = model
-    if field is not None:
-        kwargs['field'] = field
 
     for evt in events:
         config.add_subscriber(subscriber, evt, **kwargs)
+
+
+def add_field_processors(config, processors, model, field):
+    """ Add processors for model field.
+
+    Under the hood, regular nefertari event subscribed is created which
+    calls field processors in order passed to this function.
+
+    Processors are passed following params:
+
+        * new_value: New value of of field.
+        * instance: Instance affected by request. Is None when set of
+            items is updated in bulk and when item is created.
+        * field: Instance of nefertari.utils.data.FieldData instance
+            containing data of changed field.
+        * request: Current Pyramid Request instance.
+        * model: Model class affected by request.
+
+    Each processor must return processed value which is passed to next
+    processor.
+
+    :param config: Pyramid Congurator instance.
+    :param processors: Sequence of processor functions.
+    :param model: Model class for field if which processors are
+        registered.
+    :param field: Field name for which processors are registered.
+    """
+    before_change_events = (
+        BeforeCreate,
+        BeforeUpdate,
+        BeforeReplace,
+        BeforeUpdateMany,
+    )
+
+    def wrapper(event, _processors=processors, _field=field):
+        proc_kw = {
+            'new_value': event.field.new_value,
+            'instance': event.instance,
+            'field': event.field,
+            'request': event.view.request,
+            'model': event.model,
+        }
+        for proc_func in _processors:
+            proc_kw['new_value'] = proc_func(**proc_kw)
+
+        event.set_field_value(proc_kw['new_value'], _field)
+
+    for evt in before_change_events:
+        config.add_subscriber(wrapper, evt, model=model, field=field)
 
 
 def silent(obj):
