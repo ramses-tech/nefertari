@@ -201,7 +201,7 @@ class ModelClassIs(object):
 class FieldIsChanged(object):
     """ Subscriber predicate to check particular field is changed.
 
-    Example: config.add_subscriber(func, event, field=field_name)
+    Used to implement field processors.
     """
 
     def __init__(self, field, config):
@@ -279,13 +279,13 @@ def add_field_processors(config, processors, model, field):
 
     Processors are passed following params:
 
-        * new_value: New value of of field.
-        * instance: Instance affected by request. Is None when set of
-            items is updated in bulk and when item is created.
-        * field: Instance of nefertari.utils.data.FieldData instance
-            containing data of changed field.
-        * request: Current Pyramid Request instance.
-        * model: Model class affected by request.
+    * **new_value**: New value of of field.
+    * **instance**: Instance affected by request. Is None when set of
+      items is updated in bulk and when item is created.
+    * **field**: Instance of nefertari.utils.data.FieldData instance
+      containing data of changed field.
+    * **request**: Current Pyramid Request instance.
+    * **model**: Model class affected by request.
 
     Each processor must return processed value which is passed to next
     processor.
@@ -314,6 +314,7 @@ def add_field_processors(config, processors, model, field):
         for proc_func in _processors:
             proc_kw['new_value'] = proc_func(**proc_kw)
 
+        event.field.new_value = proc_kw['new_value']
         event.set_field_value(proc_kw['new_value'], _field)
 
     for evt in before_change_events:

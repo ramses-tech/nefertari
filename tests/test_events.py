@@ -162,6 +162,7 @@ class TestHelperFunctions(object):
         wrapper(event)
         event.set_field_value.assert_called_once_with(
             'user12', 'username')
+        assert event.field.new_value == 'user12'
 
         processor.assert_has_calls([
             call(new_value='admin', instance=event.instance,

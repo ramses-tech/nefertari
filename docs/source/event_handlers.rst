@@ -57,15 +57,12 @@ Nefertari defines and sets up following subscriber predicates:
 **nefertari.events.ModelClassIs**
     Available under ``model`` param when connecting subscribers, it allows to connect subscribers on per-model basis. When subscriber is connected using this predicate, it will only be called when ``view.Model`` is the same class or subclass of this param value.
 
-**nefertari.events.FieldIsChanged**
-    Available under ``field`` param when connecting subscribers, it allows to connect subscribers on per-field basis. When subscriber is connected using this predicate, it will only be called when value of this param is present in request JSON body.
-
 
 Utilities
 ----------
 
 **nefertari.events.subscribe_to_events**
-    Helper function that allows to connect subscriber to multiple events at once. Supports ``model`` and ``field`` subscriber predicate params. Available at ``config.subscribe_to_events``. Subscribers are run in order connected.
+    Helper function that allows to connect subscriber to multiple events at once. Supports ``model`` subscriber predicate param. Available at ``config.subscribe_to_events``. Subscribers are run in order connected.
 
 **nefertari.events.BEFORE_EVENTS**
     Map of ``{view_method_name: EventClass}`` of "Before" events. E.g. one of its elements is ``'index': BeforeIndex``.
@@ -131,30 +128,6 @@ In case we want to limit models for which subscriber will be called, we can conn
 
 Connected this way ``log_request`` subscriber will only be called when collection POST request comes at endpoint which handles our ``User`` model.
 
-We can also use ``field`` predicate to make subscriber run only when particular field is present in request JSON body. E.g. if we only want to log collection POST requests for model ``User`` which contain ``first_name`` field, we connect subscriber like so:
-
-.. code-block:: python
-
-    from nefertari import events
-    from .models import User
-
-    config.subscribe_to_events(
-        log_request, [events.AfterCreate],
-        model=User, field='first_name')
-
-
-Predicate ``fields`` can also be used without ``model`` predicate. E.g. if we want to log all POST request bodies of when they have field ``favourite`` we should connect subscriber like so:
-
-.. code-block:: python
-
-    from nefertari import events
-    from .models import User
-
-    config.subscribe_to_events(
-        log_request, [events.AfterCreate],
-        field='favourite')
-
-
 API
 ---
 
@@ -163,10 +136,6 @@ API
     :private-members:
 
 .. autoclass:: nefertari.events.ModelClassIs
-    :members:
-    :private-members:
-
-.. autoclass:: nefertari.events.FieldIsChanged
     :members:
     :private-members:
 
