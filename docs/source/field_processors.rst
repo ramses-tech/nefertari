@@ -85,7 +85,7 @@ And we want to make sure ``Item.name`` is always lowercase and stripped, we can 
 
 When set up as above, ``lower_strip`` processor will be called each time application gets a request that changes ``Item.name`` field.
 
-To edit other fields of instance, ``event.set_field_value`` method should be used. E.g. if we have fields ``due_date`` and ``days_left`` and we connect processors defined above to field ``due_date``, we can update ``days_left`` from it:
+To edit other fields of instance, ``event.set_field_value`` method should be used. E.g. if we have fields ``due_date`` and ``days_left`` and we connect processor defined below to field ``due_date``, we can update ``days_left`` from it:
 
 .. code-block:: python
 
