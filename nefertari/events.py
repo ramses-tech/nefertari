@@ -286,6 +286,7 @@ def add_field_processors(config, processors, model, field):
       containing data of changed field.
     * **request**: Current Pyramid Request instance.
     * **model**: Model class affected by request.
+    * **event**: Underlying event object.
 
     Each processor must return processed value which is passed to next
     processor.
@@ -310,6 +311,7 @@ def add_field_processors(config, processors, model, field):
             'field': event.field,
             'request': event.view.request,
             'model': event.model,
+            'event': event,
         }
         for proc_func in _processors:
             proc_kw['new_value'] = proc_func(**proc_kw)

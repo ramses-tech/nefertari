@@ -167,10 +167,10 @@ class TestHelperFunctions(object):
         processor.assert_has_calls([
             call(new_value='admin', instance=event.instance,
                  field=event.field, request=event.view.request,
-                 model=event.model),
+                 model=event.model, event=event),
             call(new_value='user12', instance=event.instance,
                  field=event.field, request=event.view.request,
-                 model=event.model),
+                 model=event.model, event=event),
         ])
 
 
