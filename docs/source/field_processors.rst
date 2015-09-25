@@ -97,7 +97,7 @@ To edit other fields of instance, ``event.set_field_value`` method should be use
         days_left = (parsed_date-datetime.now()).days
         event = kwargs['event']
         event.set_field_value(days_left, 'days_left')
-
+        return kwargs['new_value']
 
 API
 ---
