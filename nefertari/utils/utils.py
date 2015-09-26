@@ -169,7 +169,7 @@ def str2dict(dotted_str, value=None, separator='.'):
     return dict_
 
 
-def validate_data_privacy(request, data):
+def validate_data_privacy(request, data, wrapper_kw=None):
     """ Validate :data: contains only data allowed by privacy settings.
 
     :param request: Pyramid Request instance
@@ -177,8 +177,11 @@ def validate_data_privacy(request, data):
         validated
     """
     from nefertari import wrappers
+    if wrapper_kw is None:
+        wrapper_kw = {}
+
     wrapper = wrappers.apply_privacy(request)
-    allowed_fields = wrapper(result=data).keys()
+    allowed_fields = wrapper(result=data, **wrapper_kw).keys()
     data = data.copy()
     data.pop('_type', None)
     not_allowed_fields = set(data.keys()) - set(allowed_fields)
