@@ -37,9 +37,6 @@ Configuring Views
             es_stories = self.get_collection_es()
             stories = self.Model.filter_objects(es_stories)
 
-            if self.needs_confirmation():
-                return stories
-
             return self.Model._delete_many(stories, self.request)
 
         def update_many(self):

@@ -31,13 +31,16 @@ When authentication is enabled, Nefertari uses its own `User` model. This model 
 Visible Fields in Views
 -----------------------
 
-You can control which fields to display by defining following fields on your models:
+You can control which fields to display by defining the following properties on your models:
 
 **_auth_fields**
-    Lists field names which should be displayed to authenticated users.
+    Lists fields to be displayed to authenticated users.
 
 **_public_fields**
-    Lists field names which should be displayed to all users including unauthenticated.
+    Lists fields to be displayed to all users including unauthenticated users.
+
+**_hidden_fields**
+    Lists fields to be hidden but remain editable (as long as user has permission), e.g. password.
 
 
 Permissions

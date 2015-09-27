@@ -137,8 +137,8 @@ class apply_privacy(object):
     Privacy is applied checking model's (got using '_type' key value) fields:
       * _public_fields: Fields visible to non-authenticated users.
       * _auth_fields: Fields visible to authenticated users.
-      * _hidden_fields: Fields hidden from all users if `self.drop_hidden`
-        is True, Otherwise is shown to everyone.
+      * _hidden_fields: Fields hidden if `self.drop_hidden`
+        is True, otherwise shown to everyone.
 
     Admin can see all the fields. Whether user is admin, is checked by
     calling 'is_admin()' method on 'self.request.user'.

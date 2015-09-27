@@ -6,7 +6,7 @@ Changelog
 * :feature:`-` Refactored event system: added CRUD-based event handlers, removed field processors
 * :feature:`-` Removed unnecessary extra '__confirmation' parameter from PATCH/PUT/DELETE collection requests
 * :feature:`-` Nested relationships are now indexed in bulk in ElasticSearch
-* :feature:`-` Added the ability to hide fields from responses by listing them in the '_hidden_fields' model attribute
+* :feature:`-` Added '_hidden_fields' model attribute to hide fields while remaining editable (e.g. password)
 * :bug:`- major` Fixed a bug causing polymorchic collections to always return 403
 * :bug:`- major` ??? Fixed a bug with nested relationships not respecting '_auth_fields'
 
