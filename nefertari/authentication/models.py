@@ -19,8 +19,8 @@ class AuthModelMethodsMixin(object):
     All implemented methods must be class methods.
     """
     @classmethod
-    def get_resource(self, *args, **kwargs):
-        return super(AuthModelMethodsMixin, self).get_resource(
+    def get_item(self, *args, **kwargs):
+        return super(AuthModelMethodsMixin, self).get_item(
             *args, **kwargs)
 
     @classmethod
@@ -45,7 +45,7 @@ class AuthModelMethodsMixin(object):
         Used by Token-based auth as `credentials_callback` kwarg.
         """
         try:
-            user = cls.get_resource(username=username)
+            user = cls.get_item(username=username)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
@@ -61,7 +61,7 @@ class AuthModelMethodsMixin(object):
         Used by Token-based authentication as `check` kwarg.
         """
         try:
-            user = cls.get_resource(username=username)
+            user = cls.get_item(username=username)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
@@ -84,7 +84,7 @@ class AuthModelMethodsMixin(object):
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
-            user = cls.get_resource(**{key: login})
+            user = cls.get_item(**{key: login})
         except Exception as ex:
             log.error(str(ex))
 
@@ -145,7 +145,7 @@ class AuthModelMethodsMixin(object):
         """
         username = authenticated_userid(request)
         if username:
-            return cls.get_resource(username=username)
+            return cls.get_item(username=username)
 
 
 def lower_strip(event):
@@ -260,4 +260,4 @@ def cache_request_user(user_cls, request, user_id):
     pk_field = user_cls.pk_field()
     user = getattr(request, '_user', None)
     if user is None or getattr(user, pk_field, None) != user_id:
-        request._user = user_cls.get_resource(**{pk_field: user_id})
+        request._user = user_cls.get_item(**{pk_field: user_id})
