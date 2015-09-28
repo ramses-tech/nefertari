@@ -28,22 +28,18 @@ class RequestEvent(object):
         self.field = field
         self.instance = instance
 
-    def set_field_value(self, value, field_name=None):
+    def set_field_value(self, field_name, value):
         """ Set value of field named `field_name`.
 
         Use this method to apply changes to object which is affected
         by request. Values are set on `view._json_params` dict.
 
-        :param value: Value to be set.
         :param field_name: Name of field value of which should be set.
             Optional if `self.field` is set; in this case `self.field.name`
             is used. If `self.field` is None and `field_name` is not
             provided, KeyError is raised.
+        :param value: Value to be set.
         """
-        if field_name is None:
-            if self.field is None:
-                raise KeyError('Field name is not specified')
-            field_name = self.field.name
         self.view._json_params[field_name] = value
 
 
@@ -317,7 +313,7 @@ def add_field_processors(config, processors, model, field):
             proc_kw['new_value'] = proc_func(**proc_kw)
 
         event.field.new_value = proc_kw['new_value']
-        event.set_field_value(proc_kw['new_value'], _field)
+        event.set_field_value(_field, proc_kw['new_value'])
 
     for evt in before_change_events:
         config.add_subscriber(wrapper, evt, model=model, field=field)

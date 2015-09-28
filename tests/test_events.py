@@ -18,25 +18,8 @@ class TestEvents(object):
         view = Mock(_json_params={})
         event = events.RequestEvent(
             view=view, model=None, field=None)
-        event.set_field_value(2, 'foo')
+        event.set_field_value('foo', 2)
         assert view._json_params == {'foo': 2}
-
-    def test_set_field_value_no_field_name(self):
-        from nefertari.utils import FieldData
-        field = FieldData(name='foo', new_value=1)
-        view = Mock(_json_params={})
-        event = events.RequestEvent(
-            view=view, model=None, field=field)
-        event.set_field_value(2)
-        assert view._json_params == {'foo': 2}
-
-    def test_set_field_value_no_field_name_no_field(self):
-        view = Mock(_json_params={})
-        event = events.RequestEvent(
-            view=view, model=None, field=None)
-        with pytest.raises(KeyError) as ex:
-            event.set_field_value(2)
-        assert 'Field name is not specified' in str(ex.value)
 
     @patch('nefertari.utils.FieldData.from_dict')
     def test_trigger_events(self, mock_from):
@@ -161,7 +144,7 @@ class TestHelperFunctions(object):
         wrapper = last_call[1][0]
         wrapper(event)
         event.set_field_value.assert_called_once_with(
-            'user12', 'username')
+            'username', 'user12')
         assert event.field.new_value == 'user12'
 
         processor.assert_has_calls([
