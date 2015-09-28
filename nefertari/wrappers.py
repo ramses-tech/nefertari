@@ -119,7 +119,9 @@ class apply_request_privacy(object):
         request_data['_type'] = self.model_cls.__name__
 
         try:
-            validate_data_privacy(request, request_data)
+            validate_data_privacy(
+                request, request_data,
+                wrapper_kw={'drop_hidden': False})
         except ValidationError as ex:
             raise JHTTPForbidden(
                 'Not enough permissions to update fields: {}'.format(ex))
@@ -135,6 +137,8 @@ class apply_privacy(object):
     Privacy is applied checking model's (got using '_type' key value) fields:
       * _public_fields: Fields visible to non-authenticated users.
       * _auth_fields: Fields visible to authenticated users.
+      * _hidden_fields: Fields hidden from all users if `self.drop_hidden`
+        is True, Otherwise is shown to everyone.
 
     Admin can see all the fields. Whether user is admin, is checked by
     calling 'is_admin()' method on 'self.request.user'.
@@ -156,6 +160,7 @@ class apply_privacy(object):
 
         public_fields = set(getattr(model_cls, '_public_fields', None) or [])
         auth_fields = set(getattr(model_cls, '_auth_fields', None) or [])
+        hidden_fields = set(getattr(model_cls, '_hidden_fields', None) or [])
         fields = set(data.keys())
 
         user = getattr(self.request, 'user', None)
@@ -170,6 +175,12 @@ class apply_privacy(object):
             else:
                 fields &= public_fields
 
+            if self.drop_hidden:
+                if not self.is_admin:
+                    fields -= hidden_fields
+            else:
+                fields.update(hidden_fields)
+
         fields.update(['_type', '_pk', '_self'])
         if not isinstance(data, dictset):
             data = dictset(data)
@@ -182,7 +193,10 @@ class apply_privacy(object):
 
         :param data: Dict of data to which privacy is already applied.
         """
-        kw = {'is_admin': self.is_admin}
+        kw = {
+            'is_admin': self.is_admin,
+            'drop_hidden': self.drop_hidden,
+        }
         for key, val in data.items():
             if is_document(val):
                 data[key] = apply_privacy(self.request)(result=val, **kw)
@@ -194,6 +208,8 @@ class apply_privacy(object):
     def __call__(self, **kwargs):
         from nefertari.utils import issequence
         result = kwargs['result']
+        self.drop_hidden = kwargs.get('drop_hidden', True)
+
         if not isinstance(result, dict):
             return result
         data = result.get('data', result)
@@ -204,8 +220,11 @@ class apply_privacy(object):
                 user = getattr(self.request, 'user', None)
                 self.is_admin = user is not None and type(user).is_admin(user)
             if issequence(data) and not isinstance(data, dict):
-                kwargs = {'is_admin': self.is_admin}
-                data = [apply_privacy(self.request)(result=d, **kwargs)
+                kw = {
+                    'is_admin': self.is_admin,
+                    'drop_hidden': self.drop_hidden
+                }
+                data = [apply_privacy(self.request)(result=d, **kw)
                         for d in data]
             else:
                 data = self._filter_fields(data)

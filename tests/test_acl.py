@@ -16,7 +16,7 @@ class DummyModel(object):
     def pk_field():
         return 'id'
     @classmethod
-    def get(cls, id, **kw):
+    def get_item(cls, id, **kw):
         i = cls()
         i.id = id
         return i
@@ -76,7 +76,7 @@ class TestACLsUnit(object):
             def pk_field():
                 return 'id'
             @staticmethod
-            def get(id, **kw):
+            def get_item(id, **kw):
                 return id
         class UserACL(acl.CollectionACL):
             item_model = DummyModel
@@ -93,7 +93,7 @@ class TestACLsUnit(object):
     def test_item_404(self):
         class NotFoundModel(DummyModel):
             @staticmethod
-            def get(id, **kw):
+            def get_item(id, **kw):
                 raise AttributeError()
         class DummyACL(acl.CollectionACL):
             item_model = NotFoundModel
