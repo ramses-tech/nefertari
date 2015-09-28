@@ -38,10 +38,6 @@ class ItemsView(BaseView):
     def delete_many(self):
         es_items = self.get_collection_es()
         items = self.Model.filter_objects(es_items)
-
-        if self.needs_confirmation():
-            return items
-
         return self.Model._delete_many(items, self.request)
 
     def update_many(self):
