@@ -20,7 +20,7 @@ Check the API section for a full list of attributes/params events have.
 It's recommended to use ``before`` events to:
     * Transform input
     * Perform validation
-    * Apply changes to object that is being affected by request using ``event.set_field_value`` method.
+    * Apply changes to object that is being affected by request using ``event.set_field_value`` method. Note that if field you change by calling ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will makes field processors which are connected to this field to be triggered, if they are run after this method call(connected to events after handler that performs method call).
 
 And ``after`` events to:
     * Change DB objects which are not affected by request.
