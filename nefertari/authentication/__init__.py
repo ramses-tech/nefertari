@@ -6,21 +6,9 @@ def includeme(config):
         lower_strip,
         encrypt_password,
     )
-    from nefertari import events
-
-    subscribe_to = (
-        events.BeforeCreate,
-        events.BeforeUpdate,
-        events.BeforeReplace,
-        events.BeforeUpdateMany,
-    )
-
-    add_sub = config.subscribe_to_events
-    add_sub(random_uuid, subscribe_to, model=AuthUserMixin,
-            field='username')
-    add_sub(lower_strip, subscribe_to, model=AuthUserMixin,
-            field='username')
-    add_sub(lower_strip, subscribe_to, model=AuthUserMixin,
-            field='email')
-    add_sub(encrypt_password, subscribe_to, model=AuthUserMixin,
-            field='password')
+    add_proc = config.add_field_processors
+    add_proc(
+        [random_uuid, lower_strip],
+        model=AuthUserMixin, field='username')
+    add_proc([lower_strip], model=AuthUserMixin, field='email')
+    add_proc([encrypt_password], model=AuthUserMixin, field='password')
