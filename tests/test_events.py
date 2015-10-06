@@ -18,25 +18,8 @@ class TestEvents(object):
         view = Mock(_json_params={})
         event = events.RequestEvent(
             view=view, model=None, field=None)
-        event.set_field_value(2, 'foo')
+        event.set_field_value('foo', 2)
         assert view._json_params == {'foo': 2}
-
-    def test_set_field_value_no_field_name(self):
-        from nefertari.utils import FieldData
-        field = FieldData(name='foo', new_value=1)
-        view = Mock(_json_params={})
-        event = events.RequestEvent(
-            view=view, model=None, field=field)
-        event.set_field_value(2)
-        assert view._json_params == {'foo': 2}
-
-    def test_set_field_value_no_field_name_no_field(self):
-        view = Mock(_json_params={})
-        event = events.RequestEvent(
-            view=view, model=None, field=None)
-        with pytest.raises(KeyError) as ex:
-            event.set_field_value(2)
-        assert 'Field name is not specified' in str(ex.value)
 
     @patch('nefertari.utils.FieldData.from_dict')
     def test_trigger_events(self, mock_from):
@@ -125,10 +108,10 @@ class TestHelperFunctions(object):
     def test_subscribe_to_events(self):
         config = Mock()
         events.subscribe_to_events(
-            config, 'foo', [1, 2], model=3, field=4)
+            config, 'foo', [1, 2], model=3)
         config.add_subscriber.assert_has_calls([
-            call('foo', 1, model=3, field=4),
-            call('foo', 2, model=3, field=4)
+            call('foo', 1, model=3),
+            call('foo', 2, model=3)
         ])
 
     def test_silent_decorator(self):
@@ -143,6 +126,35 @@ class TestHelperFunctions(object):
             pass
 
         assert Foo._silent
+
+    def test_add_field_processors(self):
+        event = Mock()
+        event.field.new_value = 'admin'
+        config = Mock()
+        processor = Mock(return_value='user12')
+
+        events.add_field_processors(
+            config, [processor, processor],
+            model='User', field='username')
+        assert config.add_subscriber.call_count == 4
+        assert not event.set_field_value.called
+        assert not processor.called
+
+        last_call = config.add_subscriber.mock_calls[0]
+        wrapper = last_call[1][0]
+        wrapper(event)
+        event.set_field_value.assert_called_once_with(
+            'username', 'user12')
+        assert event.field.new_value == 'user12'
+
+        processor.assert_has_calls([
+            call(new_value='admin', instance=event.instance,
+                 field=event.field, request=event.view.request,
+                 model=event.model, event=event),
+            call(new_value='user12', instance=event.instance,
+                 field=event.field, request=event.view.request,
+                 model=event.model, event=event),
+        ])
 
 
 class TestModelClassIs(object):

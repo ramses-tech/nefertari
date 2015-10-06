@@ -28,22 +28,18 @@ class RequestEvent(object):
         self.field = field
         self.instance = instance
 
-    def set_field_value(self, value, field_name=None):
+    def set_field_value(self, field_name, value):
         """ Set value of field named `field_name`.
 
         Use this method to apply changes to object which is affected
         by request. Values are set on `view._json_params` dict.
 
-        :param value: Value to be set.
         :param field_name: Name of field value of which should be set.
             Optional if `self.field` is set; in this case `self.field.name`
             is used. If `self.field` is None and `field_name` is not
             provided, KeyError is raised.
+        :param value: Value to be set.
         """
-        if field_name is None:
-            if self.field is None:
-                raise KeyError('Field name is not specified')
-            field_name = self.field.name
         self.view._json_params[field_name] = value
 
 
@@ -201,7 +197,7 @@ class ModelClassIs(object):
 class FieldIsChanged(object):
     """ Subscriber predicate to check particular field is changed.
 
-    Example: config.add_subscriber(func, event, field=field_name)
+    Used to implement field processors.
     """
 
     def __init__(self, field, config):
@@ -255,23 +251,72 @@ def trigger_events(view_obj):
         request.registry.notify(after_event(**event_kwargs))
 
 
-def subscribe_to_events(config, subscriber, events, model=None, field=None):
+def subscribe_to_events(config, subscriber, events, model=None):
     """ Helper function to subscribe to group of events.
 
     :param config: Pyramid contig instance.
     :param subscriber: Event subscriber function.
     :param events: Sequence of events to subscribe to.
     :param model: Model predicate value.
-    :param field: Field predicate value.
     """
     kwargs = {}
     if model is not None:
         kwargs['model'] = model
-    if field is not None:
-        kwargs['field'] = field
 
     for evt in events:
         config.add_subscriber(subscriber, evt, **kwargs)
+
+
+def add_field_processors(config, processors, model, field):
+    """ Add processors for model field.
+
+    Under the hood, regular nefertari event subscribed is created which
+    calls field processors in order passed to this function.
+
+    Processors are passed following params:
+
+    * **new_value**: New value of of field.
+    * **instance**: Instance affected by request. Is None when set of
+      items is updated in bulk and when item is created.
+    * **field**: Instance of nefertari.utils.data.FieldData instance
+      containing data of changed field.
+    * **request**: Current Pyramid Request instance.
+    * **model**: Model class affected by request.
+    * **event**: Underlying event object.
+
+    Each processor must return processed value which is passed to next
+    processor.
+
+    :param config: Pyramid Congurator instance.
+    :param processors: Sequence of processor functions.
+    :param model: Model class for field if which processors are
+        registered.
+    :param field: Field name for which processors are registered.
+    """
+    before_change_events = (
+        BeforeCreate,
+        BeforeUpdate,
+        BeforeReplace,
+        BeforeUpdateMany,
+    )
+
+    def wrapper(event, _processors=processors, _field=field):
+        proc_kw = {
+            'new_value': event.field.new_value,
+            'instance': event.instance,
+            'field': event.field,
+            'request': event.view.request,
+            'model': event.model,
+            'event': event,
+        }
+        for proc_func in _processors:
+            proc_kw['new_value'] = proc_func(**proc_kw)
+
+        event.field.new_value = proc_kw['new_value']
+        event.set_field_value(_field, proc_kw['new_value'])
+
+    for evt in before_change_events:
+        config.add_subscriber(wrapper, evt, model=model, field=field)
 
 
 def silent(obj):
