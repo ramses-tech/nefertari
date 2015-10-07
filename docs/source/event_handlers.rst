@@ -93,6 +93,19 @@ Utilities
         def show(self):
             ...
 
+**nefertari.events.trigger_instead**
+    Decorator which allows view method to trigged another event instead of default one. In the example above collection GET requests (``UsersView.index``) will trigger event which corresponds to item PATCH (``update``).
+
+.. code-block:: python
+
+    from nefertari import view, events
+
+    class UsersView(view.BaseView):
+
+        @events.trigger_instead('update')
+        def index(self):
+            ...
+
 
 Examples
 --------
@@ -146,3 +159,5 @@ API
 .. autofunction:: nefertari.events.subscribe_to_events
 
 .. autofunction:: nefertari.events.silent
+
+.. autofunction:: nefertari.events.trigger_instead
