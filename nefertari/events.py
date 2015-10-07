@@ -1,5 +1,7 @@
 from contextlib import contextmanager
 
+from nefertari.utils import FieldData
+
 
 class RequestEvent(object):
     """ Nefertari request event.
@@ -34,6 +36,12 @@ class RequestEvent(object):
         Use this method to apply changes to object which is affected
         by request. Values are set on `view._json_params` dict.
 
+        If `field_name` is not affected by request, it is added to
+        `self.fields` which makes field processors which are connected
+        to `field_name` to be triggered, if they are run after this
+        method call(connected to events after handler that performs
+        method call).
+
         :param field_name: Name of field value of which should be set.
             Optional if `self.field` is set; in this case `self.field.name`
             is used. If `self.field` is None and `field_name` is not
@@ -41,6 +49,12 @@ class RequestEvent(object):
         :param value: Value to be set.
         """
         self.view._json_params[field_name] = value
+        if field_name in self.fields:
+            self.fields[field_name].new_value = value
+            return
+
+        fields = FieldData.from_dict({field_name: value}, self.model)
+        self.fields.update(fields)
 
 
 # 'Before' events
@@ -222,7 +236,6 @@ def trigger_events(view_obj):
     :param view_obj: Instance of nefertari.view.BaseView subclass created
         by nefertari.view.ViewMapper.
     """
-    from nefertari.utils import FieldData
     request = view_obj.request
 
     view_method = getattr(view_obj, request.action)

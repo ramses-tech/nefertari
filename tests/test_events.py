@@ -1,4 +1,3 @@
-import pytest
 from mock import patch, Mock, call
 
 from nefertari import events
@@ -14,12 +13,29 @@ class TestEvents(object):
         assert obj.field == 4
         assert obj.instance == 5
 
-    def test_set_field_value_field_name_provided(self):
+    def test_set_field_value_field_present(self):
         view = Mock(_json_params={})
         event = events.RequestEvent(
-            view=view, model=None, field=None)
+            view=view, model=None, field=None,
+            fields={})
+        event.fields['foo'] = Mock()
         event.set_field_value('foo', 2)
         assert view._json_params == {'foo': 2}
+        assert event.fields['foo'].new_value == 2
+
+    @patch('nefertari.events.FieldData')
+    def test_set_field_value_field_not_present(self, mock_field):
+        mock_field.from_dict.return_value = {'q': 1}
+        view = Mock(_json_params={})
+        event = events.RequestEvent(
+            view=view, model=None, field=None,
+            fields={})
+        assert 'foo' not in event.fields
+        event.set_field_value('foo', 2)
+        assert view._json_params == {'foo': 2}
+        mock_field.from_dict.assert_called_once_with(
+            {'foo': 2}, event.model)
+        assert event.fields == {'q': 1}
 
     @patch('nefertari.utils.FieldData.from_dict')
     def test_trigger_events(self, mock_from):

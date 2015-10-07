@@ -13,14 +13,12 @@ There are two types of nefertari events:
     * "Before" events, which are run after view class is instantiated, but before view method is run, thus before request is processed.
     * "After" events, which are run after view method was called.
 
-All events are named after camel-cased name of view method they are called around and prefixed with "Before" or "After" depending on the place event is triggered from (as described above). E.g. event classed for view method ``update_many`` are called ``BeforeUpdateMany`` and ``AfterUpdateMany``.
-
 Check the API section for a full list of attributes/params events have.
 
 It's recommended to use ``before`` events to:
     * Transform input
     * Perform validation
-    * Apply changes to object that is being affected by request using ``event.set_field_value`` method.
+    * Apply changes to object that is being affected by request using ``event.set_field_value`` method
 
 And ``after`` events to:
     * Change DB objects which are not affected by request.
@@ -47,6 +45,10 @@ Complete list of events:
     * AfterDeleteMany
     * AfterItemOptions
     * AfterCollectionOptions
+
+Notes:
+   - All events are named after camel-cased name of view method they are called around and prefixed with "Before" or "After" depending on the place event is triggered from (as described above). E.g. event classed for view method ``update_many`` are called ``BeforeUpdateMany`` and ``AfterUpdateMany``.
+   - If a field changed via ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
 
 
 Predicates
