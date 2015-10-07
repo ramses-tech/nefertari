@@ -49,6 +49,7 @@ class TestEvents(object):
             context=ctx,
             _silent=False)
         view.index._silent = False
+        view.index._event_action = None
 
         with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
             with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
@@ -82,6 +83,7 @@ class TestEvents(object):
             context=ctx,
             _silent=True)
         view.index._silent = False
+        view.index._event_action = None
 
         with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
             with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
@@ -108,6 +110,7 @@ class TestEvents(object):
             context=ctx,
             _silent=False)
         view.index._silent = True
+        view.index._event_action = None
 
         with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
             with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
@@ -118,6 +121,39 @@ class TestEvents(object):
         assert not mock_before.called
         assert not view.request.registry.notify.called
         assert not mock_from.called
+
+    @patch('nefertari.utils.FieldData.from_dict')
+    def test_trigger_events_different_action(self, mock_from):
+        class A(object):
+            pass
+
+        mock_from.return_value = {'foo': 1}
+        mock_after = Mock()
+        mock_before = Mock()
+        ctx = A()
+        view = Mock(
+            Model=A,
+            request=Mock(action='index'),
+            _json_params={'bar': 1},
+            context=ctx,
+            _silent=False)
+        view.index._silent = None
+        view.index._event_action = 'delete'
+
+        with patch.dict(events.BEFORE_EVENTS, {'delete': mock_before}):
+            with patch.dict(events.AFTER_EVENTS, {'delete': mock_after}):
+                with events.trigger_events(view):
+                    pass
+
+        mock_after.assert_called_once_with(
+            fields={'foo': 1}, model=view.Model, view=view)
+        mock_before.assert_called_once_with(
+            fields={'foo': 1}, model=view.Model, view=view)
+        view.request.registry.notify.assert_has_calls([
+            call(mock_before()),
+            call(mock_after()),
+        ])
+        mock_from.assert_called_once_with({'bar': 1}, view.Model)
 
 
 class TestHelperFunctions(object):
@@ -143,6 +179,13 @@ class TestHelperFunctions(object):
 
         assert Foo._silent
 
+    def test_trigger_instead_decorator(self):
+        @events.trigger_instead('foobar')
+        def foo():
+            pass
+
+        assert foo._event_action == 'foobar'
+
     def test_add_field_processors(self):
         event = Mock()
         event.field.new_value = 'admin'
@@ -152,7 +195,7 @@ class TestHelperFunctions(object):
         events.add_field_processors(
             config, [processor, processor],
             model='User', field='username')
-        assert config.add_subscriber.call_count == 4
+        assert config.add_subscriber.call_count == 5
         assert not event.set_field_value.called
         assert not processor.called
 
