@@ -99,6 +99,18 @@ class BeforeCollectionOptions(RequestEvent):
     pass
 
 
+class BeforeLogin(RequestEvent):
+    pass
+
+
+class BeforeLogout(RequestEvent):
+    pass
+
+
+class BeforeRegister(RequestEvent):
+    pass
+
+
 # 'After' events
 
 class AfterIndex(RequestEvent):
@@ -141,6 +153,18 @@ class AfterCollectionOptions(RequestEvent):
     pass
 
 
+class AfterLogin(RequestEvent):
+    pass
+
+
+class AfterLogout(RequestEvent):
+    pass
+
+
+class AfterRegister(RequestEvent):
+    pass
+
+
 """ Events run before a particular event action happened.
 It's recommended to use these events to:
     * Transform input
@@ -149,16 +173,20 @@ It's recommended to use these events to:
         `event.set_field_value`.
 """
 BEFORE_EVENTS = {
-    'index': BeforeIndex,
-    'show': BeforeShow,
-    'create': BeforeCreate,
-    'update': BeforeUpdate,
-    'replace': BeforeReplace,
-    'delete': BeforeDelete,
-    'update_many': BeforeUpdateMany,
-    'delete_many': BeforeDeleteMany,
-    'item_options': BeforeItemOptions,
-    'collection_options': BeforeCollectionOptions,
+    'index':                BeforeIndex,
+    'show':                 BeforeShow,
+    'create':               BeforeCreate,
+    'update':               BeforeUpdate,
+    'replace':              BeforeReplace,
+    'delete':               BeforeDelete,
+    'update_many':          BeforeUpdateMany,
+    'delete_many':          BeforeDeleteMany,
+    'item_options':         BeforeItemOptions,
+    'collection_options':   BeforeCollectionOptions,
+
+    'login':                BeforeLogin,
+    'logout':               BeforeLogout,
+    'register':             BeforeRegister,
 }
 
 """ Events run after a particular event action happened.
@@ -167,16 +195,20 @@ It's recommended to use these events to:
     * Perform notifications/logging.
 """
 AFTER_EVENTS = {
-    'index': AfterIndex,
-    'show': AfterShow,
-    'create': AfterCreate,
-    'update': AfterUpdate,
-    'replace': AfterReplace,
-    'delete': AfterDelete,
-    'update_many': AfterUpdateMany,
-    'delete_many': AfterDeleteMany,
-    'item_options': AfterItemOptions,
-    'collection_options': AfterCollectionOptions,
+    'index':                AfterIndex,
+    'show':                 AfterShow,
+    'create':               AfterCreate,
+    'update':               AfterUpdate,
+    'replace':              AfterReplace,
+    'delete':               AfterDelete,
+    'update_many':          AfterUpdateMany,
+    'delete_many':          AfterDeleteMany,
+    'item_options':         AfterItemOptions,
+    'collection_options':   AfterCollectionOptions,
+
+    'login':                AfterLogin,
+    'logout':               AfterLogout,
+    'register':             AfterRegister,
 }
 
 
@@ -239,6 +271,10 @@ def trigger_events(view_obj):
     request = view_obj.request
 
     view_method = getattr(view_obj, request.action)
+    event_action = (
+        getattr(view_method, '_event_action', None) or
+        request.action)
+
     do_trigger = not (
         getattr(view_method, '_silent', False) or
         getattr(view_obj, '_silent', False))
@@ -254,13 +290,13 @@ def trigger_events(view_obj):
         if hasattr(view_obj.context, 'pk_field'):
             event_kwargs['instance'] = view_obj.context
 
-        before_event = BEFORE_EVENTS[request.action]
+        before_event = BEFORE_EVENTS[event_action]
         request.registry.notify(before_event(**event_kwargs))
 
     yield
 
     if do_trigger:
-        after_event = AFTER_EVENTS[request.action]
+        after_event = AFTER_EVENTS[event_action]
         request.registry.notify(after_event(**event_kwargs))
 
 
@@ -311,6 +347,7 @@ def add_field_processors(config, processors, model, field):
         BeforeUpdate,
         BeforeReplace,
         BeforeUpdateMany,
+        BeforeRegister,
     )
 
     def wrapper(event, _processors=processors, _field=field):
@@ -342,3 +379,25 @@ def silent(obj):
     """
     obj._silent = True
     return obj
+
+
+def trigger_instead(event_action):
+    """ Specify action name to change event triggered by view method.
+
+    In the example above ``MyView.index`` method will trigger before/after
+    ``update`` events.
+
+    .. code-block:: json
+
+        class MyView(BaseView):
+            @events.trigger_instead('update')
+            def index(self):
+                (...)
+
+    :param event_action: Event action name which should be triggered
+        instead of default one.
+    """
+    def wrapper(func):
+        func._event_action = event_action
+        return func
+    return wrapper
