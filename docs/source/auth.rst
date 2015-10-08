@@ -81,8 +81,9 @@ ACL API
 
 For authorizing access to specific resources, Nefertari uses standard Pyramid access control lists. `See the documentation on Pyramid ACLs <http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/narr/security.html>`_ to understand how to extend and customize them.
 
-Note that an item will inherit its collection's permissions if item permissions are not specified in ACL class.
-
+Considerations:
+    * An item will inherit its collection's permissions if the item's permissions are not specified in an ACL class
+    * If you create an ACL class for your document that does something like give the document.owner edit permissions, then you can’t rely on this setting to be respected during collection operation. in other words, only if you walk up to the item via a URL will this permission setting be applied.
 
 .. automodule:: nefertari.acl
     :members:

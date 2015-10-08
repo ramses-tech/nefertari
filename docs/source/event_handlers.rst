@@ -1,7 +1,7 @@
 Event Handlers
 ==============
 
-Nefertari event handler module includes a set of events, maps of events, subscriber predicates and helper function to connect it all together. All the objects are contained in ``nefertari.events`` module. Nefertari event handlers use Pyramid event system.
+Nefertari event handler module includes a set of events, maps of events, event handler predicates and helper function to connect it all together. All the objects are contained in ``nefertari.events`` module. Nefertari event handlers use Pyramid event system.
 
 
 Events
@@ -10,19 +10,10 @@ Events
 ``nefertari.events`` defines a set of event classes inherited from ``nefertari.events.RequestEvent``.
 
 There are two types of nefertari events:
-    * "Before" events, which are run after view class is instantiated, but before view method is run, thus before request is processed.
-    * "After" events, which are run after view method was called.
+    * "Before" events, which are run after view class is instantiated, but before view method is run, and before request is processed
+    * "After" events, which are run after view method has been called
 
 Check the API section for a full list of attributes/params events have.
-
-It's recommended to use ``before`` events to:
-    * Transform input
-    * Perform validation
-    * Apply changes to object that is being affected by request using ``event.set_field_value`` method
-
-And ``after`` events to:
-    * Change DB objects which are not affected by request.
-    * Perform notifications/logging.
 
 Complete list of events:
     * BeforeIndex
@@ -46,25 +37,36 @@ Complete list of events:
     * AfterItemOptions
     * AfterCollectionOptions
 
-Notes:
-   - All events are named after camel-cased name of view method they are called around and prefixed with "Before" or "After" depending on the place event is triggered from (as described above). E.g. event classed for view method ``update_many`` are called ``BeforeUpdateMany`` and ``AfterUpdateMany``.
-   - If a field changed via ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
+All events are named after camel-cased name of view method they are called around and prefixed with "Before" or "After" depending on the place event is triggered from (as described above). E.g. event classed for view method ``update_many`` are called ``BeforeUpdateMany`` and ``AfterUpdateMany``.
+
+
+Before vs After
+---------------
+
+It is recommended to use ``before`` events to:
+    * Transform input
+    * Perform validation
+    * Apply changes to object that is being affected by request using ``event.set_field_value`` method
+
+And ``after`` events to:
+    * Change DB objects which are not affected by request
+    * Perform notifications/logging
+
+Note: if a field changed via ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
 
 
 Predicates
 ----------
 
-Nefertari defines and sets up following subscriber predicates:
-
 **nefertari.events.ModelClassIs**
-    Available under ``model`` param when connecting subscribers, it allows to connect subscribers on per-model basis. When subscriber is connected using this predicate, it will only be called when ``view.Model`` is the same class or subclass of this param value.
+    Available under ``model`` param when connecting event handlers, it allows to connect event handlers on per-model basis. When event handler is connected using this predicate, it will only be called when ``view.Model`` is the same class or subclass of this param value.
 
 
 Utilities
 ----------
 
 **nefertari.events.subscribe_to_events**
-    Helper function that allows to connect subscriber to multiple events at once. Supports ``model`` subscriber predicate param. Available at ``config.subscribe_to_events``. Subscribers are run in order connected.
+    Helper function that allows to connect event handler to multiple events at once. Supports ``model`` event handler predicate param. Available at ``config.subscribe_to_events``. Subscribers are run in order connected.
 
 **nefertari.events.BEFORE_EVENTS**
     Map of ``{view_method_name: EventClass}`` of "Before" events. E.g. one of its elements is ``'index': BeforeIndex``.
@@ -107,10 +109,10 @@ Utilities
             ...
 
 
-Examples
---------
+Example
+-------
 
-Having subscriber that logs request body:
+We will use the following example to demonstrate how to connect handlers to events. This handler logs ``request`` to the console.
 
 .. code-block:: python
 
@@ -120,17 +122,18 @@ Having subscriber that logs request body:
     def log_request(event):
         log.debug(event.request.body)
 
-**Having access to configurator**, we can connect it to any of Nefertari events. E.g. lets log all collection POST requests (view ``create`` method):
+
+We can connect this handler to any of Nefertari events of any requests. E.g. lets log all collection POST after requests are made (view ``create`` method):
 
 .. code-block:: python
 
     from nefertari import events
 
-    config.subscribe_to_events(log_request, [events.AfterCreate])
+    config.subscribe_to_events(
+        log_request, [events.AfterCreate])
 
-Connected this way ``log_request`` subscriber will be called after every collection POST request.
 
-In case we want to limit models for which subscriber will be called, we can connect subscriber with a ``model`` predicate:
+Or, if we wanted to limit the models for which this handler should be called, we can connect it with a ``model`` predicate:
 
 .. code-block:: python
 
@@ -141,7 +144,8 @@ In case we want to limit models for which subscriber will be called, we can conn
         log_request, [events.AfterCreate],
         model=User)
 
-Connected this way ``log_request`` subscriber will only be called when collection POST request comes at endpoint which handles our ``User`` model.
+This way, ``log_request`` event handler will only be called when collection POST request comes at an endpoint which handles the ``User`` model.
+
 
 API
 ---
