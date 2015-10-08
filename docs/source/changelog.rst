@@ -1,14 +1,15 @@
 Changelog
 =========
 
-* :release:`0.6.0 <2015-09-xx>`
-* :support:`-` Added support for `'nefertari-guards' <https://nefertari-guards.readthedocs.org/>`_
-* :feature:`-` Refactored event system: added CRUD-based event handlers, removed field processors
+* :release:`0.6.0 <2015-10-07>`
+* :feature:`-` Event system is now crud-based as opposed to db-based
+* :feature:`-` Refactored field processors to use the new event system
 * :feature:`-` Removed unnecessary extra '__confirmation' parameter from PATCH/PUT/DELETE collection requests
 * :feature:`-` Nested relationships are now indexed in bulk in ElasticSearch
 * :feature:`-` Added '_hidden_fields' model attribute to hide fields while remaining editable (e.g. password)
 * :bug:`- major` Fixed a bug causing polymorchic collections to always return 403
-* :bug:`- major` ??? Fixed a bug with nested relationships not respecting '_auth_fields'
+* :bug:`- major` Fixed nested relationships not respecting '_auth_fields'
+* :support:`-` Added support for `'nefertari-guards' <https://nefertari-guards.readthedocs.org/>`_
 
 * :release:`0.5.1 <2015-09-02>`
 * :bug:`-` Fixed '_self' param for ``/api/users/self`` convience route
