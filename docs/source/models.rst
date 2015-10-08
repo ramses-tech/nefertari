@@ -63,8 +63,8 @@ Wrapper API
 
 Both database engines used by Nefertari implement a "Wrapper API" for developers who use Nefertari in their project. You can read more about either engine's in their respective documentation:
 
- * `nefertari-sqla documentation <http://nefertari-sqla.readthedocs.org/>`_
- * `nefertari-mongodb documentation <http://nefertari-mongodb.readthedocs.org/>`_
+    * `nefertari-sqla documentation <http://nefertari-sqla.readthedocs.org/>`_
+    * `nefertari-mongodb documentation <http://nefertari-mongodb.readthedocs.org/>`_
 
 BaseMixin
     Mixin with most of the API of *BaseDocument*. *BaseDocument* subclasses from this mixin.
@@ -75,6 +75,7 @@ BaseDocument
     * `__tablename__`: table name (only required by nefertari-sqla)
     * `_auth_fields`: String names of fields meant to be displayed to authenticated users.
     * `_public_fields`: String names of fields meant to be displayed to non-authenticated users.
+    * `_hidden_fields`: String names of fields meant to be hidden but editable.
     * `_nested_relationships`: String names of relationship fields that should be included in JSON data of an object as full included documents. If relationship field is not present in this list, this field's value in JSON will be an object's ID or list of IDs.
 
 ESBaseDocument

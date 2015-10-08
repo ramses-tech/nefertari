@@ -8,56 +8,30 @@ from nefertari.utils import FieldData
 
 class TestModelHelpers(object):
 
-    def test_lower_strip_with_value(self, engine_mock):
-        from nefertari import events
+    def test_lower_strip(self, engine_mock):
         from nefertari.authentication import models
-        field = FieldData(name='username', new_value='Foo            ')
-        view = Mock(_json_params={})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={},
-            field=field)
-        models.lower_strip(event)
-        assert view._json_params == {'username': 'foo'}
-
-    def test_lower_strip_without_value(self, engine_mock):
-        from nefertari import events
-        from nefertari.authentication import models
-        field = FieldData(name='username', new_value=None)
-        view = Mock(_json_params={})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={}, field=field)
-        models.lower_strip(event)
-        assert view._json_params == {'username': ''}
+        assert models.lower_strip(instance=None, new_value='Foo   ') == 'foo'
+        assert models.lower_strip(instance=None, new_value=None) == ''
 
     def test_encrypt_password(self, engine_mock):
-        from nefertari import events
         from nefertari.authentication import models
-        field = FieldData(
-            name='password', new_value='foo',
-            params={'min_length': 1})
-        view = Mock(_json_params={'password': 'boo'})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={}, field=field)
-
-        models.encrypt_password(event)
-        encrypted = event.view._json_params['password']
+        field = Mock(params={'min_length': 1})
+        encrypted = models.encrypt_password(
+            instance=None, new_value='foo',
+            field=field)
         assert models.crypt.match(encrypted)
         assert encrypted != 'foo'
-        models.encrypt_password(event)
-        assert encrypted == event.view._json_params['password']
+        assert encrypted == models.encrypt_password(
+            instance=None, new_value=encrypted, field=field)
 
     def test_encrypt_password_failed(self, engine_mock):
-        from nefertari import events
         from nefertari.authentication import models
-        field = FieldData(
-            name='q', new_value='foo',
-            params={'min_length': 10})
-        view = Mock(_json_params={'password': 'boo'})
-        event = events.BeforeCreate(
-            view=view, model=None, fields={}, field=field)
-
+        field = Mock(params={'min_length': 10})
+        field.name = 'q'
         with pytest.raises(ValueError) as ex:
-            models.encrypt_password(event)
+            models.encrypt_password(
+                instance=None, new_value='foo',
+                field=field)
         assert str(ex.value) == '`q`: Value length must be more than 10'
 
     @patch('nefertari.authentication.models.uuid.uuid4')
@@ -72,8 +46,8 @@ class TestModelHelpers(object):
         model_cls.pk_field.return_value = 'myid'
         request = Mock(_user=None)
         models.cache_request_user(model_cls, request, 1)
-        model_cls.get_resource.assert_called_once_with(myid=1)
-        assert request._user == model_cls.get_resource()
+        model_cls.get_item.assert_called_once_with(myid=1)
+        assert request._user == model_cls.get_item()
 
     def test_cache_request_user_wrong_id(self, engine_mock):
         from nefertari.authentication import models
@@ -81,8 +55,8 @@ class TestModelHelpers(object):
         model_cls.pk_field.return_value = 'myid'
         request = Mock(_user=Mock(myid=4))
         models.cache_request_user(model_cls, request, 1)
-        model_cls.get_resource.assert_called_once_with(myid=1)
-        assert request._user == model_cls.get_resource()
+        model_cls.get_item.assert_called_once_with(myid=1)
+        assert request._user == model_cls.get_item()
 
     def test_cache_request_user_present(self, engine_mock):
         from nefertari.authentication import models
@@ -90,7 +64,7 @@ class TestModelHelpers(object):
         model_cls.pk_field.return_value = 'myid'
         request = Mock(_user=Mock(myid=1))
         models.cache_request_user(model_cls, request, 1)
-        assert not model_cls.get_resource.called
+        assert not model_cls.get_item.called
 
 
 mixin_path = 'nefertari.authentication.models.AuthModelMethodsMixin.'
@@ -104,7 +78,7 @@ class TestAuthModelMethodsMixin(object):
         user = Mock(groups=['user', 'admin'])
         assert models.AuthModelMethodsMixin.is_admin(user)
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_token_credentials(self, mock_res, engine_mock):
         from nefertari.authentication import models
         user = Mock()
@@ -114,7 +88,7 @@ class TestAuthModelMethodsMixin(object):
         assert token == 'foo-token'
         mock_res.assert_called_once_with(username='user1')
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_token_credentials_user_not_found(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.return_value = None
@@ -123,7 +97,7 @@ class TestAuthModelMethodsMixin(object):
         mock_res.assert_called_once_with(username='user1')
 
     @patch('nefertari.authentication.models.forget')
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_token_credentials_query_error(
             self, mock_res, mock_forg, engine_mock):
         from nefertari.authentication import models
@@ -133,7 +107,7 @@ class TestAuthModelMethodsMixin(object):
         mock_res.assert_called_once_with(username='user1')
         mock_forg.assert_called_once_with(1)
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_groups_by_token(self, mock_res, engine_mock):
         from nefertari.authentication import models
         user = Mock(groups=['admin', 'user'])
@@ -144,7 +118,7 @@ class TestAuthModelMethodsMixin(object):
         assert groups == ['g:admin', 'g:user']
         mock_res.assert_called_once_with(username='user1')
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_groups_by_token_user_not_found(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.return_value = None
@@ -153,7 +127,7 @@ class TestAuthModelMethodsMixin(object):
         assert groups is None
         mock_res.assert_called_once_with(username='user1')
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_groups_by_token_wrong_token(self, mock_res, engine_mock):
         from nefertari.authentication import models
         user = Mock(groups=['admin', 'user'])
@@ -165,7 +139,7 @@ class TestAuthModelMethodsMixin(object):
         mock_res.assert_called_once_with(username='user1')
 
     @patch('nefertari.authentication.models.forget')
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_groups_by_token_query_error(
             self, mock_res, mock_forg, engine_mock):
         from nefertari.authentication import models
@@ -176,7 +150,7 @@ class TestAuthModelMethodsMixin(object):
         mock_res.assert_called_once_with(username='user1')
         mock_forg.assert_called_once_with(1)
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_authenticate_by_password(self, mock_res, engine_mock):
         from nefertari.authentication import models
         user = Mock(password=models.crypt.encode('foo'))
@@ -190,7 +164,7 @@ class TestAuthModelMethodsMixin(object):
             {'login': 'user1@example.com', 'password': 'foo'})
         mock_res.assert_called_with(email='user1@example.com')
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_authenticate_by_password_not_found(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.return_value = None
@@ -200,7 +174,7 @@ class TestAuthModelMethodsMixin(object):
         assert usr is None
         mock_res.assert_called_once_with(username='user1')
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_authenticate_by_password_pasword_not_matching(
             self, mock_res, engine_mock):
         from nefertari.authentication import models
@@ -212,7 +186,7 @@ class TestAuthModelMethodsMixin(object):
         assert user == usr
         mock_res.assert_called_once_with(username='user1')
 
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_authenticate_by_password_exception(self, mock_res, engine_mock):
         from nefertari.authentication import models
         mock_res.side_effect = Exception
@@ -236,7 +210,7 @@ class TestAuthModelMethodsMixin(object):
             models.AuthModelMethodsMixin, request, 'user1')
 
     @patch(mixin_path + 'pk_field')
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_groups_by_userid_user_not_found(
             self, mock_res, mock_field, engine_mock):
         from nefertari.authentication import models
@@ -249,7 +223,7 @@ class TestAuthModelMethodsMixin(object):
 
     @patch('nefertari.authentication.models.forget')
     @patch(mixin_path + 'pk_field')
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_groups_by_userid_query_error(
             self, mock_res, mock_field, mock_forg, engine_mock):
         from nefertari.authentication import models
@@ -303,7 +277,7 @@ class TestAuthModelMethodsMixin(object):
         assert not mock_cache.called
 
     @patch('nefertari.authentication.models.authenticated_userid')
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_authuser_by_name(
             self, mock_res, mock_auth, engine_mock):
         from nefertari.authentication import models
@@ -313,7 +287,7 @@ class TestAuthModelMethodsMixin(object):
         mock_res.assert_called_once_with(username='user1')
 
     @patch('nefertari.authentication.models.authenticated_userid')
-    @patch(mixin_path + 'get_resource')
+    @patch(mixin_path + 'get_item')
     def test_get_authuser_by_name_not_authenticated(
             self, mock_res, mock_auth, engine_mock):
         from nefertari.authentication import models

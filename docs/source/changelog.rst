@@ -1,6 +1,16 @@
 Changelog
 =========
 
+* :release:`0.6.0 <2015-10-07>`
+* :feature:`-` Event system is now crud-based as opposed to db-based
+* :feature:`-` Refactored field processors to use the new event system
+* :feature:`-` Removed unnecessary extra '__confirmation' parameter from PATCH/PUT/DELETE collection requests
+* :feature:`-` Nested relationships are now indexed in bulk in ElasticSearch
+* :feature:`-` Added '_hidden_fields' model attribute to hide fields while remaining editable (e.g. password)
+* :bug:`- major` Fixed a bug causing polymorchic collections to always return 403
+* :bug:`- major` Fixed nested relationships not respecting '_auth_fields'
+* :support:`-` Added support for `'nefertari-guards' <https://nefertari-guards.readthedocs.org/>`_
+
 * :release:`0.5.1 <2015-09-02>`
 * :bug:`-` Fixed '_self' param for ``/api/users/self`` convience route
 * :bug:`-` Fixed a bug when using reserved query params with GET tunneling
@@ -24,7 +34,6 @@ Changelog
 * :bug:`- major` Fixed 400 error returned when querying resources with id in another format than the id field used in URL schema, e.g. ``/api/<collection>/<string_instead_of_integer>``, it now returns 404
 * :bug:`- major` Fixed `_count` querying not respecting ``public_max_limit`` .ini setting
 * :bug:`- major` Fixed error response when aggregating hidden fields with ``auth = true``, it now returns 403
-
 
 * :release:`0.4.1 <2015-07-07>`
 * :bug:`-` Fixed a bug when setting ``cors.allow_origins = *``

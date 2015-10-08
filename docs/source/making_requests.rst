@@ -30,6 +30,7 @@ Additional parameters are available when using an ElasticSearch-enabled collecti
 url parameter                                       description
 ========================================            ===========
 ``<field_name>=<keywords>``                         to filter a collection using full-text search on <field_name>, ES operators [#]_ can be used, e.g. ``?title=foo AND bar``
+``<field_name>=(!<keywords>)``                      to filter a collection using negative search
 ``q=<keywords>``                                    to filter a collection using full-text search on all fields
 ``_search_fields=<field_list>``                     use with ``?q=<keywords>`` to restrict search to specific fields
 ``_refresh_index=true``                             to refresh the ES index after performing the operation [#]_

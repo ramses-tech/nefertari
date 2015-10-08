@@ -590,7 +590,7 @@ class ES(object):
 
         return documents
 
-    def get_resource(self, **kw):
+    def get_item(self, **kw):
         __raise_on_empty = kw.pop('__raise_on_empty', True)
 
         params = dict(
@@ -621,10 +621,6 @@ class ES(object):
             data['_type'] = self.doc_type
 
         return dict2obj(data)
-
-    def get(self, **kw):
-        kw['__raise_on_empty'] = kw.pop('__raise', False)
-        return self.get_resource(**kw)
 
     @classmethod
     def index_relations(cls, db_obj, request=None, **kwargs):

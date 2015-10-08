@@ -350,7 +350,8 @@ class BaseView(OptionsViewMixin):
             if hasattr(id_, 'pk_field'):
                 return id_
 
-            obj = model.get(**{pk_field: id_})
+            obj = model.get_item(
+                **{pk_field: id_, '__raise_on_empty': False})
             if setdefault:
                 return obj or setdefault
             else:
