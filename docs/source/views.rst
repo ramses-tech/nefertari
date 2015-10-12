@@ -21,7 +21,7 @@ Configuring Views
             return story.save(self.request)
 
         def update(self, **kwargs):
-            story = self.Model.get_resource(
+            story = self.Model.get_item(
                 id=kwargs.pop('story_id'), **kwargs)
             return story.update(self._json_params, self.request)
 
@@ -29,16 +29,13 @@ Configuring Views
             return self.update(**kwargs)
 
         def delete(self, **kwargs):
-            story = self.Model.get_resource(
+            story = self.Model.get_item(
                 id=kwargs.pop('story_id'), **kwargs)
             story.delete(self.request)
 
         def delete_many(self):
             es_stories = self.get_collection_es()
             stories = self.Model.filter_objects(es_stories)
-
-            if self.needs_confirmation():
-                return stories
 
             return self.Model._delete_many(stories, self.request)
 

@@ -31,13 +31,16 @@ When authentication is enabled, Nefertari uses its own `User` model. This model 
 Visible Fields in Views
 -----------------------
 
-You can control which fields to display by defining following fields on your models:
+You can control which fields to display by defining the following properties on your models:
 
 **_auth_fields**
-    Lists field names which should be displayed to authenticated users.
+    Lists fields to be displayed to authenticated users.
 
 **_public_fields**
-    Lists field names which should be displayed to all users including unauthenticated.
+    Lists fields to be displayed to all users including unauthenticated users.
+
+**_hidden_fields**
+    Lists fields to be hidden but remain editable (as long as user has permission), e.g. password.
 
 
 Permissions
@@ -78,11 +81,18 @@ ACL API
 
 For authorizing access to specific resources, Nefertari uses standard Pyramid access control lists. `See the documentation on Pyramid ACLs <http://docs.pylonsproject.org/projects/pyramid/en/1.5-branch/narr/security.html>`_ to understand how to extend and customize them.
 
-Note that an item will inherit its collection's permissions if item permissions are not specified in ACL class.
-
+Considerations:
+    * An item will inherit its collection's permissions if the item's permissions are not specified in an ACL class
+    * If you create an ACL class for your document that does something like give the document.owner edit permissions, then you can’t rely on this setting to be respected during collection operation. in other words, only if you walk up to the item via a URL will this permission setting be applied.
 
 .. automodule:: nefertari.acl
     :members:
+
+
+Advanced ACLs
+-------------
+
+For more advanced ACLs, you can look into using `nefertari-guards <https://github.com/brandicted/nefertari-guards>`_ in you project. This package stores ACLs at the object level, making it easier to build multi-tenant applications using a single data store.
 
 
 CORS

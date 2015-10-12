@@ -19,8 +19,8 @@ class AuthModelMethodsMixin(object):
     All implemented methods must be class methods.
     """
     @classmethod
-    def get_resource(self, *args, **kwargs):
-        return super(AuthModelMethodsMixin, self).get_resource(
+    def get_item(self, *args, **kwargs):
+        return super(AuthModelMethodsMixin, self).get_item(
             *args, **kwargs)
 
     @classmethod
@@ -45,7 +45,7 @@ class AuthModelMethodsMixin(object):
         Used by Token-based auth as `credentials_callback` kwarg.
         """
         try:
-            user = cls.get_resource(username=username)
+            user = cls.get_item(username=username)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
@@ -61,7 +61,7 @@ class AuthModelMethodsMixin(object):
         Used by Token-based authentication as `check` kwarg.
         """
         try:
-            user = cls.get_resource(username=username)
+            user = cls.get_item(username=username)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
@@ -84,7 +84,7 @@ class AuthModelMethodsMixin(object):
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
-            user = cls.get_resource(**{key: login})
+            user = cls.get_item(**{key: login})
         except Exception as ex:
             log.error(str(ex))
 
@@ -145,23 +145,21 @@ class AuthModelMethodsMixin(object):
         """
         username = authenticated_userid(request)
         if username:
-            return cls.get_resource(username=username)
+            return cls.get_item(username=username)
 
 
-def lower_strip(event):
-    value = (event.field.new_value or '').lower().strip()
-    event.set_field_value(value)
+def lower_strip(**kwargs):
+    return (kwargs['new_value'] or '').lower().strip()
 
 
-def random_uuid(event):
-    if not event.field.new_value:
-        event.set_field_value(uuid.uuid4().hex)
+def random_uuid(**kwargs):
+    return kwargs['new_value'] or uuid.uuid4().hex
 
 
-def encrypt_password(event):
+def encrypt_password(**kwargs):
     """ Crypt :new_value: if it's not crypted yet. """
-    field = event.field
-    new_value = field.new_value
+    new_value = kwargs['new_value']
+    field = kwargs['field']
     min_length = field.params['min_length']
     if len(new_value) < min_length:
         raise ValueError(
@@ -169,9 +167,8 @@ def encrypt_password(event):
                 field.name, field.params['min_length']))
 
     if new_value and not crypt.match(new_value):
-        encrypted = str(crypt.encode(new_value))
-        field.new_value = encrypted
-        event.set_field_value(encrypted)
+        new_value = str(crypt.encode(new_value))
+    return new_value
 
 
 class AuthUserMixin(AuthModelMethodsMixin):
@@ -260,4 +257,4 @@ def cache_request_user(user_cls, request, user_id):
     pk_field = user_cls.pk_field()
     user = getattr(request, '_user', None)
     if user is None or getattr(user, pk_field, None) != user_id:
-        request._user = user_cls.get_resource(**{pk_field: user_id})
+        request._user = user_cls.get_item(**{pk_field: user_id})

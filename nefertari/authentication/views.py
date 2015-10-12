@@ -65,6 +65,7 @@ class TicketAuthRegisterView(TicketAuthViewMixin, BaseView):
         root.add('account', view='path.to.TicketAuthRegisterView',
                  factory='nefertari.acl.AuthenticationACL')
     """
+    @events.trigger_instead('register')
     def create(self, *args, **kwargs):
         return self.register(*args, **kwargs)
 
@@ -77,12 +78,11 @@ class TicketAuthLoginView(TicketAuthViewMixin, BaseView):
         root.add('login', view='path.to.TicketAuthLoginView',
                  factory='nefertari.acl.AuthenticationACL')
     """
-    @events.silent
+    @events.trigger_instead('login')
     def create(self, *args, **kwargs):
         return self.login(*args, **kwargs)
 
 
-@events.silent
 class TicketAuthLogoutView(TicketAuthViewMixin, BaseView):
     """ Ticket auth logout view. Allows logout on GET and POST.
 
@@ -91,10 +91,8 @@ class TicketAuthLogoutView(TicketAuthViewMixin, BaseView):
         root.add('logout', view='path.to.TicketAuthLogoutView',
                  factory='nefertari.acl.AuthenticationACL')
     """
+    @events.trigger_instead('logout')
     def create(self, *args, **kwargs):
-        return self.logout(*args, **kwargs)
-
-    def show(self, *args, **kwargs):
         return self.logout(*args, **kwargs)
 
 
@@ -160,6 +158,7 @@ class TokenAuthRegisterView(TokenAuthViewMixin, BaseView):
         root.add('register', view='path.to.TokenAuthRegisterView',
                  factory='nefertari.acl.AuthenticationACL')
     """
+    @events.trigger_instead('register')
     def create(self, *args, **kwargs):
         return self.register(*args, **kwargs)
 

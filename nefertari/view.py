@@ -197,18 +197,16 @@ class BaseView(OptionsViewMixin):
         from nefertari.elasticsearch import ES
         return ES(self.Model.__name__).get_collection(**self._query_params)
 
-    def fill_null_values(self, model_cls=None):
+    def fill_null_values(self):
         """ Fill missing model fields in JSON with {key: null value}.
 
         Only run for PUT requests.
         """
-        if model_cls is None:
-            model_cls = self.Model
-        if not model_cls:
+        if not self.Model:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
 
-        empty_values = model_cls.get_null_values()
+        empty_values = self.Model.get_null_values()
         for field, value in empty_values.items():
             if field not in self._json_params:
                 self._json_params[field] = value
@@ -224,22 +222,20 @@ class BaseView(OptionsViewMixin):
         if self._auth_enabled and not getattr(self.request, 'user', None):
             wrappers.set_public_limits(self)
 
-    def convert_ids2objects(self, model_cls=None):
+    def convert_ids2objects(self):
         """ Convert object IDs from `self._json_params` to objects if needed.
 
         Only IDs that belong to relationship field of `self.Model`
         are converted.
         """
-        if model_cls is None:
-            model_cls = self.Model
-        if not model_cls:
+        if not self.Model:
             log.info("%s has no model defined" % self.__class__.__name__)
             return
 
         for field in self._json_params.keys():
-            if not engine.is_relationship_field(field, model_cls):
+            if not engine.is_relationship_field(field, self.Model):
                 continue
-            rel_model_cls = engine.get_relationship_cls(field, model_cls)
+            rel_model_cls = engine.get_relationship_cls(field, self.Model)
             self.id2obj(field, rel_model_cls)
 
     def setup_default_wrappers(self):
@@ -354,7 +350,8 @@ class BaseView(OptionsViewMixin):
             if hasattr(id_, 'pk_field'):
                 return id_
 
-            obj = model.get(**{pk_field: id_})
+            obj = model.get_item(
+                **{pk_field: id_, '__raise_on_empty': False})
             if setdefault:
                 return obj or setdefault
             else:

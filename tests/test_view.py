@@ -552,7 +552,7 @@ class TestBaseView(object):
     def test_id2obj(self, run):
         model = Mock()
         model.pk_field.return_value = 'idname'
-        model.get.return_value = 'foo'
+        model.get_item.return_value = 'foo'
         request = self.get_common_mock_request()
         view = DummyBaseView(
             context={}, request=request, _json_params={'foo': 'bar'},
@@ -561,13 +561,14 @@ class TestBaseView(object):
         view.id2obj(name='user', model=model)
         assert view._json_params['user'] == 'foo'
         model.pk_field.assert_called_once_with()
-        model.get.assert_called_once_with(idname='1')
+        model.get_item.assert_called_once_with(
+            idname='1', __raise_on_empty=False)
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_list(self, run):
         model = Mock()
         model.pk_field.return_value = 'idname'
-        model.get.return_value = 'foo'
+        model.get_item.return_value = 'foo'
         request = self.get_common_mock_request()
         view = DummyBaseView(
             context={}, request=request, _json_params={'foo': 'bar'},
@@ -576,7 +577,8 @@ class TestBaseView(object):
         view.id2obj(name='user', model=model)
         assert view._json_params['user'] == ['foo']
         model.pk_field.assert_called_once_with()
-        model.get.assert_called_once_with(idname='1')
+        model.get_item.assert_called_once_with(
+            idname='1', __raise_on_empty=False)
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_not_in_params(self, run):
@@ -587,13 +589,13 @@ class TestBaseView(object):
             _query_params={'foo1': 'bar1'})
         view.id2obj(name='asdasdasd', model=model)
         assert not model.pk_field.called
-        assert not model.get.called
+        assert not model.get_item.called
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_setdefault(self, run):
         model = Mock()
         model.pk_field.return_value = 'idname'
-        model.get.return_value = None
+        model.get_item.return_value = None
         request = self.get_common_mock_request()
         view = DummyBaseView(
             context={}, request=request, _json_params={'foo': 'bar'},
@@ -602,13 +604,14 @@ class TestBaseView(object):
         view.id2obj(name='user', model=model, setdefault=123)
         assert view._json_params['user'] == 123
         model.pk_field.assert_called_once_with()
-        model.get.assert_called_once_with(idname='1')
+        model.get_item.assert_called_once_with(
+            idname='1', __raise_on_empty=False)
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_value_none(self, run):
         model = Mock()
         model.pk_field.return_value = 'idname'
-        model.get.return_value = 'foo'
+        model.get_item.return_value = 'foo'
         request = self.get_common_mock_request()
         view = DummyBaseView(
             context={}, request=request, _json_params={'foo': 'bar'},
@@ -625,7 +628,7 @@ class TestBaseView(object):
         id_ = Mock()
         model = Mock()
         model.pk_field.return_value = 'idname'
-        model.get.return_value = None
+        model.get_item.return_value = None
         request = self.get_common_mock_request()
         view = DummyBaseView(
             context={}, request=request, _json_params={'foo': 'bar'},
@@ -634,13 +637,13 @@ class TestBaseView(object):
         view.id2obj(name='user', model=model, setdefault=123)
         assert view._json_params['user'] == id_
         model.pk_field.assert_called_once_with()
-        assert not model.get.called
+        assert not model.get_item.called
 
     @patch('nefertari.view.BaseView._run_init_actions')
     def test_id2obj_not_found(self, run):
         model = Mock()
         model.pk_field.return_value = 'idname'
-        model.get.return_value = None
+        model.get_item.return_value = None
         request = self.get_common_mock_request()
         view = DummyBaseView(
             context={}, request=request, _json_params={'foo': 'bar'},
