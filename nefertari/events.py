@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from nefertari.utils import FieldData
+from nefertari.utils import FieldData, DataProxy
 
 
 class RequestEvent(object):
@@ -287,8 +287,9 @@ def trigger_events(view_obj):
                 view_obj._json_params,
                 view_obj.Model)
         }
-        if hasattr(view_obj.context, 'pk_field'):
-            event_kwargs['instance'] = view_obj.context
+        ctx = view_obj.context
+        if hasattr(ctx, 'pk_field') or isinstance(ctx, DataProxy):
+            event_kwargs['instance'] = ctx
 
         before_event = BEFORE_EVENTS[event_action]
         request.registry.notify(before_event(**event_kwargs))
