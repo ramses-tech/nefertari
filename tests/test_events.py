@@ -58,7 +58,7 @@ class TestEvents(object):
 
         mock_after.assert_called_once_with(
             fields={'foo': 1}, model=view.Model, instance=ctx,
-            view=view)
+            view=view, response=view._response)
         mock_before.assert_called_once_with(
             fields={'foo': 1}, model=view.Model, instance=ctx,
             view=view)
@@ -146,7 +146,8 @@ class TestEvents(object):
                     pass
 
         mock_after.assert_called_once_with(
-            fields={'foo': 1}, model=view.Model, view=view)
+            fields={'foo': 1}, model=view.Model, view=view,
+            response=view._response)
         mock_before.assert_called_once_with(
             fields={'foo': 1}, model=view.Model, view=view)
         view.request.registry.notify.assert_has_calls([
