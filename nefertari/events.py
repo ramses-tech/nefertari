@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from nefertari.utils import FieldData
+from nefertari.utils import FieldData, DataProxy
 
 
 class RequestEvent(object):
@@ -19,16 +19,25 @@ class RequestEvent(object):
         determine what event was triggered when same event handler was
         registered with and without field predicate.
     :param instance: Object instance affected by request. Used in item
-        requests  only. Should be used to read data only. Changes to the
-        instance may result in database data inconsistency.
+        requests  only(item GET, PATCH, PUT, DELETE). Should be used
+        to read data only. Changes to the instance may result in database
+        data inconsistency.
+    :param response: Return value of view method. E.g. if view method
+        returns "1", value of event.response will be "1". Is None in all
+        "before" events. Note that is not necessarily a valid Pyramid
+        Response instance but the exact value returned by view method.
+        May be useful to access newly created object on "create" action
+        if it is returned by view method.
     """
     def __init__(self, model, view,
-                 fields=None, field=None, instance=None):
+                 fields=None, field=None, instance=None,
+                 response=None):
         self.model = model
         self.view = view
         self.fields = fields
         self.field = field
         self.instance = instance
+        self.response = response
 
     def set_field_value(self, field_name, value):
         """ Set value of field named `field_name`.
@@ -287,8 +296,9 @@ def trigger_events(view_obj):
                 view_obj._json_params,
                 view_obj.Model)
         }
-        if hasattr(view_obj.context, 'pk_field'):
-            event_kwargs['instance'] = view_obj.context
+        ctx = view_obj.context
+        if hasattr(ctx, 'pk_field') or isinstance(ctx, DataProxy):
+            event_kwargs['instance'] = ctx
 
         before_event = BEFORE_EVENTS[event_action]
         request.registry.notify(before_event(**event_kwargs))
@@ -296,6 +306,7 @@ def trigger_events(view_obj):
     yield
 
     if do_trigger:
+        event_kwargs['response'] = view_obj._response
         after_event = AFTER_EVENTS[event_action]
         request.registry.notify(after_event(**event_kwargs))
 
