@@ -290,8 +290,8 @@ class add_meta(object):
 class add_object_url(object):
     """ Add '_self' to each object in results
 
-    For each object in `result['data']` adds a uri which points
-    to current object
+    For each object in `result['data']` fetches a uri from pyramid
+    which points to current object
     """
     def __init__(self, request):
         self.request = request
@@ -301,15 +301,27 @@ class add_object_url(object):
         """ Add '_self' key value to :obj: dict. """
         from nefertari.elasticsearch import ES
         location = self.request.path_url
+        route_kwargs = {}
+        
+        """ Check for parents """
+        if self.request.matchdict:
+            parent_location = self.request.matchdict
+            route_kwargs.update(parent_location)
+        
         try:
             type_, obj_pk = obj['_type'], obj['_pk']
         except KeyError:
             return
+            
         resource = (self.model_collections.get(type_) or
                     self.model_collections.get(ES.src2type(type_)))
+                
         if resource is not None:
+            route_kwargs.update({resource.id_name : obj_pk})
             location = self.request.route_url(
-                resource.uid, **{resource.id_name: obj_pk})
+                resource.uid, **route_kwargs)
+        
+        print('test location', location)
         obj.setdefault('_self', location)
 
     def __call__(self, **kwargs):
