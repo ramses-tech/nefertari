@@ -302,26 +302,22 @@ class add_object_url(object):
         from nefertari.elasticsearch import ES
         location = self.request.path_url
         route_kwargs = {}
-        
+
         """ Check for parents """
         if self.request.matchdict:
             parent_location = self.request.matchdict
             route_kwargs.update(parent_location)
-        
         try:
             type_, obj_pk = obj['_type'], obj['_pk']
         except KeyError:
             return
-            
         resource = (self.model_collections.get(type_) or
                     self.model_collections.get(ES.src2type(type_)))
-                
         if resource is not None:
             route_kwargs.update({resource.id_name : obj_pk})
             location = self.request.route_url(
                 resource.uid, **route_kwargs)
-        
-        print('test location', location)
+        log.info('Object route is', location)
         obj.setdefault('_self', location)
 
     def __call__(self, **kwargs):
