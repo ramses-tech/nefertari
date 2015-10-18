@@ -317,7 +317,7 @@ class add_object_url(object):
             route_kwargs.update({resource.id_name : obj_pk})
             location = self.request.route_url(
                 resource.uid, **route_kwargs)
-        log.error('Object route is', location)
+        log.info('Object route is', location)
         obj.setdefault('_self', location)
 
     def __call__(self, **kwargs):
