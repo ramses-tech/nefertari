@@ -95,6 +95,10 @@ class TicketAuthLogoutView(TicketAuthViewMixin, BaseView):
     def create(self, *args, **kwargs):
         return self.logout(*args, **kwargs)
 
+    @events.trigger_instead('logout')
+    def show(self, *args, **kwargs):
+        return self.logout(*args, **kwargs)
+
 
 class TokenAuthViewMixin(object):
     """ View for auth operations to use with
