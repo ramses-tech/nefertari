@@ -305,8 +305,7 @@ class add_object_url(object):
 
         """ Check for parents """
         if self.request.matchdict:
-            parent_location = self.request.matchdict
-            route_kwargs.update(parent_location)
+            route_kwargs.update(self.request.matchdict)
         try:
             type_, obj_pk = obj['_type'], obj['_pk']
         except KeyError:
@@ -314,11 +313,11 @@ class add_object_url(object):
         resource = (self.model_collections.get(type_) or
                     self.model_collections.get(ES.src2type(type_)))
         if resource is not None:
-            route_kwargs.update({resource.id_name : obj_pk})
+            route_kwargs.update({resource.id_name: obj_pk})
             location = self.request.route_url(
                 resource.uid, **route_kwargs)
-        log.info('Object route is', location)
         obj.setdefault('_self', location)
+        log.info('Added `_self` attr: ', location)
 
     def __call__(self, **kwargs):
         result = kwargs['result']
