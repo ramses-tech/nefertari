@@ -28,7 +28,7 @@ Keyword Arguments
     New value of of field
 
 **instance**
-    Instance affected by request. Is None when set of items is updated in bulk and when item is created.
+    Instance affected by request. Is None when set of items is updated in bulk and when item is created. ``event.response`` may be used to access newly created object, if object is returned by view method.
 
 **field**
     Instance of nefertari.utils.data.FieldData instance containing data of changed field.
