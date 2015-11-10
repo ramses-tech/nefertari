@@ -60,6 +60,7 @@ We will use the following example to demonstrate how to connect fields to proces
     # models.py
     from nefertari import engine
 
+
     class Item(engine.BaseDocument):
         __tablename__ = 'stories'
         id = engine.IdField(primary_key=True)
@@ -73,6 +74,7 @@ We want to make sure ``Item.name`` is always lowercase, we can connect ``lowerca
     # __init__.py
     from .models import Item
     from .processors import lowercase
+
 
     # Get access to Pyramid configurator
     ...
@@ -88,6 +90,7 @@ You can use the ``event.set_field_value`` helper method to edit other fields fro
 
     from .helpers import parse_data
     from datetime import datetime
+
 
     def calculate_days_left(**kwargs):
         parsed_date = parse_data(kwargs['new_value'])

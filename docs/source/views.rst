@@ -76,6 +76,7 @@ Each view must define the following property:
 
 .. code-block:: python
 
+
     from nefertari.view import BaseView
     from example_api.models import Story
 

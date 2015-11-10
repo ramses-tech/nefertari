@@ -4,9 +4,9 @@ Configuring Models
 .. code-block:: python
 
     from datetime import datetime
-
     from nefertari import engine as eng
     from nefertari.engine import BaseDocument
+
 
     class Story(BaseDocument):
         __tablename__ = 'stories'

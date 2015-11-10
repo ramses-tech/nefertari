@@ -81,6 +81,7 @@ Utilities
 
     from nefertari import view, events
 
+
     @events.silent
     class ItemsView(view.BaseView):
         ...
@@ -102,6 +103,7 @@ Utilities
 
     from nefertari import view, events
 
+
     class UsersView(view.BaseView):
 
         @events.trigger_instead('update')
@@ -119,6 +121,7 @@ We will use the following example to demonstrate how to connect handlers to even
     import logging
     log = logging.getLogger(__name__)
 
+
     def log_request(event):
         log.debug(event.request.body)
 
@@ -128,6 +131,7 @@ We can connect this handler to any of Nefertari events of any requests. E.g. let
 .. code-block:: python
 
     from nefertari import events
+
 
     config.subscribe_to_events(
         log_request, [events.AfterCreate])
@@ -139,6 +143,7 @@ Or, if we wanted to limit the models for which this handler should be called, we
 
     from nefertari import events
     from .models import User
+
 
     config.subscribe_to_events(
         log_request, [events.AfterCreate],
