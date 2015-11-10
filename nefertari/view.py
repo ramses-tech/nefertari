@@ -62,7 +62,8 @@ class ViewMapper(object):
                 raise JHTTPNotFound()
 
             with trigger_events(view_obj):
-                return action(**matchdict)
+                view_obj._response = action(**matchdict)
+                return view_obj._response
 
         return view_mapper_wrapper
 

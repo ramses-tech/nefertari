@@ -52,6 +52,7 @@ class TestViewMapper(object):
 
         class MyView(object):
             Model = Mock
+            _response = None
 
             def __init__(self, ctx, req):
                 self._before_calls = {'index': [bc1], 'show': [bc3]}

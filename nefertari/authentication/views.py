@@ -20,6 +20,7 @@ class TicketAuthViewMixin(object):
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
 
+        self.request._user = user
         pk_field = user.pk_field()
         headers = remember(self.request, getattr(user, pk_field))
         return JHTTPOk('Registered', headers=headers)
@@ -95,6 +96,10 @@ class TicketAuthLogoutView(TicketAuthViewMixin, BaseView):
     def create(self, *args, **kwargs):
         return self.logout(*args, **kwargs)
 
+    @events.trigger_instead('logout')
+    def show(self, *args, **kwargs):
+        return self.logout(*args, **kwargs)
+
 
 class TokenAuthViewMixin(object):
     """ View for auth operations to use with
@@ -114,6 +119,7 @@ class TokenAuthViewMixin(object):
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
 
+        self.request._user = user
         headers = remember(self.request, user.username)
         return JHTTPOk('Registered', headers=headers)
 
