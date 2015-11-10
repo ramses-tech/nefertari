@@ -457,7 +457,7 @@ class TestES(object):
         documents = [{'_id': 1, '_type': 'Story'}]
         mock_mget.side_effect = es.IndexNotFoundException()
         with pytest.raises(JHTTPNotFound) as ex:
-            obj.get_by_ids(documents, __raise_on_empty=True)
+            obj.get_by_ids(documents, _raise_on_empty=True)
         assert 'resource not found (Index does not exist)' in str(ex.value)
 
     @patch('nefertari.elasticsearch.ES.api.mget')
@@ -466,7 +466,7 @@ class TestES(object):
         documents = [{'_id': 1, '_type': 'Story'}]
         mock_mget.side_effect = es.IndexNotFoundException()
         try:
-            docs = obj.get_by_ids(documents, __raise_on_empty=False)
+            docs = obj.get_by_ids(documents, _raise_on_empty=False)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
         assert len(docs) == 0
@@ -477,7 +477,7 @@ class TestES(object):
         documents = [{'_id': 1, '_type': 'Story'}]
         mock_mget.return_value = {'docs': [{'_type': 'foo', '_id': 1}]}
         with pytest.raises(JHTTPNotFound):
-            obj.get_by_ids(documents, __raise_on_empty=True)
+            obj.get_by_ids(documents, _raise_on_empty=True)
 
     @patch('nefertari.elasticsearch.ES.api.mget')
     def test_get_by_ids_not_found_not_raise(self, mock_mget):
@@ -485,7 +485,7 @@ class TestES(object):
         documents = [{'_id': 1, '_type': 'Story'}]
         mock_mget.return_value = {'docs': [{'_type': 'foo', '_id': 1}]}
         try:
-            docs = obj.get_by_ids(documents, __raise_on_empty=False)
+            docs = obj.get_by_ids(documents, _raise_on_empty=False)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
         assert len(docs) == 0
@@ -652,7 +652,7 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         with pytest.raises(JHTTPNotFound) as ex:
             obj.aggregate(_aggregations_params={'zoo': 5}, param1=6,
-                          __raise_on_empty=True)
+                          _raise_on_empty=True)
         assert 'Aggregation failed: Index does not exist' in str(ex.value)
 
     @patch('nefertari.elasticsearch.ES.build_search_params')
@@ -731,7 +731,7 @@ class TestES(object):
         mock_search.side_effect = es.IndexNotFoundException()
         with pytest.raises(JHTTPNotFound) as ex:
             obj.get_collection(
-                body={'foo': 'bar'}, __raise_on_empty=True,
+                body={'foo': 'bar'}, _raise_on_empty=True,
                 from_=0)
         assert 'resource not found (Index does not exist)' in str(ex.value)
 
@@ -741,7 +741,7 @@ class TestES(object):
         mock_search.side_effect = es.IndexNotFoundException()
         try:
             docs = obj.get_collection(
-                body={'foo': 'bar'}, __raise_on_empty=False,
+                body={'foo': 'bar'}, _raise_on_empty=False,
                 from_=0)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
@@ -759,7 +759,7 @@ class TestES(object):
         }
         with pytest.raises(JHTTPNotFound):
             obj.get_collection(
-                body={'foo': 'bar'}, __raise_on_empty=True,
+                body={'foo': 'bar'}, _raise_on_empty=True,
                 from_=0)
 
     @patch('nefertari.elasticsearch.ES.api.search')
@@ -774,7 +774,7 @@ class TestES(object):
         }
         try:
             docs = obj.get_collection(
-                body={'foo': 'bar'}, __raise_on_empty=False,
+                body={'foo': 'bar'}, _raise_on_empty=False,
                 from_=0)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
@@ -803,7 +803,7 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         mock_get.side_effect = es.IndexNotFoundException()
         try:
-            obj.get_item(name='foo', __raise_on_empty=False)
+            obj.get_item(name='foo', _raise_on_empty=False)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
 
@@ -819,7 +819,7 @@ class TestES(object):
         obj = es.ES('Foo', 'foondex')
         mock_get.return_value = {}
         try:
-            obj.get_item(name='foo', __raise_on_empty=False)
+            obj.get_item(name='foo', _raise_on_empty=False)
         except JHTTPNotFound:
             raise Exception('Unexpected error')
 

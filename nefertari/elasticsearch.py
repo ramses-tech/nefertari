@@ -372,7 +372,7 @@ class ES(object):
         if not ids:
             return _ESDocs()
 
-        __raise_on_empty = params.pop('__raise_on_empty', False)
+        _raise_on_empty = params.pop('_raise_on_empty', False)
         fields = params.pop('_fields', [])
 
         _limit = params.pop('_limit', len(ids))
@@ -406,7 +406,7 @@ class ES(object):
         try:
             data = self.api.mget(**params)
         except IndexNotFoundException:
-            if __raise_on_empty:
+            if _raise_on_empty:
                 raise JHTTPNotFound(
                     '{}({}) resource not found (Index does not exist)'.format(
                         self.doc_type, params))
@@ -420,7 +420,7 @@ class ES(object):
             except KeyError:
                 msg = "ES: '%s(%s)' resource not found" % (
                     found_doc['_type'], found_doc['_id'])
-                if __raise_on_empty:
+                if _raise_on_empty:
                     raise JHTTPNotFound(msg)
                 else:
                     log.error(msg)
@@ -500,7 +500,7 @@ class ES(object):
         Arguments:
             :_aggregations_params: Dict of aggregation params. Root key is an
                 aggregation name. Required.
-            :__raise_on_empty: Boolean indicating whether to raise exception
+            :_raise_on_empty: Boolean indicating whether to raise exception
                 when IndexNotFoundException exception happens. Optional,
                 defaults to False.
             :_search_type: Type of search to use. Optional, defaults to
@@ -508,7 +508,7 @@ class ES(object):
                 when performing nested aggregations on buckets.
         """
         _aggregations_params = params.pop('_aggregations_params', None)
-        __raise_on_empty = params.pop('__raise_on_empty', False)
+        _raise_on_empty = params.pop('_raise_on_empty', False)
         _search_type = params.pop('_search_type', 'count')
 
         if not _aggregations_params:
@@ -528,7 +528,7 @@ class ES(object):
         try:
             response = self.api.search(**search_params)
         except IndexNotFoundException:
-            if __raise_on_empty:
+            if _raise_on_empty:
                 raise JHTTPNotFound(
                     'Aggregation failed: Index does not exist')
             return {}
@@ -539,7 +539,7 @@ class ES(object):
             raise JHTTPNotFound('No aggregations returned from ES')
 
     def get_collection(self, **params):
-        __raise_on_empty = params.pop('__raise_on_empty', False)
+        _raise_on_empty = params.pop('_raise_on_empty', False)
 
         if 'body' in params:
             _params = params
@@ -562,7 +562,7 @@ class ES(object):
         try:
             data = self.api.search(**_params)
         except IndexNotFoundException:
-            if __raise_on_empty:
+            if _raise_on_empty:
                 raise JHTTPNotFound(
                     '{}({}) resource not found (Index does not exist)'.format(
                         self.doc_type, params))
@@ -583,7 +583,7 @@ class ES(object):
 
         if not documents:
             msg = "%s(%s) resource not found" % (self.doc_type, params)
-            if __raise_on_empty:
+            if _raise_on_empty:
                 raise JHTTPNotFound(msg)
             else:
                 log.debug(msg)
@@ -591,7 +591,7 @@ class ES(object):
         return documents
 
     def get_item(self, **kw):
-        __raise_on_empty = kw.pop('__raise_on_empty', True)
+        _raise_on_empty = kw.pop('_raise_on_empty', True)
 
         params = dict(
             index=self.index_name,
@@ -604,7 +604,7 @@ class ES(object):
         try:
             data = self.api.get_source(**params)
         except IndexNotFoundException:
-            if __raise_on_empty:
+            if _raise_on_empty:
                 raise JHTTPNotFound("{} (Index does not exist)".format(
                     not_found_msg, self.doc_type, params))
             data = {}
@@ -612,7 +612,7 @@ class ES(object):
             data = {}
 
         if not data:
-            if __raise_on_empty:
+            if _raise_on_empty:
                 raise JHTTPNotFound(not_found_msg)
             else:
                 log.debug(not_found_msg)
