@@ -41,6 +41,7 @@ Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elastic
 
     from nefertari.engine import ESBaseDocument
 
+
     class Story(ESBaseDocument):
         (...)
 
@@ -49,6 +50,7 @@ or
 .. code-block:: python
 
     from nefertari.engine import BaseDocument
+
 
     class Story(BaseDocument):
         (...)
