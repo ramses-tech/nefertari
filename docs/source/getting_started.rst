@@ -17,7 +17,7 @@ Requirements
 ------------
 
 * Python 2.7, 3.3 or 3.4
-* Elasticsearch for ElasticSearch-powered resources (see :any:`models <models>` and :any:`requests <making_requests>`)
+* Elasticsearch for Elasticsearch-powered resources (see :any:`models <models>` and :any:`requests <making_requests>`)
 * Postgres or Mongodb
 
 

@@ -193,7 +193,7 @@ class ES(object):
             cls.api = elasticsearch.Elasticsearch(
                 hosts=hosts, serializer=engine.ESJSONSerializer(),
                 connection_class=ESHttpConnection, **params)
-            log.info('Including ElasticSearch. %s' % cls.settings)
+            log.info('Including Elasticsearch. %s' % cls.settings)
 
         except KeyError as e:
             raise Exception(

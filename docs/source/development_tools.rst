@@ -1,10 +1,10 @@
 Development Tools
 =================
 
-Indexing in ElasticSearch
+Indexing in Elasticsearch
 -------------------------
 
-``nefertari.index`` console script can be used to manually (re-)index models from your database engine to ElasticSearch.
+``nefertari.index`` console script can be used to manually (re-)index models from your database engine to Elasticsearch.
 
 You can run it like so::
 

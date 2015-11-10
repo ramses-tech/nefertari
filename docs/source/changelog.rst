@@ -5,7 +5,7 @@ Changelog
 * :feature:`-` Event system is now crud-based as opposed to db-based
 * :feature:`-` Refactored field processors to use the new event system
 * :feature:`-` Removed unnecessary extra '__confirmation' parameter from PATCH/PUT/DELETE collection requests
-* :feature:`-` Nested relationships are now indexed in bulk in ElasticSearch
+* :feature:`-` Nested relationships are now indexed in bulk in Elasticsearch
 * :feature:`-` Added '_hidden_fields' model attribute to hide fields while remaining editable (e.g. password)
 * :bug:`- major` Fixed a bug causing polymorchic collections to always return 403
 * :bug:`- major` Fixed nested relationships not respecting '_auth_fields'
@@ -64,7 +64,7 @@ Changelog
 
 * :release:`0.3.0 <2015-05-18>`
 * :support:`-` Step-by-step 'Getting started' guide
-* :bug:`- major` Fixed several issues related to ElasticSearch indexing
+* :bug:`- major` Fixed several issues related to Elasticsearch indexing
 * :support:`-` Increased test coverave
 * :feature:`-` Added ability to PATCH/DELETE collections
 * :feature:`-` Implemented API output control by field (apply_privacy wrapper)
