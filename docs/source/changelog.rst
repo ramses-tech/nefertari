@@ -1,6 +1,10 @@
 Changelog
 =========
 
+* :release:`0.6.1 <2015-11-xx>`
+* :bug:`-` Added 'event.instance' to 'event' object to access newly created object (if object is returned by view method)
+* :bug:`-` Fixed a bug with GET '/auth/logout'
+
 * :release:`0.6.0 <2015-10-07>`
 * :feature:`-` Event system is now crud-based as opposed to db-based
 * :feature:`-` Refactored field processors to use the new event system
