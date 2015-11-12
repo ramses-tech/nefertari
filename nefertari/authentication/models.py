@@ -81,7 +81,6 @@ class AuthModelMethodsMixin(object):
 
         success = False
         user = None
-        print params
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
