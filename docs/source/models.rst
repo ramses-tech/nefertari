@@ -4,9 +4,9 @@ Configuring Models
 .. code-block:: python
 
     from datetime import datetime
-
     from nefertari import engine as eng
     from nefertari.engine import BaseDocument
+
 
     class Story(BaseDocument):
         __tablename__ = 'stories'
@@ -41,6 +41,7 @@ Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elastic
 
     from nefertari.engine import ESBaseDocument
 
+
     class Story(ESBaseDocument):
         (...)
 
@@ -49,6 +50,7 @@ or
 .. code-block:: python
 
     from nefertari.engine import BaseDocument
+
 
     class Story(BaseDocument):
         (...)

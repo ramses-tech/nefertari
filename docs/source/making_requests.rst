@@ -21,10 +21,10 @@ url parameter                               description
 ===============================             ===========
 
 
-Query syntax for ElasticSearch
+Query syntax for Elasticsearch
 ------------------------------
 
-Additional parameters are available when using an ElasticSearch-enabled collection (see **ESBaseDocument** in the :any:`Wrapper API <wrapper-api>` section of this documentation).
+Additional parameters are available when using an Elasticsearch-enabled collection (see **ESBaseDocument** in the :any:`Wrapper API <wrapper-api>` section of this documentation).
 
 ========================================            ===========
 url parameter                                       description
@@ -94,6 +94,6 @@ Similarly, if delete_many() is defined, you will be able to delete entire collec
 
 
 .. [#] Set ``enable_get_tunneling = true`` in your .ini file to enable this feature. To update listfields and dictfields, you can use the following syntax: ``_m=PATCH&<listfield>.<value>&<dictfield>.<key>=<value>``
-.. [#] The full syntax of ElasticSearch querying is beyond the scope of this documentation. You can read more on the `ElasticSearch Query String Query documentation <https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html>`_ to do things like fuzzy search: ``?name=fuzzy~`` or date range search: ``?date=[2015-01-01 TO *]``
-.. [#] Set ``elasticsearch.enable_refresh_query = true`` in your .ini file to enable this feature. This parameter only works with POST, PATCH, PUT and DELETE methods. Read more on `ElasticSearch Bulk API documentation <https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#bulk-refresh>`_.
-.. [#] Set ``elasticsearch.enable_aggregations = true`` in your .ini file to enable this feature. You can also use the short name `_aggs`. Read more on `ElasticSearch Aggregations <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html>`_.
+.. [#] The full syntax of Elasticsearch querying is beyond the scope of this documentation. You can read more on the `Elasticsearch Query String Query documentation <https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html>`_ to do things like fuzzy search: ``?name=fuzzy~`` or date range search: ``?date=[2015-01-01 TO *]``
+.. [#] Set ``elasticsearch.enable_refresh_query = true`` in your .ini file to enable this feature. This parameter only works with POST, PATCH, PUT and DELETE methods. Read more on `Elasticsearch Bulk API documentation <https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html#bulk-refresh>`_.
+.. [#] Set ``elasticsearch.enable_aggregations = true`` in your .ini file to enable this feature. You can also use the short name `_aggs`. Read more on `Elasticsearch Aggregations <https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html>`_.

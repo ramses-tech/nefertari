@@ -142,9 +142,10 @@ def enable_selfalias(config, id_name):
 
     def context_found_subscriber(event):
         request = event.request
+        user = getattr(request, 'user', None)
         if (request.matchdict and
                 request.matchdict.get(id_name, None) == 'self' and
-                request.user):
-            request.matchdict[id_name] = request.user.username
+                user):
+            request.matchdict[id_name] = user.username
 
     config.add_subscriber(context_found_subscriber, ContextFound)

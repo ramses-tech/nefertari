@@ -21,6 +21,7 @@ When authentication is enabled, Nefertari uses its own `User` model. This model 
     from nefertari.authentication.models import AuthUserMixin
     from nefertari.engine import BaseDocument
 
+
     class User(AuthUserMixin, BaseDocument):
         __tablename__ = 'users'
 
