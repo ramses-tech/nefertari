@@ -42,18 +42,23 @@ def includeme(config):
     for path in engine_paths:
         config.include(path)
     _load_engines(config)
-    main_engine_module = engines[0]
-    _import_public_names(main_engine_module)
+    _import_public_names(primary)
 
 
-# replaced by registered engine modules during configuration
+# Replaced by registered engine modules during configuration
+primary = None
+secondary = None
 engines = ()
 
 
 def _load_engines(config):
-    global engines
+    global primary, secondary, engines
     engine_paths = aslist(config.registry.settings['nefertari.engine'])
     engines = tuple([resolve(path) for path in engine_paths])
+    try:
+        primary, secondary = engines
+    except ValueError:
+        primary = engines[0]
 
 
 def _import_public_names(module):
