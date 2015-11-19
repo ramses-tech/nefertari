@@ -1,9 +1,10 @@
 Changelog
 =========
 
-* :release:`0.6.1 <2015-11-xx>`
+* :release:`0.6.1 <2015-11-18>`
 * :bug:`-` Added 'event.instance' to 'event' object to access newly created object (if object is returned by view method)
 * :bug:`-` Fixed a bug with GET '/auth/logout'
+* :bug:`-` 'request.user' is now set to None when using 'auth = False'
 
 * :release:`0.6.0 <2015-10-07>`
 * :feature:`-` Event system is now crud-based as opposed to db-based
