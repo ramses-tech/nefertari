@@ -18,9 +18,9 @@ Table of Content
     getting_started
     views
     models
+    auth
     event_handlers
     field_processors
-    auth
     making_requests
     development_tools
     why
