@@ -9,10 +9,10 @@ from nefertari.renderers import _JSONEncoder
 log = logging.getLogger(__name__)
 
 
-class MultipleEnginesDocMixin(object):
+class MultiEngineDocMixin(object):
     @classmethod
     def get_collection(cls, **params):
-        return super(MultipleEnginesDocMixin, cls).get_collection(
+        return super(MultiEngineDocMixin, cls).get_collection(
             **params)
 
 
