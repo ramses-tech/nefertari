@@ -1,5 +1,6 @@
 import datetime
 import decimal
+import inspect
 import logging
 
 import elasticsearch
@@ -10,10 +11,16 @@ log = logging.getLogger(__name__)
 
 
 class MultiEngineMeta(type):
-    def __new__(cls, name, bases, attrs):
-        new_class = super(MultiEngineMeta, cls).__new__(
-            cls, name, bases, attrs)
-        return new_class
+    def __init__(self, name, bases, attrs):
+        super(MultiEngineMeta, self).__init__(name, bases, attrs)
+        if self._is_abstract():
+            return
+        # TODO: Fix mongo error
+
+        fields = self._fields_map()
+        members = {key: val for key, val in inspect.getmembers(self)
+                   if key not in fields}
+
 
 
 class MultiEngineDocMixin(object):
