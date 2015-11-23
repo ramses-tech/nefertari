@@ -9,6 +9,13 @@ from nefertari.renderers import _JSONEncoder
 log = logging.getLogger(__name__)
 
 
+class MultiEngineMeta(type):
+    def __new__(cls, name, bases, attrs):
+        new_class = super(MultiEngineMeta, cls).__new__(
+            cls, name, bases, attrs)
+        return new_class
+
+
 class MultiEngineDocMixin(object):
     @classmethod
     def get_collection(cls, **params):
