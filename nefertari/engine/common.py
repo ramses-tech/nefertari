@@ -20,7 +20,7 @@ class MultiEngineMeta(type):
         if self._is_abstract() or single_engine or already_generated:
             return
 
-        replaced_bases = self._replace_bases(list(bases))
+        replaced_bases = self._recreate_bases()
         fields = self._recreate_fields()
         new_attrs = {
             key: val for key, val in attrs.items()
@@ -45,7 +45,8 @@ class MultiEngineMeta(type):
 
         return recreated_fields
 
-    def _replace_bases(self, bases):
+    def _recreate_bases(self):
+        bases = list(self.__bases__)
         return [self._get_secondary(base) for base in bases]
 
     def _get_secondary(self, obj):
