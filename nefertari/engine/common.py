@@ -1,11 +1,11 @@
 import datetime
 import decimal
-import inspect
 import logging
 
 import elasticsearch
 
 from nefertari.renderers import _JSONEncoder
+from nefertari import engine
 
 log = logging.getLogger(__name__)
 
@@ -13,14 +13,49 @@ log = logging.getLogger(__name__)
 class MultiEngineMeta(type):
     def __init__(self, name, bases, attrs):
         super(MultiEngineMeta, self).__init__(name, bases, attrs)
-        if self._is_abstract():
+        single_engine = engine.secondary is None
+        already_generated = (
+            getattr(self, '_primary', None) is not None or
+            getattr(self, '_secondary', None) is not None)
+        if self._is_abstract() or single_engine or already_generated:
             return
-        # TODO: Fix mongo error
 
+        replaced_bases = self._replace_bases(list(bases))
+        fields = self._recreate_fields()
+        new_attrs = {
+            key: val for key, val in attrs.items()
+            if key not in fields}
+        new_attrs.update(fields)
+        new_attrs['_primary'] = self
+
+        metaclass = type(engine.secondary.BaseDocument)
+        self._secondary = metaclass(
+            name, tuple(replaced_bases), new_attrs)
+
+    def _recreate_fields(self):
         fields = self._fields_map()
-        members = {key: val for key, val in inspect.getmembers(self)
-                   if key not in fields}
+        fields_kw = {name: self.get_field_params(name)
+                     for name in fields}
 
+        recreated_fields = {}
+        for fname, field in fields.items():
+            field_kw = fields_kw[fname]
+            field_cls = self._get_secondary(field.__class__)
+            recreated_fields[fname] = field_cls(**field_kw)
+
+        return recreated_fields
+
+    def _replace_bases(self, bases):
+        return [self._get_secondary(base) for base in bases]
+
+    def _get_secondary(self, obj):
+        try:
+            type_name = obj.__name__
+        except AttributeError:
+            return obj
+        if hasattr(engine.secondary, type_name):
+            return getattr(engine.secondary, type_name)
+        return obj
 
 
 class MultiEngineDocMixin(object):

@@ -57,6 +57,8 @@ def _load_engines(config):
     engines = tuple([resolve(path) for path in engine_paths])
     try:
         primary, secondary = engines
+        if primary is secondary:
+            secondary = None
     except ValueError:
         primary = engines[0]
 
