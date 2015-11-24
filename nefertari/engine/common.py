@@ -40,6 +40,8 @@ class MultiEngineMeta(type):
         recreated_fields = {}
         for fname, field in fields.items():
             field_kw = fields_kw[fname]
+            field_kw = {key: self._get_secondary(val)
+                        for key, val in field_kw.items()}
             field_cls = self._get_secondary(field.__class__)
             recreated_fields[fname] = field_cls(**field_kw)
 
