@@ -52,3 +52,14 @@ class TestEngine(object):
         assert engine.engines == (foo, bar)
         assert engine.primary == foo
         assert engine.secondary == bar
+
+    @patch('nefertari.engine.secondary')
+    @patch('nefertari.engine.primary')
+    def test_replace_setup_database(self, mock_prim, mock_sec):
+        from nefertari import engine
+        engine._replace_setup_database()
+        assert engine.setup_database is not mock_prim.setup_database
+        assert engine.setup_database is not mock_sec.setup_database
+        engine.setup_database(1)
+        mock_prim.setup_database.assert_called_once_with(1)
+        mock_sec.setup_database.assert_called_once_with(1)

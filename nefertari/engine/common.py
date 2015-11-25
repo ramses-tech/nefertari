@@ -11,13 +11,23 @@ log = logging.getLogger(__name__)
 
 
 class MultiEngineMeta(type):
+    """ Document metaclass to be used with multi-engine setup.
+
+    Generates copy of model class but using classes from
+    secondary engine.
+    """
     def __init__(self, name, bases, attrs):
         super(MultiEngineMeta, self).__init__(name, bases, attrs)
-        single_engine = engine.secondary is None
-        already_generated = (
-            getattr(self, '_primary', None) is not None or
-            getattr(self, '_secondary', None) is not None)
-        if self._is_abstract() or single_engine or already_generated:
+        self._generate_secondary_model(name, attrs)
+
+    def _generate_secondary_model(self, name, attrs):
+        """ Generate secondary engine model.
+
+        :param name: String name of model to be generated.
+        :param attrs: Dict containing attrs used in creation of
+            main class.
+        """
+        if not self._needs_generation():
             return
 
         replaced_bases = self._recreate_bases()
@@ -32,7 +42,30 @@ class MultiEngineMeta(type):
         self._secondary = metaclass(
             name, tuple(replaced_bases), new_attrs)
 
+    def _needs_generation(self):
+        """ Determine whether secondary model class needs to be
+        generated.
+
+        :returns bool: True is secondary model class needs
+            to be generated. False otherwise.
+        """
+        if self._is_abstract():
+            return False
+        if engine.secondary is None:
+            return False
+        already_generated = (
+            getattr(self, '_primary', None) is not None or
+            getattr(self, '_secondary', None) is not None)
+        if already_generated:
+            return False
+        return True
+
     def _recreate_fields(self):
+        """ Recreate primary model fields using secondary engine.
+
+        :returns dict: Keys are field names, values are instances
+            of secondary engine fields.
+        """
         field_creators = self._get_fields_creators()
         fields_kw = {name: self.get_field_params(name)
                      for name in field_creators}
@@ -48,10 +81,22 @@ class MultiEngineMeta(type):
         return recreated_fields
 
     def _recreate_bases(self):
+        """ Get secondary engine analogues of bases.
+
+        E.g. if current class inherits from BaseDocument and secondary
+        engine defines class BaseDocument, latter will replace prior.
+
+        :returns list: of replaced base classes of primary model.
+        """
         bases = list(self.__bases__)
         return [self._get_secondary(base) for base in bases]
 
     def _get_secondary(self, obj):
+        """ Get ``obj`` analog from secondary engine.
+
+        :returns: Analog of ``obj`` with the same name from secondary
+            engine if exists. Returns ``obj`` otherwise.
+        """
         try:
             type_name = obj.__name__
         except AttributeError:
@@ -62,6 +107,9 @@ class MultiEngineMeta(type):
 
 
 class MultiEngineDocMixin(object):
+    """ Document/model base that implements logic required for
+    multi-engine setup.
+    """
     @classmethod
     def get_collection(cls, **params):
         return super(MultiEngineDocMixin, cls).get_collection(
@@ -69,6 +117,9 @@ class MultiEngineDocMixin(object):
 
 
 class JSONEncoderMixin(object):
+    """ JSON encoder mixin that implements encoding of common
+    data types.
+    """
     def default(self, obj):
         if isinstance(obj, (datetime.datetime, datetime.date)):
             return obj.strftime("%Y-%m-%dT%H:%M:%SZ")  # iso
@@ -94,7 +145,8 @@ class JSONEncoder(JSONEncoderMixin, _JSONEncoder):
 class ESJSONSerializer(JSONEncoderMixin,
                        elasticsearch.serializer.JSONSerializer):
     """ JSON encoder class used to serialize data before indexing
-    to ES. """
+    to ES.
+    """
     def default(self, obj):
         try:
             return super(ESJSONSerializer, self).default(obj)
