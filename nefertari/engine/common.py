@@ -33,17 +33,17 @@ class MultiEngineMeta(type):
             name, tuple(replaced_bases), new_attrs)
 
     def _recreate_fields(self):
-        fields = self._fields_map()
+        field_creators = self._get_fields_creators()
         fields_kw = {name: self.get_field_params(name)
-                     for name in fields}
+                     for name in field_creators}
 
         recreated_fields = {}
-        for fname, field in fields.items():
+        for fname, creator in field_creators.items():
             field_kw = fields_kw[fname] or {}
             field_kw = {key: self._get_secondary(val)
                         for key, val in field_kw.items()}
-            field_cls = self._get_secondary(field.__class__)
-            recreated_fields[fname] = field_cls(**field_kw)
+            secondary_creator = self._get_secondary(creator)
+            recreated_fields[fname] = secondary_creator(**field_kw)
 
         return recreated_fields
 
