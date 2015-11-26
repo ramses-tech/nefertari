@@ -110,8 +110,13 @@ class MultiEngineDocMixin(object):
     """ Document/model base that implements logic required for
     multi-engine setup.
     """
+    _primary = None
+    _secondary = None
+
     @classmethod
-    def get_collection(cls, **params):
+    def get_collection(cls, _query_secondary=True, **params):
+        if _query_secondary and cls._secondary is not None:
+            return cls._secondary.get_collection(**params)
         return super(MultiEngineDocMixin, cls).get_collection(
             **params)
 
