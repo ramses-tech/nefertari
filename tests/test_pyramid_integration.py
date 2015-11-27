@@ -8,8 +8,10 @@ class TestPyramidIntegration(unittest.TestCase):
         from nefertari import includeme
 
         config = mock.Mock()
+        config.registry.settings = {'auth': True}
         includeme(config)
 
-        self.assertEqual(1, config.add_directive.call_count)
+        self.assertEqual(3, config.add_directive.call_count)
         self.assertEqual(2, config.add_renderer.call_count)
-        # config.add_renderer.assert_called_with('json', JsonRendererFactory)
+        root = config.get_root_resource()
+        assert root.auth

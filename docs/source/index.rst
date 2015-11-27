@@ -1,27 +1,30 @@
 Nefertari, queen of APIs
 ========================
 
-Github: `<http://github.com/brandicted/nefertari>`_
-
 Nefertari is a REST API framework for Pyramid that uses Elasticsearch for reads and either MongoDB or Postgres for writes.
 
-Nefertari currently powers `Brandicted <http://brandicted.com/>`_ and `Cerri <http://www.cerri.com/>`_. She is fully production ready and actively maintained.
+Nefertari currently powers `Brandicted <https://brandicted.com>`_ and `Cerri <http://www.cerri.com>`_. She is fully production ready and actively maintained.
+
+Source code:
+    `<http://github.com/brandicted/nefertari>`_
+
 
 Table of Content
 ================
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   getting_started
-   views
-   database_backends
-   auth
-   making_requests
-   development_tools
-   example_project
-   why
-   changelog
+    getting_started
+    views
+    models
+    auth
+    event_handlers
+    field_processors
+    making_requests
+    development_tools
+    why
+    changelog
 
 
 .. image:: nefertari.jpg

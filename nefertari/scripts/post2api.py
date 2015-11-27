@@ -20,7 +20,7 @@ def load(inputfile, destination):
             destination,
             data=data,
             headers={'Content-type': 'application/json'})
-        print r.status_code
+        print(r.status_code)
 
     json_file.close()
 
@@ -39,8 +39,8 @@ def load_singular_objects(inputfile, destination):
     parent_objects = requests.get(parent_route + query_string).json()['data']
 
     for parent in parent_objects:
-        print parent_route
-        parent_url = parent['self'].replace(query_string, '')
+        print(parent_route)
+        parent_url = parent['_self'].replace(query_string, '')
         singular_url = parent_url + '/' + singlular_field
         child = json_data.pop()
         data = json.dumps(child, default=_jdefault)
@@ -49,7 +49,7 @@ def load_singular_objects(inputfile, destination):
             singular_url,
             data=data,
             headers={'Content-type': 'application/json'})
-        print r.status_code
+        print(r.status_code)
 
 
 def main():
@@ -85,7 +85,7 @@ def main():
 
 
 def usage():
-    print 'Usage: nefertari.post2api -f <jsonFile> -u <urlToPost>'
+    print('Usage: nefertari.post2api -f <jsonFile> -u <urlToPost>')
 
 
 if __name__ == '__main__':

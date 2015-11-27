@@ -1,0 +1,48 @@
+import logging
+
+from nefertari.view import BaseView
+
+from {{package}}.models import Item
+
+log = logging.getLogger(__name__)
+
+
+class ItemsView(BaseView):
+    Model = Item
+
+    def index(self):
+        return self.get_collection_es()
+
+    def show(self, **kwargs):
+        return self.Model.get(
+            id=kwargs.pop('item_id'),
+            __raise=True)
+
+    def create(self):
+        item = self.Model(**self._json_params)
+        return item.save(self.request)
+
+    def update(self, **kwargs):
+        item = self.Model.get_item(
+            id=kwargs.pop('item_id'), **kwargs)
+        return item.update(self._json_params, self.request)
+
+    def replace(self, **kwargs):
+        return self.update(**kwargs)
+
+    def delete(self, **kwargs):
+        item = self.Model.get_item(
+            id=kwargs.pop('item_id'), **kwargs)
+        item.delete(self.request)
+
+    def delete_many(self):
+        es_items = self.get_collection_es()
+        items = self.Model.filter_objects(es_items)
+        return self.Model._delete_many(items, self.request)
+
+    def update_many(self):
+        es_items = self.get_collection_es()
+        items = self.Model.filter_objects(es_items)
+
+        return self.Model._update_many(
+            items, self._json_params, self.request)

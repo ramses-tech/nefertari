@@ -1,0 +1,78 @@
+[app:{{package}}]
+use = egg:{{package}}
+
+# Nefertari
+nefertari.engine = nefertari_{{engine}}
+enable_get_tunneling = true
+
+# SQLA
+sqlalchemy.url = postgresql://%(host)s:5432/{{package}}
+
+# MongoDB
+mongodb.host = localhost
+mongodb.port = 27017
+mongodb.db = {{package}}
+
+# Elasticsearch
+elasticsearch.hosts = localhost:9200
+elasticsearch.sniff = false
+elasticsearch.index_name = {{package}}
+elasticsearch.chunk_size = 1000
+elasticsearch.enable_refresh_query = false
+elasticsearch.enable_aggregations = false
+elasticsearch.enable_polymorphic_query = false
+
+# {{package}}
+host = localhost
+base_url = http://%(host)s:6543
+
+# CORS
+cors.enable = false
+cors.allow_origins = %(base_url)s
+cors.allow_credentials = true
+
+###
+# wsgi server configuration
+###
+
+[composite:main]
+use = egg:Paste#urlmap
+/api/ = {{package}}
+
+[server:main]
+use = egg:waitress#main
+host = localhost
+port = 6543
+threads = 3
+
+[loggers]
+keys = root, {{package}}, nefertari
+
+[handlers]
+keys = console
+
+[formatters]
+keys = generic
+
+[logger_root]
+level = INFO
+handlers = console
+
+[logger_{{package}}]
+level = INFO
+handlers =
+qualname = {{package}}
+
+[logger_nefertari]
+level = INFO
+handlers =
+qualname = nefertari
+
+[handler_console]
+class = StreamHandler
+args = (sys.stderr,)
+level = NOTSET
+formatter = generic
+
+[formatter_generic]
+format = %(asctime)s %(levelname)-5.5s [%(name)s][%(threadName)s] %(module)s.%(funcName)s: %(message)s

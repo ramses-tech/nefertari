@@ -1,3 +1,5 @@
+import six
+import pytest
 from mock import Mock, patch
 
 from nefertari import tweens
@@ -61,7 +63,29 @@ class TestTweens(object):
         assert request.GET == {"foo": "bar"}
         assert request.method == 'POST'
         assert request.content_type == 'application/json'
-        assert request.body == '{"foo": "bar"}'
+        assert request.body == six.b('{"foo": "bar"}')
+
+    def test_get_tunneling_reserved_params_dropped(self):
+        from nefertari import RESERVED_PARAMS
+
+        class GET(dict):
+            def mixed(self):
+                return self
+
+        reserved = RESERVED_PARAMS[0]
+        get_data = GET({
+            '_m': 'POST',
+            'foo': 'bar',
+            reserved: 'boo',
+        })
+        request = Mock(GET=get_data, method='GET')
+        get_tunneling = tweens.get_tunneling(lambda x: x, None)
+        get_tunneling(request)
+        assert request.GET == {'foo': 'bar', reserved: 'boo'}
+        assert request.method == 'POST'
+        assert request.content_type == 'application/json'
+        assert request.body == six.b('{"foo": "bar"}')
+        assert request._tunneled_get
 
     def test_get_tunneling_not_allowed_method(self):
         class GET(dict):
@@ -149,14 +173,30 @@ class TestTweens(object):
         assert response.headerlist == [
             ('Access-Control-Allow-Origin', '127.0.0.1:8080')]
 
-    def test_cors_allow_origins_star(self):
+    def test_cors_allow_origins_star_credentials_true(self):
         registry = Mock(settings={
             'cors.allow_origins': '*',
             'cors.allow_credentials': True,
         })
         handler = lambda x: Mock(headerlist=[])
-        cors = tweens.cors(handler, registry)
-        assert cors is None
+        with pytest.raises(Exception) as ex:
+            tweens.cors(handler, registry)
+        expected = ('Not allowed Access-Control-Allow-Credentials '
+                    'to set to TRUE if origin is *')
+        assert str(ex.value) == expected
+
+    def test_cors_allow_origins_star_credentials_false(self):
+        registry = Mock(settings={
+            'cors.allow_origins': '*',
+            'cors.allow_credentials': None,
+        })
+        handler = lambda x: Mock(headerlist=[])
+        request = Mock(
+            headers={},
+            host_url='127.1.2.3:1234')
+        response = tweens.cors(handler, registry)(request)
+        assert response.headerlist == [
+            ('Access-Control-Allow-Origin', '127.1.2.3:1234')]
 
     def test_cache_control_header_not_set(self):
         handler = lambda x: Mock(headerlist=[('Cache-Control', '')])
@@ -198,7 +238,7 @@ class TestTweens(object):
         assert config.subscribed == []
         tweens.enable_selfalias(config, 'foo')
         assert len(config.subscribed) == 1
-        assert callable(config.subscribed[0][0])
+        assert six.callable(config.subscribed[0][0])
         assert config.subscribed[0][1] is ContextFound
 
     def test_context_found_subscriber_alias_enabled(self):

@@ -15,15 +15,20 @@ install_requires = [
     'blinker',
     'zope.dottedname',
     'cryptacular',
+    'six',
 ]
 
 setup(
     name='nefertari',
     version=VERSION,
-    description='nefertari',
+    description='REST API framework for Pyramid',
     long_description=README,
     classifiers=[
         "Programming Language :: Python",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.4",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
@@ -31,7 +36,7 @@ setup(
     author='Brandicted',
     author_email='hello@brandicted.com',
     url='https://github.com/brandicted/nefertari',
-    keywords='web wsgi bfg pylons pyramid rest',
+    keywords='web wsgi bfg pylons pyramid rest api elasticsearch',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -41,5 +46,7 @@ setup(
     [console_scripts]
         nefertari.index = nefertari.scripts.es:main
         nefertari.post2api = nefertari.scripts.post2api:main
+    [pyramid.scaffold]
+        nefertari_starter = nefertari.scaffolds:NefertariStarterTemplate
     """,
 )

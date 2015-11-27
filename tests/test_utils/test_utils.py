@@ -1,16 +1,27 @@
 import pytest
-from mock import patch, call
+from mock import patch, call, Mock
 
 from nefertari.utils import utils
 
 
 class TestUtils(object):
 
-    @patch('nefertari.utils.utils.json')
-    def test_json_dumps(self, mock_json):
+    @patch('nefertari.engine')
+    def test_get_json_encoder_engine(self, mock_eng):
+        eng = utils.get_json_encoder()
+        assert eng == mock_eng.JSONEncoder
+
+    def test_get_json_encoder_default(self):
         from nefertari.renderers import _JSONEncoder
+        eng = utils.get_json_encoder()
+        assert eng is _JSONEncoder
+
+    @patch('nefertari.utils.utils.get_json_encoder')
+    @patch('nefertari.utils.utils.json')
+    def test_json_dumps(self, mock_json, mock_get):
         utils.json_dumps('foo')
-        mock_json.dumps.assert_called_once_with('foo', cls=_JSONEncoder)
+        mock_get.assert_called_once_with()
+        mock_json.dumps.assert_called_once_with('foo', cls=mock_get())
 
     @patch('nefertari.utils.utils.json')
     def test_json_dumps_encoder(self, mock_json):
@@ -118,3 +129,65 @@ class TestUtils(object):
         assert not utils.issequence('asd')
         assert not utils.issequence(1)
         assert not utils.issequence(2.0)
+
+    def test_merge_dicts(self):
+        dict1 = {'a': {'b': {'c': 1}}}
+        dict2 = {'a': {'d': 2}, 'q': 3}
+        merged = utils.merge_dicts(dict1, dict2)
+        assert merged == {
+            'a': {
+                'b': {'c': 1},
+                'd': 2,
+            },
+            'q': 3
+        }
+
+    def test_str2dict(self):
+        assert utils.str2dict('foo.bar') == {'foo': {'bar': {}}}
+
+    def test_str2dict_value(self):
+        assert utils.str2dict('foo.bar', value=2) == {'foo': {'bar': 2}}
+
+    def test_str2dict_separator(self):
+        assert utils.str2dict('foo:bar', value=2, separator=':') == {
+            'foo': {'bar': 2}}
+
+    @patch('nefertari.wrappers.apply_privacy')
+    def test_validate_data_privacy_valid(self, mock_wrapper):
+        from nefertari import wrappers
+        wrapper = Mock()
+        wrapper.return_value = {'foo': 1, 'bar': 2}
+        mock_wrapper.return_value = wrapper
+        data = {'foo': None, '_type': 'ASD'}
+        try:
+            utils.validate_data_privacy(None, data)
+        except wrappers.ValidationError:
+            raise Exception('Unexpected error')
+        mock_wrapper.assert_called_once_with(None)
+        wrapper.assert_called_once_with(result=data)
+
+    @patch('nefertari.wrappers.apply_privacy')
+    def test_validate_data_privacy_invalid(self, mock_wrapper):
+        from nefertari import wrappers
+        wrapper = Mock()
+        wrapper.return_value = {'foo': 1, 'bar': 2}
+        mock_wrapper.return_value = wrapper
+        data = {'qoo': None, '_type': 'ASD'}
+        with pytest.raises(wrappers.ValidationError) as ex:
+            utils.validate_data_privacy(None, data)
+
+        assert str(ex.value) == 'qoo'
+        mock_wrapper.assert_called_once_with(None)
+        wrapper.assert_called_once_with(result=data)
+
+    def test_drop_reserved_params(self):
+        from nefertari import RESERVED_PARAMS
+        reserved_param = RESERVED_PARAMS[0]
+        result = utils.drop_reserved_params({reserved_param: 1, 'foo': 2})
+        assert result == {'foo': 2}
+
+    def test_is_document(self):
+        assert not utils.is_document([1])
+        assert not utils.is_document('foo')
+        assert not utils.is_document({'id': 1})
+        assert utils.is_document({'id': 1, '_type': 'foo'})

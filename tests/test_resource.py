@@ -1,16 +1,23 @@
 import unittest
+
+import six
 import mock
 from webtest import TestApp
 
 from pyramid import testing
 from pyramid.config import Configurator
 from pyramid.url import route_path
+from pyramid.response import Response
 
 from nefertari.view import BaseView
+from nefertari.renderers import _JSONEncoder
 
 
 def get_test_view_class(name=''):
     class View(BaseView):
+        _json_encoder = _JSONEncoder
+        Model = mock.Mock(__name__='Foo')
+
         def __init__(self, *a, **k):
             BaseView.__init__(self, *a, **k)
             # turning off before and after calls
@@ -18,18 +25,21 @@ def get_test_view_class(name=''):
             self._after_calls = {}
 
         def index(self, **a):
-            return name + 'index'
+            return Response(name + 'index')
 
         def show(self, **a):
-            return name + 'show'
+            return Response(name + 'show')
 
         def delete(self, **a):
-            return name + 'delete'
+            return Response(name + 'delete')
 
         def __getattr__(self, attr):
-            return lambda *a, **k: name + attr
+            return lambda *a, **k: Response(name + attr)
 
         def convert_ids2objects(self, *args, **kwargs):
+            pass
+
+        def fill_null_values(self, *args, **kwargs):
             pass
 
     return View
@@ -52,22 +62,22 @@ class Test(unittest.TestCase):
 
 
 class DummyCrudView(object):
-    _json_encoder = None
+    _json_encoder = _JSONEncoder
 
     def __init__(self, request):
         self.request = request
 
     def index(self, **a):
-        return 'index'
+        return Response('index')
 
     def show(self, **a):
-        return 'show'
+        return Response('show')
 
     def delete(self, **a):
-        return 'delete'
+        return Response('delete')
 
     def __getattr__(self, attr):
-        return lambda *a, **kw: attr
+        return lambda *a, **kw: Response(attr)
 
 
 class TestResourceGeneration(Test):
@@ -160,13 +170,23 @@ class TestResourceGeneration(Test):
         )
 
 
+class DummyCrudRenderedView(object):
+    _json_encoder = _JSONEncoder
+
+    def __init__(self, request):
+        self.request = request
+
+    def __getattr__(self, attr):
+        return lambda *a, **kw: attr
+
+
 class TestResourceRecognition(Test):
     def setUp(self):
         from nefertari.resource import add_resource_routes
         self.config = _create_config()
         add_resource_routes(
             self.config,
-            DummyCrudView,
+            DummyCrudRenderedView,
             'message',
             'messages',
             renderer='string'
@@ -179,50 +199,67 @@ class TestResourceRecognition(Test):
         self.member_name = 'message'
 
     def test_get_collection(self):
-        self.assertEqual(self.app.get('/messages').body, 'index')
+        self.assertEqual(self.app.get('/messages').body, six.b('index'))
 
     def test_get_collection_json(self):
         from nefertari.resource import add_resource_routes
         add_resource_routes(
             self.config,
-            DummyCrudView,
+            DummyCrudRenderedView,
             'message',
             'messages',
             renderer='json'
         )
-        self.assertEqual(self.app.get('/messages').body, '"index"')
+        self.assertEqual(self.app.get('/messages').body, six.b('"index"'))
 
     def test_get_collection_nefertari_json(self):
         from nefertari.resource import add_resource_routes
         add_resource_routes(
             self.config,
-            DummyCrudView,
+            DummyCrudRenderedView,
             'message',
             'messages',
             renderer='nefertari_json'
         )
-        self.assertEqual(self.app.get('/messages').body, '"index"')
+        self.assertEqual(self.app.get('/messages').body, six.b('"index"'))
 
     def test_get_collection_no_renderer(self):
         from nefertari.resource import add_resource_routes
-        add_resource_routes(self.config, DummyCrudView, 'message', 'messages')
+        add_resource_routes(
+            self.config, DummyCrudRenderedView, 'message', 'messages')
         self.assertRaises(ValueError, self.app.get, '/messages')
 
     def test_post_collection(self):
         result = self.app.post('/messages').body
-        self.assertEqual(result, 'create')
+        self.assertEqual(result, six.b('create'))
+
+    def test_head_collection(self):
+        response = self.app.head('/messages')
+        self.assertEqual(response.body, six.b(''))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers)
 
     def test_get_member(self):
         result = self.app.get('/messages/1').body
-        self.assertEqual(result, 'show')
+        self.assertEqual(result, six.b('show'))
+
+    def test_head_member(self):
+        response = self.app.head('/messages/1')
+        self.assertEqual(response.body, six.b(''))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.headers)
 
     def test_put_member(self):
         result = self.app.put('/messages/1').body
-        self.assertEqual(result, 'update')
+        self.assertEqual(result, six.b('replace'))
+
+    def test_patch_member(self):
+        result = self.app.patch('/messages/1').body
+        self.assertEqual(result, six.b('update'))
 
     def test_delete_member(self):
         result = self.app.delete('/messages/1').body
-        self.assertEqual(result, 'delete')
+        self.assertEqual(result, six.b('delete'))
 
 
 class TestResource(Test):
@@ -271,6 +308,7 @@ class TestResource(Test):
             get_default_view_path(m)
         )
 
+    @mock.patch('nefertari.view.trigger_events')
     def test_singular_resource(self, *a):
         View = get_test_view_class()
         config = _create_config()
@@ -299,22 +337,32 @@ class TestResource(Test):
                        grandpa_id=1, id=2)
         )
 
-        self.assertEqual(app.put('/grandpas').body, '"update_many"')
+        self.assertEqual(app.put('/grandpas').body, six.b('update_many'))
+        self.assertEqual(app.head('/grandpas').body, six.b(''))
+        self.assertEqual(app.options('/grandpas').body, six.b(''))
 
-        self.assertEqual(app.delete('/grandpas/1').body, '"delete"')
+        self.assertEqual(app.delete('/grandpas/1').body, six.b('delete'))
+        self.assertEqual(app.head('/grandpas/1').body, six.b(''))
+        self.assertEqual(app.options('/grandpas/1').body, six.b(''))
 
-        self.assertEqual(app.put('/thing').body, '"update"')
+        self.assertEqual(app.put('/thing').body, six.b('replace'))
+        self.assertEqual(app.patch('/thing').body, six.b('update'))
+        self.assertEqual(app.delete('/thing').body, six.b('delete'))
+        self.assertEqual(app.head('/thing').body, six.b(''))
+        self.assertEqual(app.options('/thing').body, six.b(''))
 
-        self.assertEqual(app.delete('/thing').body, '"delete"')
+        self.assertEqual(app.put('/grandpas/1/wife').body, six.b('replace'))
+        self.assertEqual(app.patch('/grandpas/1/wife').body, six.b('update'))
+        self.assertEqual(app.delete('/grandpas/1/wife').body, six.b('delete'))
+        self.assertEqual(app.head('/grandpas/1/wife').body, six.b(''))
+        self.assertEqual(app.options('/grandpas/1/wife').body, six.b(''))
 
-        self.assertEqual(app.put('/grandpas/1/wife').body, '"update"')
+        self.assertEqual(six.b('show'), app.get('/grandpas/1').body)
+        self.assertEqual(six.b('show'), app.get('/grandpas/1/wife').body)
+        self.assertEqual(
+            six.b('show'), app.get('/grandpas/1/wife/children/1').body)
 
-        self.assertEqual(app.delete('/grandpas/1/wife').body, '"delete"')
-
-        self.assertEqual('"show"', app.get('/grandpas/1').body)
-        self.assertEqual('"show"', app.get('/grandpas/1/wife').body)
-        self.assertEqual('"show"', app.get('/grandpas/1/wife/children/1').body)
-
+    @mock.patch('nefertari.view.trigger_events')
     def test_renderer_override(self, *args):
         # resource.renderer and view._default_renderer are only used
         # when accept header is missing.
@@ -331,41 +379,42 @@ class TestResource(Test):
         app = TestApp(config.make_wsgi_app())
 
         # no headers, user renderer==string.returns string
-        self.assertEqual('"index"', app.get('/things').body)
+        self.assertEqual(six.b('index'), app.get('/things').body)
 
         # header is sting, renderer is string. returns string
-        self.assertEqual('index', app.get('/things',
+        self.assertEqual(six.b('index'), app.get('/things',
                          headers={'ACCEPT': 'text/plain'}).body)
 
         # header is json, renderer is string. returns json
-        self.assertEqual('"index"', app.get('/things',
+        self.assertEqual(six.b('index'), app.get('/things',
                          headers={'ACCEPT': 'application/json'}).body)
 
         # no header. returns json
-        self.assertEqual('"index"', app.get('/2things').body)
+        self.assertEqual(six.b('index'), app.get('/2things').body)
 
         # header==json, renderer==json, returns json
-        self.assertEqual('"index"', app.get('/2things',
+        self.assertEqual(six.b('index'), app.get('/2things',
                          headers={'ACCEPT': 'application/json'}).body)
 
         # header==text, renderer==json, returns string
-        self.assertEqual("index", app.get('/2things',
+        self.assertEqual(six.b("index"), app.get('/2things',
                          headers={'ACCEPT': 'text/plain'}).body)
 
         # no header, no renderer. uses default_renderer, returns
         # View._default_renderer==nefertari_json
-        self.assertEqual('"index"', app.get('/3things').body)
+        self.assertEqual(six.b('index'), app.get('/3things').body)
 
-        self.assertEqual('"index"', app.get('/3things',
+        self.assertEqual(six.b('index'), app.get('/3things',
                          headers={'ACCEPT': 'application/json'}).body)
 
-        self.assertEqual('index', app.get('/3things',
+        self.assertEqual(six.b('index'), app.get('/3things',
                          headers={'ACCEPT': 'text/plain'}).body)
 
         # bad accept.defaults to json
-        self.assertEqual('"index"', app.get('/3things',
+        self.assertEqual(six.b('index'), app.get('/3things',
                          headers={'ACCEPT': 'text/blablabla'}).body)
 
+    @mock.patch('nefertari.view.trigger_events')
     def test_nonBaseView_default_renderer(self, *a):
         config = _create_config()
         r = config.get_root_resource()
@@ -374,8 +423,9 @@ class TestResource(Test):
         config.begin()
         app = TestApp(config.make_wsgi_app())
 
-        self.assertEqual('"index"', app.get('/ythings').body)
+        self.assertEqual(six.b('index'), app.get('/ythings').body)
 
+    @mock.patch('nefertari.view.trigger_events')
     def test_nested_resources(self, *a):
         config = _create_config()
         root = config.get_root_resource()

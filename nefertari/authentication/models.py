@@ -12,24 +12,24 @@ log = logging.getLogger(__name__)
 crypt = cryptacular.bcrypt.BCRYPTPasswordManager()
 
 
-class AuthModelDefaultMixin(object):
+class AuthModelMethodsMixin(object):
     """ Mixin that implements all methods required for Ticket and Token
     auth systems to work.
 
     All implemented methods must be class methods.
     """
     @classmethod
-    def get_resource(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_resource(
+    def get_item(self, *args, **kwargs):
+        return super(AuthModelMethodsMixin, self).get_item(
             *args, **kwargs)
 
     @classmethod
     def pk_field(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).pk_field(*args, **kwargs)
+        return super(AuthModelMethodsMixin, self).pk_field(*args, **kwargs)
 
     @classmethod
     def get_or_create(self, *args, **kwargs):
-        return super(AuthModelDefaultMixin, self).get_or_create(
+        return super(AuthModelMethodsMixin, self).get_or_create(
             *args, **kwargs)
 
     @classmethod
@@ -45,9 +45,9 @@ class AuthModelDefaultMixin(object):
         Used by Token-based auth as `credentials_callback` kwarg.
         """
         try:
-            user = cls.get_resource(username=username)
+            user = cls.get_item(username=username)
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
             forget(request)
         else:
             if user:
@@ -61,9 +61,9 @@ class AuthModelDefaultMixin(object):
         Used by Token-based authentication as `check` kwarg.
         """
         try:
-            user = cls.get_resource(username=username)
+            user = cls.get_item(username=username)
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
             forget(request)
             return
         else:
@@ -84,9 +84,9 @@ class AuthModelDefaultMixin(object):
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
-            user = cls.get_resource(**{key: login})
+            user = cls.get_item(**{key: login})
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
 
         if user:
             password = params.get('password', None)
@@ -100,13 +100,13 @@ class AuthModelDefaultMixin(object):
         Used by Ticket-based auth as `callback` kwarg.
         """
         try:
-            user = cls.get_resource(**{cls.pk_field(): userid})
+            cache_request_user(cls, request, userid)
         except Exception as ex:
-            log.error(unicode(ex))
+            log.error(str(ex))
             forget(request)
         else:
-            if user:
-                return ['g:%s' % g for g in user.groups]
+            if request._user:
+                return ['g:%s' % g for g in request._user.groups]
 
     @classmethod
     def create_account(cls, params):
@@ -131,9 +131,10 @@ class AuthModelDefaultMixin(object):
         Used by Ticket-based auth. Is added as request method to populate
         `request.user`.
         """
-        _id = authenticated_userid(request)
-        if _id:
-            return cls.get_resource(**{cls.pk_field(): _id})
+        userid = authenticated_userid(request)
+        if userid:
+            cache_request_user(cls, request, userid)
+            return request._user
 
     @classmethod
     def get_authuser_by_name(cls, request):
@@ -144,36 +145,43 @@ class AuthModelDefaultMixin(object):
         """
         username = authenticated_userid(request)
         if username:
-            return cls.get_resource(username=username)
+            return cls.get_item(username=username)
 
 
-def lower_strip(value):
-    return (value or '').lower().strip()
+def lower_strip(**kwargs):
+    return (kwargs['new_value'] or '').lower().strip()
 
 
-def encrypt_password(password):
-    """ Crypt :password: if it's not crypted yet. """
-    if password and not crypt.match(password):
-        password = unicode(crypt.encode(password))
-    return password
+def random_uuid(**kwargs):
+    return kwargs['new_value'] or uuid.uuid4().hex
 
 
-class AuthUser(AuthModelDefaultMixin, engine.BaseDocument):
-    """ Class that is meant to be User class in Auth system.
+def encrypt_password(**kwargs):
+    """ Crypt :new_value: if it's not crypted yet. """
+    new_value = kwargs['new_value']
+    field = kwargs['field']
+    min_length = field.params['min_length']
+    if len(new_value) < min_length:
+        raise ValueError(
+            '`{}`: Value length must be more than {}'.format(
+                field.name, field.params['min_length']))
+
+    if new_value and not crypt.match(new_value):
+        new_value = str(crypt.encode(new_value))
+    return new_value
+
+
+class AuthUserMixin(AuthModelMethodsMixin):
+    """ Mixin that may be used as base for auth User models.
 
     Implements basic operations to support Pyramid Ticket-based and custom
     ApiKey token-based authentication.
     """
-    __tablename__ = 'nefertari_authuser'
-
-    id = engine.IdField(primary_key=True)
     username = engine.StringField(
-        min_length=1, max_length=50, unique=True,
-        required=True, processors=[lower_strip])
-    email = engine.StringField(
-        unique=True, required=True, processors=[lower_strip])
-    password = engine.StringField(
-        min_length=3, required=True, processors=[encrypt_password])
+        primary_key=True, unique=True,
+        min_length=1, max_length=50)
+    email = engine.StringField(unique=True, required=True)
+    password = engine.StringField(min_length=3, required=True)
     groups = engine.ListField(
         item_type=engine.StringField,
         choices=['admin', 'user'], default=['user'])
@@ -233,3 +241,20 @@ def create_apikey_model(user_model):
     ApiKey.autogenerate_for(user_model, 'user')
 
     return ApiKey
+
+
+def cache_request_user(user_cls, request, user_id):
+    """ Helper function to cache currently logged in user.
+
+    User is cached at `request._user`. Caching happens only only
+    if user is not already cached or if cached user's pk does not
+    match `user_id`.
+
+    :param user_cls: User model class to use for user lookup.
+    :param request: Pyramid Request instance.
+    :user_id: Current user primary key field value.
+    """
+    pk_field = user_cls.pk_field()
+    user = getattr(request, '_user', None)
+    if user is None or getattr(user, pk_field, None) != user_id:
+        request._user = user_cls.get_item(**{pk_field: user_id})

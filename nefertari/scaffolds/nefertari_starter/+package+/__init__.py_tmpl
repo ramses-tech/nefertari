@@ -1,0 +1,84 @@
+from pkg_resources import get_distribution
+import logging
+
+from pyramid.config import Configurator
+
+import nefertari
+from nefertari.utils import dictset
+
+APP_NAME = __package__.split('.')[0]
+_DIST = get_distribution(APP_NAME)
+PROJECTDIR = _DIST.location
+__version__ = _DIST.version
+
+log = logging.getLogger(__name__)
+
+Settings = dictset()
+
+
+def bootstrap(config):
+    Settings.update(config.registry.settings)
+    Settings[APP_NAME + '.__version__'] = __version__
+    Settings[nefertari.APP_NAME+'.__version__'] = nefertari.__version__
+
+    config.include('nefertari')
+
+    config.include('{{package}}.models')
+    config.include('nefertari.view')
+    config.include('nefertari.elasticsearch')
+    config.include('nefertari.json_httpexceptions')
+
+    if Settings.asbool('enable_get_tunneling'):
+        config.add_tween('nefertari.tweens.get_tunneling')
+
+    def _route_url(request, route_name, *args, **kw):
+        if config.route_prefix:
+            route_name = '%s_%s' % (config.route_prefix, route_name)
+        return request.route_url(route_name, *args, **kw)
+
+    config.add_request_method(_route_url)
+
+    def _route_path(request, route_name, *args, **kw):
+        if config.route_prefix:
+            route_name = '%s_%s' % (config.route_prefix, route_name)
+        return request.route_path(route_name, *args, **kw)
+
+    config.add_request_method(_route_path)
+
+
+def main(global_config, **settings):
+    Settings.update(settings)
+    Settings.update(global_config)
+
+    config = Configurator(settings=settings)
+    config.include('nefertari.engine')
+    config.include(includeme)
+
+    from nefertari.engine import setup_database
+    setup_database(config)
+
+    from nefertari.elasticsearch import ES
+    ES.setup_mappings()
+
+    config.commit()
+
+    return config.make_wsgi_app()
+
+
+def includeme(config):
+    log.info("%s %s" % (APP_NAME, __version__))
+
+    bootstrap(config)
+
+    config.scan(package='{{package}}.views')
+
+    create_resources(config)
+
+
+def create_resources(config):
+    from {{package}}.models import Item
+    root = config.get_root_resource()
+
+    root.add(
+        'item', 'items',
+        id_name='item_' + Item.pk_field())

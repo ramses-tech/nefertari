@@ -1,0 +1,12 @@
+import sys
+
+__all__ = ('Item',)
+
+this = sys.modules[__name__]
+
+
+def includeme(config):
+    pass
+
+
+from {{package}}.models.item import Item

@@ -4,16 +4,50 @@ from nefertari.utils import snake2camel, maybe_dotted
 log = logging.getLogger(__name__)
 
 
-ACTIONS = ['index', 'show', 'create', 'update',
-           'delete', 'update_many', 'delete_many']
+# All actions names(view method names) supported by nefertari
+ACTIONS = [
+    'index',                # Collection GET
+    'create',               # Collection POST
+    'update_many',          # Collection PATCH/PUT
+    'delete_many',          # Collection DELETE
+    'collection_options',   # Collection OPTIONS
+    'show',                 # Item GET
+    'update',               # Item PATCH
+    'replace',              # Item PUT
+    'delete',               # Item DELETE
+    'item_options',         # Item OPTIONS
+]
+PERMISSIONS = {
+    'index':                'view',
+    'show':                 'view',
+    'create':               'create',
+    'update':               'update',
+    'update_many':          'update',
+    'replace':              'update',
+    'delete':               'delete',
+    'delete_many':          'delete',
+    'collection_options':   'options',
+    'item_options':         'options',
+    }
 DEFAULT_ID_NAME = 'id'
 
 
+def get_app_package_name(config):
+    """ Get package name of app that is running.
+
+    Name is either name of app that included nefertari, or
+    current package name (which is 'nefertari').
+    """
+    if config.includepath:
+        return config.includepath[0].split(':')[0]
+    return config.package_name
+
+
 def get_root_resource(config):
-    "Returns the root resource."
+    """Returns the root resource."""
+    app_package_name = get_app_package_name(config)
     return config.registry._root_resources.setdefault(
-        config.package_name,
-        Resource(config))
+        app_package_name, Resource(config))
 
 
 def get_resource_map(request):
@@ -84,29 +118,45 @@ def add_resource_routes(config, view, member_name, collection_name, **kwargs):
         if route_name not in added_routes:
             config.add_route(
                 route_name, path, factory=_factory,
-                request_method=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+                request_method=['GET', 'POST', 'PUT', 'PATCH', 'DELETE',
+                                'OPTIONS'],
                 **route_kwargs)
             added_routes[route_name] = path
 
         action_route[action] = route_name
 
+        if _auth:
+            permission = PERMISSIONS[action]
+        else:
+            permission = None
         config.add_view(view=view, attr=action, route_name=route_name,
                         request_method=request_method,
-                        permission=action if _auth else None,
+                        permission=permission,
                         **kwargs)
         config.commit()
+
+    if collection_name == member_name:
+        collection_name = collection_name + '_collection'
 
     if collection_name:
         add_route_and_view(
             config, 'index', name_prefix + collection_name, path,
             'GET')
 
+        add_route_and_view(
+            config, 'collection_options', name_prefix + collection_name, path,
+            'OPTIONS')
+
     add_route_and_view(
         config, 'show', name_prefix + member_name, path + id_name,
         'GET', traverse=_traverse)
 
     add_route_and_view(
-        config, 'update', name_prefix + member_name, path + id_name,
+        config, 'item_options', name_prefix + member_name, path + id_name,
+        'OPTIONS', traverse=_traverse)
+
+    add_route_and_view(
+        config, 'replace', name_prefix + member_name, path + id_name,
         'PUT', traverse=_traverse)
 
     add_route_and_view(
@@ -152,7 +202,8 @@ def get_default_view_path(resource):
     view_file = '%s' % '_'.join(parts)
     view = '%s:%sView' % (view_file, snake2camel(view_file))
 
-    return '%s.views.%s' % (resource.config.package_name, view)
+    app_package_name = get_app_package_name(resource.config)
+    return '%s.views.%s' % (app_package_name, view)
 
 
 class Resource(object):
@@ -197,6 +248,8 @@ class Resource(object):
 
     ancestors = property(get_ancestors)
     resource_map = property(lambda self: self.config.registry._resources_map)
+    model_collections = property(
+        lambda self: self.config.registry._model_collections)
     is_root = property(lambda self: not self.member_name)
     is_singular = property(
         lambda self: not self.is_root and not self.collection_name)
@@ -236,10 +289,16 @@ class Resource(object):
         if uid in self.resource_map:
             raise ValueError('%s already exists in resource map' % uid)
 
+        # Use id_name of parent for singular views to make url generation
+        # easier
+        id_name = kwargs.get('id_name', '')
+        if not id_name and parent:
+            id_name = parent.id_name
+
         new_resource = Resource(self.config, member_name=member_name,
                                 collection_name=collection_name,
                                 parent=parent, uid=uid,
-                                id_name=kwargs.get('id_name', ''),
+                                id_name=id_name,
                                 prefix=prefix)
 
         view = maybe_dotted(
@@ -274,7 +333,7 @@ class Resource(object):
 
         name_segs = [a.member_name for a in new_resource.ancestors]
         name_segs.insert(1, prefix)
-        name_segs = filter(bool, name_segs)
+        name_segs = [seg for seg in name_segs if seg]
         if name_segs:
             kwargs['name_prefix'] = '_'.join(name_segs) + ':'
 
@@ -298,8 +357,20 @@ class Resource(object):
         # add all route names for this resource as keys in the dict,
         # so its easy to find it in the view.
         self.resource_map.update(dict.fromkeys(
-            new_resource.action_route_map.values(),
+            list(new_resource.action_route_map.values()),
             new_resource))
+
+        # Store resources in {modelName: resource} map if:
+        #   * Its view has Model defined
+        #   * It's not singular
+        #   * Its parent is root or it's not already stored
+        model = new_resource.view.Model
+        is_collection = model is not None and not new_resource.is_singular
+        if is_collection:
+            is_needed = (model.__name__ not in self.model_collections or
+                         new_resource.parent is root_resource)
+            if is_needed:
+                self.model_collections[model.__name__] = new_resource
 
         parent.children.append(new_resource)
         view._resource = new_resource

@@ -2,6 +2,8 @@ import logging
 import sys
 import traceback
 from datetime import datetime
+
+import six
 from pyramid import httpexceptions as http_exc
 
 from nefertari.wrappers import apply_privacy
@@ -27,24 +29,26 @@ def add_stack():
 def create_json_response(obj, request=None, log_it=False, show_stack=False,
                          **extra):
     from nefertari.utils import json_dumps
-    body = dict()
+    body = extra.pop('body', None)
     encoder = extra.pop('encoder', None)
-    for attr in BASE_ATTRS:
-        body[attr] = extra.pop(attr, None) or getattr(obj, attr, None)
 
-    extra['timestamp'] = datetime.utcnow()
-    if request:
-        extra['request_url'] = request.url
-        if obj.status_int in [403, 401]:
-            extra['client_addr'] = request.client_addr
-            extra['remote_addr'] = request.remote_addr
+    if body is None:
+        body = dict()
+        for attr in BASE_ATTRS:
+            body[attr] = extra.pop(attr, None) or getattr(obj, attr, None)
 
-    if obj.location:
-        body['id'] = obj.location.split('/')[-1]
+        extra['timestamp'] = datetime.utcnow()
+        if request:
+            extra['request_url'] = request.url
+            if obj.status_int in [403, 401]:
+                extra['client_addr'] = request.client_addr
+                extra['remote_addr'] = request.remote_addr
 
-    body.update(extra)
+        if obj.location:
+            body['_pk'] = obj.location.split('/')[-1]
+        body.update(extra)
 
-    obj.body = json_dumps(body, encoder=encoder)
+    obj.body = six.b(json_dumps(body, encoder=encoder))
     show_stack = log_it or show_stack
     status = obj.status_int
 
@@ -77,7 +81,7 @@ class JBase(object):
 thismodule = sys.modules[__name__]
 
 
-http_exceptions = http_exc.status_map.values() + [
+http_exceptions = list(http_exc.status_map.values()) + [
     http_exc.HTTPBadRequest,
     http_exc.HTTPInternalServerError,
 ]
@@ -96,18 +100,16 @@ def httperrors(context, request):
 class JHTTPCreated(http_exc.HTTPCreated):
     def __init__(self, *args, **kwargs):
         resource = kwargs.pop('resource', None)
-        encoder = kwargs.pop('encoder', None)
-        request = kwargs.pop('request', None)
+        resp_kwargs = {
+            'obj': self,
+            'request': kwargs.pop('request', None),
+            'encoder': kwargs.pop('encoder', None),
+            'body': kwargs.pop('body', None),
+            'resource': resource,
+        }
         super(JHTTPCreated, self).__init__(*args, **kwargs)
 
         if resource and 'location' in kwargs:
-            resource['self'] = kwargs['location']
+            resource['_self'] = kwargs['location']
 
-        auth = request and request.registry._root_resources.values()[0].auth
-        if resource and auth:
-            wrapper = apply_privacy(request=request)
-            resource = wrapper(result=resource)
-
-        create_json_response(
-            self, data=resource,
-            encoder=encoder)
+        create_json_response(**resp_kwargs)

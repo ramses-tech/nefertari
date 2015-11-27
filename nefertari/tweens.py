@@ -1,7 +1,10 @@
 import time
-from pyramid.settings import asbool
 import logging
 import json
+
+import six
+from pyramid.settings import asbool
+from nefertari.utils import drop_reserved_params
 
 log = logging.getLogger(__name__)
 
@@ -29,10 +32,9 @@ def request_timing(handler, registry):
 
 
 def get_tunneling(handler, registry):
+    """ Allows all methods to be tunneled via GET for dev/debuging
+    purposes.
     """
-    This allows all methods to be tunneled via GET for dev/debuging purposes.
-    """
-
     log.info('get_tunneling enabled')
 
     def get_tunneling(request):
@@ -41,9 +43,11 @@ def get_tunneling(handler, registry):
             request.method = method
 
             if method in ['POST', 'PUT', 'PATCH']:
-                request.body = json.dumps(request.GET.mixed())
+                get_params = request.GET.mixed()
+                valid_params = drop_reserved_params(get_params)
+                request.body = six.b(json.dumps(valid_params))
                 request.content_type = 'application/json'
-                # request.POST.update(request.GET)
+                request._tunneled_get = True
 
         return handler(request)
 
@@ -53,7 +57,8 @@ def get_tunneling(handler, registry):
 def cors(handler, registry):
     log.info('cors_tunneling enabled')
 
-    allow_origins_setting = registry.settings.get('cors.allow_origins', '')
+    allow_origins_setting = registry.settings.get(
+        'cors.allow_origins', '').strip()
 
     allow_origins = [
         each.strip() for each in allow_origins_setting.split(',')]
@@ -63,7 +68,7 @@ def cors(handler, registry):
         origin = request.headers.get('Origin') or request.host_url
         response = handler(request)
 
-        if origin in allow_origins:
+        if origin in allow_origins or '*' in allow_origins:
             response.headerlist.append(('Access-Control-Allow-Origin', origin))
 
         if allow_credentials is not None:
@@ -81,9 +86,8 @@ def cors(handler, registry):
         log.warning('cors.allow_credentials is not set')
 
     elif asbool(allow_credentials) and allow_origins_setting == '*':
-        log.error('Not allowed Access-Control-Allow-Credentials '
-                  'to set to TRUE if origin is *')
-        return
+        raise Exception('Not allowed Access-Control-Allow-Credentials '
+                        'to set to TRUE if origin is *')
     else:
         log.info('Access-Control-Allow-Credentials = %s ' % allow_credentials)
 
@@ -138,9 +142,10 @@ def enable_selfalias(config, id_name):
 
     def context_found_subscriber(event):
         request = event.request
+        user = getattr(request, 'user', None)
         if (request.matchdict and
                 request.matchdict.get(id_name, None) == 'self' and
-                request.user):
-            request.matchdict[id_name] = request.user.username
+                user):
+            request.matchdict[id_name] = user.username
 
     config.add_subscriber(context_found_subscriber, ContextFound)

@@ -1,3 +1,5 @@
+from mock import Mock
+
 from nefertari.utils import data as dutils
 
 
@@ -33,7 +35,7 @@ class TestDataUtils(object):
     def test_data_proxy_model_no_depth(self):
         obj = DummyModel({'foo1': 'bar1'})
         proxy = dutils.DataProxy({'foo': obj})
-        data = proxy.to_dict(__depth=0)
+        data = proxy.to_dict(_depth=0)
         assert data == {'_type': 'DataProxy', 'foo': obj}
 
     def test_data_proxy_model_sequence(self):
@@ -43,30 +45,27 @@ class TestDataUtils(object):
         assert data == {'_type': 'DataProxy', 'foo': [{'foo1': 'bar1'}]}
 
     def test_dict2obj_regular_value(self):
-        obj = dutils.dict2obj({'foo': 'bar', 'baz': 1})
+        obj = dutils.dict2obj({'_type': 'Foo', 'foo': 'bar', 'baz': 1})
         assert isinstance(obj, dutils.DataProxy)
         assert obj.foo == 'bar'
         assert obj.baz == 1
 
     def test_dict2obj_dict_value(self):
-        obj = dutils.dict2obj({'foo': {'baz': 1}})
+        obj = dutils.dict2obj({'_type': 'Foo', 'foo': {'baz': 1}})
         assert isinstance(obj, dutils.DataProxy)
         assert isinstance(obj.foo, dutils.DataProxy)
         assert obj.foo.baz == 1
 
     def test_dict2obj_list_value(self):
-        obj = dutils.dict2obj({'foo': [{'baz': 1}]})
+        obj = dutils.dict2obj({'_type': 'Foo', 'foo': [{'baz': 1}]})
         assert isinstance(obj, dutils.DataProxy)
         assert isinstance(obj.foo, list)
         assert len(obj.foo) == 1
         assert isinstance(obj.foo[0], dutils.DataProxy)
         assert obj.foo[0].baz == 1
 
-    def test_dict2obj_no_data(self):
-        assert dutils.dict2obj({}) == {}
-
     def test_to_objs(self):
-        collection = dutils.to_objs([{'foo': 'bar'}])
+        collection = dutils.to_objs([{'foo': 'bar', '_type': 'Foo'}])
         assert len(collection) == 1
         assert isinstance(collection[0], dutils.DataProxy)
         assert collection[0].foo == 'bar'
@@ -118,3 +117,29 @@ class TestDataUtils(object):
         assert dutils.obj2dict(1) == 1
         assert dutils.obj2dict('foo') == 'foo'
         assert dutils.obj2dict(None) is None
+
+
+class TestFieldData(object):
+
+    def test_init(self):
+        obj = dutils.FieldData(name='foo', new_value=1, params={})
+        assert obj.name == 'foo'
+        assert obj.new_value == 1
+        assert obj.params == {}
+
+    def test_repr(self):
+        obj = dutils.FieldData(name='foo', new_value=1, params={})
+        assert str(obj) == '<FieldData: foo>'
+
+    def test_from_dict_model_provided(self):
+        model = Mock()
+        model.get_field_params.return_value = {'foo': 1}
+        data = {'username': 'admin'}
+        result = dutils.FieldData.from_dict(data, model)
+        assert list(result.keys()) == ['username']
+        field = result['username']
+        assert isinstance(field, dutils.FieldData)
+        assert field.name == 'username'
+        assert field.new_value == 'admin'
+        assert field.params == {'foo': 1}
+        model.get_field_params.assert_called_once_with('username')
