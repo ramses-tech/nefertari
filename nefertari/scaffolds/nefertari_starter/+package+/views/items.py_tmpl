@@ -14,9 +14,8 @@ class ItemsView(BaseView):
         return self.get_collection_es()
 
     def show(self, **kwargs):
-        return self.Model.get(
-            id=kwargs.pop('item_id'),
-            __raise=True)
+        return self.Model.get_item(
+            id=kwargs.pop('item_id'), **kwargs)
 
     def create(self):
         item = self.Model(**self._json_params)
