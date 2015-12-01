@@ -107,7 +107,7 @@ class MultiEngineMeta(type):
         return obj
 
 
-def query_secondary(method):
+def call_secondary(method):
     """ Decorator to call class method of secondary engine when needed.
 
     Secondary engine's class method with the same name is called when
@@ -119,12 +119,12 @@ def query_secondary(method):
     methods using the decorator should expect it.
     """
     @wraps(method)
-    def wrapper(cls, **params):
+    def wrapper(cls, *args, **params):
         _query_secondary = params.get('_query_secondary', True)
         if _query_secondary and cls._secondary is not None:
             secondary_method = getattr(cls._secondary, method.__name__)
-            return secondary_method(**params)
-        return method(cls, **params)
+            return secondary_method(*args, **params)
+        return method(cls, *args, **params)
     return wrapper
 
 
@@ -136,7 +136,7 @@ class MultiEngineDocMixin(object):
     _secondary = None
 
     @classmethod
-    @query_secondary
+    @call_secondary
     def get_collection(cls, _query_secondary=True, **params):
         """ Expect `_query_secondary` as separate param so it's not passed
         to parent methods.
@@ -144,14 +144,14 @@ class MultiEngineDocMixin(object):
         return super(MultiEngineDocMixin, cls).get_collection(**params)
 
     @classmethod
-    @query_secondary
+    @call_secondary
     def get_item(cls, **params):
         return super(MultiEngineDocMixin, cls).get_item(**params)
 
     @classmethod
-    @query_secondary
-    def get_by_ids(cls, **params):
-        return super(MultiEngineDocMixin, cls).get_by_ids(**params)
+    @call_secondary
+    def get_by_ids(cls, *args, **params):
+        return super(MultiEngineDocMixin, cls).get_by_ids(*args, **params)
 
 
 class JSONEncoderMixin(object):
