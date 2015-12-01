@@ -3,7 +3,7 @@ from pyramid.security import(
     Allow,
     Everyone,
     Authenticated,
-    )
+)
 
 
 class Contained(object):
@@ -46,8 +46,7 @@ class CollectionACL(Contained):
         pk_field = self.item_model.pk_field()
         try:
             item = self.item_model.get_item(
-                __raise=True, **{pk_field: db_id}
-                )
+                __raise=True, **{pk_field: db_id})
         except AttributeError:
             # strangely we get an AttributeError when the item isn't found
             raise KeyError(key)

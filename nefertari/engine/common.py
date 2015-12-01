@@ -1,6 +1,7 @@
 import datetime
 import decimal
 import logging
+from functools import wraps
 
 import elasticsearch
 
@@ -106,6 +107,27 @@ class MultiEngineMeta(type):
         return obj
 
 
+def query_secondary(method):
+    """ Decorator to call class method of secondary engine when needed.
+
+    Secondary engine's class method with the same name is called when
+    `_query_secondary=True` param and secondary model are present.
+
+    Methods using this decorator must implement super() call.
+    Should only be used to decorate class methods.
+    Not that `_query_secondary` isn't removed from params, thus
+    methods using the decorator should expect it.
+    """
+    @wraps(method)
+    def wrapper(cls, **params):
+        _query_secondary = params.get('_query_secondary', True)
+        if _query_secondary and cls._secondary is not None:
+            secondary_method = getattr(cls._secondary, method.__name__)
+            return secondary_method(**params)
+        return method(cls, **params)
+    return wrapper
+
+
 class MultiEngineDocMixin(object):
     """ Document/model base that implements logic required for
     multi-engine setup.
@@ -114,11 +136,22 @@ class MultiEngineDocMixin(object):
     _secondary = None
 
     @classmethod
+    @query_secondary
     def get_collection(cls, _query_secondary=True, **params):
-        if _query_secondary and cls._secondary is not None:
-            return cls._secondary.get_collection(**params)
-        return super(MultiEngineDocMixin, cls).get_collection(
-            **params)
+        """ Expect `_query_secondary` as separate param so it's not passed
+        to parent methods.
+        """
+        return super(MultiEngineDocMixin, cls).get_collection(**params)
+
+    @classmethod
+    @query_secondary
+    def get_item(cls, **params):
+        return super(MultiEngineDocMixin, cls).get_item(**params)
+
+    @classmethod
+    @query_secondary
+    def get_by_ids(cls, **params):
+        return super(MultiEngineDocMixin, cls).get_by_ids(**params)
 
 
 class JSONEncoderMixin(object):
