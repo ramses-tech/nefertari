@@ -46,7 +46,8 @@ class TestModelHelpers(object):
         model_cls.pk_field.return_value = 'myid'
         request = Mock(_user=None)
         models.cache_request_user(model_cls, request, 1)
-        model_cls.get_item.assert_called_once_with(myid=1)
+        model_cls.get_item.assert_called_once_with(
+            _query_secondary=False, myid=1)
         assert request._user == model_cls.get_item()
 
     def test_cache_request_user_wrong_id(self, engine_mock):
@@ -55,7 +56,8 @@ class TestModelHelpers(object):
         model_cls.pk_field.return_value = 'myid'
         request = Mock(_user=Mock(myid=4))
         models.cache_request_user(model_cls, request, 1)
-        model_cls.get_item.assert_called_once_with(myid=1)
+        model_cls.get_item.assert_called_once_with(
+            _query_secondary=False, myid=1)
         assert request._user == model_cls.get_item()
 
     def test_cache_request_user_present(self, engine_mock):
@@ -86,7 +88,8 @@ class TestAuthModelMethodsMixin(object):
         mock_res.return_value = user
         token = models.AuthModelMethodsMixin.get_token_credentials('user1', 1)
         assert token == 'foo-token'
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch(mixin_path + 'get_item')
     def test_get_token_credentials_user_not_found(self, mock_res, engine_mock):
@@ -94,7 +97,8 @@ class TestAuthModelMethodsMixin(object):
         mock_res.return_value = None
         token = models.AuthModelMethodsMixin.get_token_credentials('user1', 1)
         assert token is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch('nefertari.authentication.models.forget')
     @patch(mixin_path + 'get_item')
@@ -104,7 +108,8 @@ class TestAuthModelMethodsMixin(object):
         mock_res.side_effect = Exception
         token = models.AuthModelMethodsMixin.get_token_credentials('user1', 1)
         assert token is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
         mock_forg.assert_called_once_with(1)
 
     @patch(mixin_path + 'get_item')
@@ -116,7 +121,8 @@ class TestAuthModelMethodsMixin(object):
         groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups == ['g:admin', 'g:user']
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch(mixin_path + 'get_item')
     def test_get_groups_by_token_user_not_found(self, mock_res, engine_mock):
@@ -125,7 +131,8 @@ class TestAuthModelMethodsMixin(object):
         groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch(mixin_path + 'get_item')
     def test_get_groups_by_token_wrong_token(self, mock_res, engine_mock):
@@ -136,7 +143,8 @@ class TestAuthModelMethodsMixin(object):
         groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch('nefertari.authentication.models.forget')
     @patch(mixin_path + 'get_item')
@@ -147,7 +155,8 @@ class TestAuthModelMethodsMixin(object):
         groups = models.AuthModelMethodsMixin.get_groups_by_token(
             'user1', 'token', 1)
         assert groups is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
         mock_forg.assert_called_once_with(1)
 
     @patch(mixin_path + 'get_item')
@@ -159,10 +168,12 @@ class TestAuthModelMethodsMixin(object):
             {'login': 'user1', 'password': 'foo'})
         assert success
         assert user == usr
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
         models.AuthModelMethodsMixin.authenticate_by_password(
             {'login': 'user1@example.com', 'password': 'foo'})
-        mock_res.assert_called_with(email='user1@example.com')
+        mock_res.assert_called_with(
+            _query_secondary=False, email='user1@example.com')
 
     @patch(mixin_path + 'get_item')
     def test_authenticate_by_password_not_found(self, mock_res, engine_mock):
@@ -172,7 +183,8 @@ class TestAuthModelMethodsMixin(object):
             {'login': 'user1', 'password': 'foo'})
         assert not success
         assert usr is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch(mixin_path + 'get_item')
     def test_authenticate_by_password_pasword_not_matching(
@@ -184,7 +196,8 @@ class TestAuthModelMethodsMixin(object):
             {'login': 'user1', 'password': 'asdasdasd'})
         assert not success
         assert user == usr
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch(mixin_path + 'get_item')
     def test_authenticate_by_password_exception(self, mock_res, engine_mock):
@@ -194,7 +207,8 @@ class TestAuthModelMethodsMixin(object):
             {'login': 'user1', 'password': 'asdasdasd'})
         assert not success
         assert usr is None
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch(mixin_path + 'pk_field')
     @patch('nefertari.authentication.models.cache_request_user')
@@ -219,7 +233,8 @@ class TestAuthModelMethodsMixin(object):
         groups = models.AuthModelMethodsMixin.get_groups_by_userid(
             'user1', 1)
         assert groups is None
-        mock_res.assert_called_once_with(idid='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, idid='user1')
 
     @patch('nefertari.authentication.models.forget')
     @patch(mixin_path + 'pk_field')
@@ -232,7 +247,8 @@ class TestAuthModelMethodsMixin(object):
         groups = models.AuthModelMethodsMixin.get_groups_by_userid(
             'user1', 1)
         assert groups is None
-        mock_res.assert_called_once_with(idid='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, idid='user1')
         mock_forg.assert_called_once_with(1)
 
     @patch(mixin_path + 'get_or_create')
@@ -284,7 +300,8 @@ class TestAuthModelMethodsMixin(object):
         mock_auth.return_value = 'user1'
         models.AuthModelMethodsMixin.get_authuser_by_name(1)
         mock_auth.assert_called_once_with(1)
-        mock_res.assert_called_once_with(username='user1')
+        mock_res.assert_called_once_with(
+            _query_secondary=False, username='user1')
 
     @patch('nefertari.authentication.models.authenticated_userid')
     @patch(mixin_path + 'get_item')
