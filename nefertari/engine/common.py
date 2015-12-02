@@ -3,8 +3,6 @@ import decimal
 import logging
 from functools import wraps
 
-import elasticsearch
-
 from nefertari.renderers import _JSONEncoder
 from nefertari import engine
 
@@ -178,16 +176,3 @@ class JSONEncoder(JSONEncoderMixin, _JSONEncoder):
             # Outter objects would have been handled with DataProxy.
             return obj.to_dict()
         return super(JSONEncoder, self).default(obj)
-
-
-class ESJSONSerializer(JSONEncoderMixin,
-                       elasticsearch.serializer.JSONSerializer):
-    """ JSON encoder class used to serialize data before indexing
-    to ES.
-    """
-    def default(self, obj):
-        try:
-            return super(ESJSONSerializer, self).default(obj)
-        except:
-            import traceback
-            log.error(traceback.format_exc())
