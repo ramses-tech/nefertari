@@ -126,7 +126,7 @@ class TestWrappers(unittest.TestCase):
 
     def test_add_object_url_collection(self):
         result = {'data': [{'_pk': 4, '_type': 'Story'}]}
-        request = Mock()
+        request = Mock(matchdict=None)
         wrapper = wrappers.add_object_url(request=request)
         wrapper.model_collections = {
             'Story': Mock(uid='stories_resource', id_name='story_id'),
@@ -138,7 +138,7 @@ class TestWrappers(unittest.TestCase):
 
     def test_add_object_url_item(self):
         result = {'_pk': 4, '_type': 'Story'}
-        request = Mock()
+        request = Mock(matchdict=None)
         wrapper = wrappers.add_object_url(request=request)
         wrapper.model_collections = {
             'Story': Mock(uid='stories_resource', id_name='story_id'),
@@ -146,6 +146,18 @@ class TestWrappers(unittest.TestCase):
         result = wrapper(result=result)
         request.route_url.assert_called_once_with(
             'stories_resource', story_id=4)
+        assert result['_self'] == request.route_url()
+
+    def test_add_object_url_with_parent(self):
+        result = {'_pk': 4, '_type': 'Story'}
+        request = Mock(matchdict={'user_username': 'admin'})
+        wrapper = wrappers.add_object_url(request=request)
+        wrapper.model_collections = {
+            'Story': Mock(uid='stories_resource', id_name='story_id'),
+        }
+        result = wrapper(result=result)
+        request.route_url.assert_called_once_with(
+            'stories_resource', user_username='admin', story_id=4)
         assert result['_self'] == request.route_url()
 
     @patch('nefertari.utils.validate_data_privacy')
