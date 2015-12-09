@@ -1,6 +1,9 @@
 Changelog
 =========
 
+* :release:`0.x.y <2015-xx-yy>`
+* :bug:`121` Fixed issue with nested resources referencing a parent in their schema
+
 * :release:`0.6.1 <2015-11-18>`
 * :bug:`-` Added 'event.instance' to 'event' object to access newly created object (if object is returned by view method)
 * :bug:`-` Fixed a bug with GET '/auth/logout'
