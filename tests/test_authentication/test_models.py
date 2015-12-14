@@ -255,10 +255,12 @@ class TestAuthModelMethodsMixin(object):
     def test_create_account(self, mock_get, engine_mock):
         from nefertari.authentication import models
         models.AuthModelMethodsMixin.create_account(
-            {'username': 1, 'password': 2, 'email': 3, 'foo': 4})
+            {'username': 1, 'password': 2, 'email': 3, 'foo': 4},
+            request=9)
         mock_get.assert_called_once_with(
             email=3,
-            defaults={'username': 1, 'password': 2, 'email': 3})
+            defaults={'username': 1, 'password': 2, 'email': 3},
+            request=9)
 
     @patch(mixin_path + 'get_or_create')
     def test_create_account_bad_request(self, mock_get, engine_mock):
@@ -266,9 +268,12 @@ class TestAuthModelMethodsMixin(object):
         engine_mock.mock_add_spec([])
         mock_get.side_effect = JHTTPBadRequest
         with pytest.raises(JHTTPBadRequest) as ex:
-            models.AuthModelMethodsMixin.create_account({'email': 3})
+            models.AuthModelMethodsMixin.create_account(
+                {'email': 3}, request=1)
         assert str(ex.value) == 'Failed to create account.'
-        mock_get.assert_called_once_with(email=3, defaults={'email': 3})
+        mock_get.assert_called_once_with(
+            email=3, defaults={'email': 3},
+            request=1)
 
     @patch('nefertari.authentication.models.authenticated_userid')
     @patch('nefertari.authentication.models.cache_request_user')

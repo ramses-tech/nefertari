@@ -112,7 +112,7 @@ class AuthModelMethodsMixin(object):
                 return ['g:%s' % g for g in request._user.groups]
 
     @classmethod
-    def create_account(cls, params):
+    def create_account(cls, params, request=None):
         """ Create auth user instance with data from :params:.
 
         Used by both Token and Ticket-based auths to register a user (
@@ -123,7 +123,8 @@ class AuthModelMethodsMixin(object):
         try:
             return cls.get_or_create(
                 email=user_params['email'],
-                defaults=user_params)
+                defaults=user_params,
+                request=request)
         except JHTTPBadRequest:
             raise JHTTPBadRequest('Failed to create account.')
 
