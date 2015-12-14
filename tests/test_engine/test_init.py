@@ -25,7 +25,9 @@ class TestEngine(object):
         assert not hasattr(engine, 'log')
         assert not hasattr(engine, '__testvar__')
         assert hasattr(engine, 'another_var')
-        assert engine.engines == (module, )
+        assert engine.engines == (module,)
+        assert engine.primary == module
+        assert engine.secondary is None
 
     @patch('nefertari.engine.resolve')
     def test_multiple_engines(self, mock_resolve):
@@ -48,3 +50,16 @@ class TestEngine(object):
         assert hasattr(engine, 'one')
         assert hasattr(engine, 'two')
         assert engine.engines == (foo, bar)
+        assert engine.primary == foo
+        assert engine.secondary == bar
+
+    @patch('nefertari.engine.secondary')
+    @patch('nefertari.engine.primary')
+    def test_replace_setup_database(self, mock_prim, mock_sec):
+        from nefertari import engine
+        engine._replace_setup_database()
+        assert engine.setup_database is not mock_prim.setup_database
+        assert engine.setup_database is not mock_sec.setup_database
+        engine.setup_database(1)
+        mock_prim.setup_database.assert_called_once_with(1)
+        mock_sec.setup_database.assert_called_once_with(1)

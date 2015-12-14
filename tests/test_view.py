@@ -563,6 +563,7 @@ class TestBaseView(object):
         assert view._json_params['user'] == 'foo'
         model.pk_field.assert_called_once_with()
         model.get_item.assert_called_once_with(
+            _query_secondary=False,
             idname='1', _raise_on_empty=False)
 
     @patch('nefertari.view.BaseView._run_init_actions')
@@ -579,6 +580,7 @@ class TestBaseView(object):
         assert view._json_params['user'] == ['foo']
         model.pk_field.assert_called_once_with()
         model.get_item.assert_called_once_with(
+            _query_secondary=False,
             idname='1', _raise_on_empty=False)
 
     @patch('nefertari.view.BaseView._run_init_actions')
@@ -606,6 +608,7 @@ class TestBaseView(object):
         assert view._json_params['user'] == 123
         model.pk_field.assert_called_once_with()
         model.get_item.assert_called_once_with(
+            _query_secondary=False,
             idname='1', _raise_on_empty=False)
 
     @patch('nefertari.view.BaseView._run_init_actions')

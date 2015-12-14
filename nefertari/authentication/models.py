@@ -45,7 +45,8 @@ class AuthModelMethodsMixin(object):
         Used by Token-based auth as `credentials_callback` kwarg.
         """
         try:
-            user = cls.get_item(username=username)
+            user = cls.get_item(
+                _query_secondary=False, username=username)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
@@ -61,7 +62,8 @@ class AuthModelMethodsMixin(object):
         Used by Token-based authentication as `check` kwarg.
         """
         try:
-            user = cls.get_item(username=username)
+            user = cls.get_item(
+                _query_secondary=False, username=username)
         except Exception as ex:
             log.error(str(ex))
             forget(request)
@@ -84,7 +86,8 @@ class AuthModelMethodsMixin(object):
         login = params['login'].lower().strip()
         key = 'email' if '@' in login else 'username'
         try:
-            user = cls.get_item(**{key: login})
+            user = cls.get_item(
+                **{key: login, '_query_secondary': False})
         except Exception as ex:
             log.error(str(ex))
 
@@ -109,7 +112,7 @@ class AuthModelMethodsMixin(object):
                 return ['g:%s' % g for g in request._user.groups]
 
     @classmethod
-    def create_account(cls, params):
+    def create_account(cls, params, request=None):
         """ Create auth user instance with data from :params:.
 
         Used by both Token and Ticket-based auths to register a user (
@@ -120,7 +123,8 @@ class AuthModelMethodsMixin(object):
         try:
             return cls.get_or_create(
                 email=user_params['email'],
-                defaults=user_params)
+                defaults=user_params,
+                request=request)
         except JHTTPBadRequest:
             raise JHTTPBadRequest('Failed to create account.')
 
@@ -145,7 +149,8 @@ class AuthModelMethodsMixin(object):
         """
         username = authenticated_userid(request)
         if username:
-            return cls.get_item(username=username)
+            return cls.get_item(
+                _query_secondary=False, username=username)
 
 
 def lower_strip(**kwargs):
@@ -257,4 +262,5 @@ def cache_request_user(user_cls, request, user_id):
     pk_field = user_cls.pk_field()
     user = getattr(request, '_user', None)
     if user is None or getattr(user, pk_field, None) != user_id:
-        request._user = user_cls.get_item(**{pk_field: user_id})
+        request._user = user_cls.get_item(
+            **{pk_field: user_id, '_query_secondary': False})
