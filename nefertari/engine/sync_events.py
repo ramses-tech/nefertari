@@ -2,13 +2,15 @@
 
 
 class ItemEvent(object):
-    def __init__(self, item):
+    def __init__(self, item, request):
         self.item = item
+        self.request = request
 
 
 class BulkEvent(object):
-    def __init__(self, items):
+    def __init__(self, items, request):
         self.items = items
+        self.request = request
 
 
 class ItemCreated(ItemEvent):
