@@ -317,7 +317,6 @@ class add_object_url(object):
             location = self.request.route_url(
                 resource.uid, **route_kwargs)
         obj.setdefault('_self', location)
-        log.info('Added `_self` attr: {}'.format(location))
 
     def __call__(self, **kwargs):
         result = kwargs['result']
