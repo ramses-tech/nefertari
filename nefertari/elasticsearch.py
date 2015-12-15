@@ -68,9 +68,6 @@ def includeme(config):
     ES.setup(Settings)
     ES.create_index()
 
-    if ES.settings.asbool('enable_polymorphic_query'):
-        config.include('nefertari.polymorphic')
-
 
 def _bulk_body(documents_actions, request):
     kwargs = {
