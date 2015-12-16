@@ -37,10 +37,17 @@ def get_app_package_name(config):
 
     Name is either name of app that included nefertari, or
     current package name (which is 'nefertari').
+    Name is cached, thus name of the first app to call
+    `get_app_package_name` is used.
     """
-    if config.includepath:
-        return config.includepath[0].split(':')[0]
-    return config.package_name
+    name = getattr(config.registry, '_app_name', None)
+    if name is None:
+        if config.includepath:
+            name = config.includepath[0].split(':')[0]
+        else:
+            name = config.package_name
+        config.registry._app_name = name
+    return config.registry._app_name
 
 
 def get_root_resource(config):
