@@ -268,42 +268,6 @@ class TestBaseView(object):
         setpub.assert_called_once_with()
 
     @patch('nefertari.elasticsearch.ES')
-    @patch('nefertari.view.ESAggregator')
-    def test_setup_aggregation_es_disabled(self, aggregator, mock_es):
-        mock_es.settings = dictset(enable_aggregations=False)
-        request = Mock(content_type='', method='', accept=[''])
-        view = DummyBaseView(context={}, request=request,
-                        _query_params={'foo': 'bar'})
-        view.index = 1
-        view._setup_aggregation()
-        assert view.index == 1
-
-    @patch('nefertari.elasticsearch.ES')
-    @patch('nefertari.view.ESAggregator')
-    def test_setup_aggregation_index_not_defined(self, aggregator, mock_es):
-        mock_es.settings = dictset(enable_aggregations=True)
-        request = Mock(content_type='', method='', accept=[''])
-        view = DummyBaseView(context={}, request=request,
-                        _query_params={'foo': 'bar'})
-        assert view.index == view.not_allowed_action
-        view._setup_aggregation()
-        with pytest.raises(JHTTPMethodNotAllowed):
-            view.index()
-
-    @patch('nefertari.elasticsearch.ES')
-    @patch('nefertari.view.ESAggregator')
-    def test_setup_aggregation(self, aggregator, mock_es):
-        mock_es.settings = dictset(enable_aggregations=True)
-        request = Mock(content_type='', method='', accept=[''])
-        view = DummyBaseView(context={}, request=request,
-                             _query_params={'foo': 'bar'})
-        type(view).index = 1
-        view._setup_aggregation()
-        aggregator.assert_called_once_with(view)
-        aggregator().wrap.assert_called_once_with(1)
-        assert view.index == aggregator().wrap()
-
-    @patch('nefertari.elasticsearch.ES')
     def test_get_collection_es(self, mock_es):
         request = Mock(content_type='', method='', accept=[''])
         view = DummyBaseView(
