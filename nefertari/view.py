@@ -168,12 +168,7 @@ class BaseView(OptionsViewMixin):
             self.request.override_renderer = 'string'
 
     def _setup_aggregation(self, aggregator=None):
-        """ Wrap `self.index` method with ESAggregator.
-
-        This makes `self.index` to first try to run aggregation and only
-        on fail original method is run. Method is wrapped only if it is
-        defined and `elasticsearch.enable_aggregations` setting is true.
-        """
+        """ Setup ES aggregations. """
         try:
             import nefertari_es
         except ImportError as ex:
