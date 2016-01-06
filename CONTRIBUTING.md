@@ -2,6 +2,7 @@
 
 In alphabetical order:
 
+* [Amos Latteier](https://github.com/latteier)
 * [Artem Kostiuk](https://github.com/postatum)
 * [Chris Hart](https://github.com/chrstphrhrt)
 * [Jonathan Stoikovitch](https://github.com/jstoiko)
