@@ -664,14 +664,13 @@ class TestES(object):
         mock_count.assert_called_once_with({'foo': 'bar'})
         mock_build.assert_called_once_with({'_count': True, 'foo': 1})
 
-    @patch('nefertari.elasticsearch.ES.build_search_params')
     @patch('nefertari.elasticsearch.ES.do_count')
-    def test_get_collection_count_with_body(self, mock_count, mock_build):
+    def test_get_collection_count_with_body(self, mock_count):
         obj = es.ES('Foo', 'foondex')
         obj.get_collection(_count=True, foo=1, body={'foo': 'bar'})
-        mock_count.assert_called_once_with(
-            {'body': {'foo': 'bar'}, '_count': True, 'foo': 1})
-        assert not mock_build.called
+        mock_count.assert_called_once_with({
+            'body': {'foo': 'bar'}, 'doc_type': 'Foo',
+            'from_': 0, 'size': 1, 'index': 'foondex'})
 
     @patch('nefertari.elasticsearch.ES.api.search')
     def test_get_collection_fields(self, mock_search):
@@ -685,10 +684,11 @@ class TestES(object):
             'took': 2.8,
         }
         docs = obj.get_collection(
-            fields=['foo'], body={'foo': 'bar'}, from_=0)
+            _fields=['foo'], body={'foo': 'bar'}, from_=0)
         mock_search.assert_called_once_with(
-            body={'foo': 'bar'}, _source_include=['foo', '_type'],
-            from_=0, _source=True)
+            body={'foo': 'bar'}, doc_type='Foo', index='foondex',
+            _source_include=['foo', '_type'], _source=True,
+            from_=0, size=1)
         assert len(docs) == 1
         assert docs[0].id == 1
         assert docs[0]._score == 2
@@ -714,7 +714,9 @@ class TestES(object):
             'took': 2.8,
         }
         docs = obj.get_collection(body={'foo': 'bar'}, from_=0)
-        mock_search.assert_called_once_with(body={'foo': 'bar'}, from_=0)
+        mock_search.assert_called_once_with(
+            body={'foo': 'bar'}, doc_type='Foo', from_=0, size=1,
+            index='foondex')
         assert len(docs) == 1
         assert docs[0].id == 1
         assert docs[0]._score == 2

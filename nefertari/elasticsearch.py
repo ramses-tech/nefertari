@@ -540,11 +540,7 @@ class ES(object):
 
     def get_collection(self, **params):
         _raise_on_empty = params.pop('_raise_on_empty', False)
-
-        if 'body' in params:
-            _params = params
-        else:
-            _params = self.build_search_params(params)
+        _params = self.build_search_params(params)
 
         if '_count' in params:
             return self.do_count(_params)
