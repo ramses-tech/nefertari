@@ -12,7 +12,7 @@ from nefertari.json_httpexceptions import (
 from nefertari.utils import dictset, merge_dicts, str2dict
 from nefertari import wrappers, engine
 from nefertari.resource import ACTIONS
-from nefertari.view_helpers import OptionsViewMixin, ESAggregator
+from nefertari.view_helpers import OptionsViewMixin
 from nefertari.events import trigger_events
 
 
@@ -168,25 +168,18 @@ class BaseView(OptionsViewMixin):
             self.request.override_renderer = 'string'
 
     def _setup_aggregation(self, aggregator=None):
-        """ Wrap `self.index` method with ESAggregator.
-
-        This makes `self.index` to first try to run aggregation and only
-        on fail original method is run. Method is wrapped only if it is
-        defined and `elasticsearch.enable_aggregations` setting is true.
-        """
-        from nefertari.elasticsearch import ES
-        if aggregator is None:
-            aggregator = ESAggregator
-        aggregations_enabled = (
-            ES.settings and ES.settings.asbool('enable_aggregations'))
-        if not aggregations_enabled:
-            log.debug('Elasticsearch aggregations are not enabled')
+        """ Setup ES aggregations. """
+        try:
+            import nefertari_es
+        except ImportError as ex:
+            log.warning('Failed to set up aggregation: {}'.format(ex))
             return
 
-        index = getattr(self, 'index', None)
-        index_defined = index and index != self.not_allowed_action
-        if index_defined:
-            self.index = aggregator(self).wrap(self.index)
+        nefes_used = (engine.secondary is nefertari_es or
+                      engine.primary is nefertari_es)
+        if nefes_used:
+            from nefertari_es.aggregation import setup_aggregation
+            setup_aggregation(self, aggregator=aggregator)
 
     def get_collection_es(self):
         """ Query ES collection and return results.
@@ -351,8 +344,11 @@ class BaseView(OptionsViewMixin):
             if hasattr(id_, 'pk_field'):
                 return id_
 
-            obj = model.get_item(
-                **{pk_field: id_, '_raise_on_empty': False})
+            obj = model.get_item(**{
+                pk_field: id_,
+                '_raise_on_empty': False,
+                '_query_secondary': False,
+            })
             if setdefault:
                 return obj or setdefault
             else:

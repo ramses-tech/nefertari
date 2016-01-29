@@ -42,22 +42,43 @@ def includeme(config):
     for path in engine_paths:
         config.include(path)
     _load_engines(config)
-    main_engine_module = engines[0]
-    _import_public_names(main_engine_module)
+    _import_public_names(primary)
+
+    if secondary is not None:
+        _replace_setup_database()
 
 
-# replaced by registered engine modules during configuration
+# Replaced by registered engine modules during configuration
+primary = None
+secondary = None
 engines = ()
 
 
+def _replace_setup_database():
+    """ Replace "setup_database" with function that calls func with
+    the same name in both engines.
+    """
+    def setup_database(config):
+        primary.setup_database(config)
+        secondary.setup_database(config)
+    setattr(sys.modules[__name__], 'setup_database', setup_database)
+
+
 def _load_engines(config):
-    global engines
+    """ Load engines modules.  """
+    global primary, secondary, engines
     engine_paths = aslist(config.registry.settings['nefertari.engine'])
     engines = tuple([resolve(path) for path in engine_paths])
+    try:
+        primary, secondary = engines
+        if primary is secondary:
+            secondary = None
+    except ValueError:
+        primary = engines[0]
 
 
 def _import_public_names(module):
-    "Import public names from module into this module, like import *"
+    """ Import public names from module into this module, like import *"""
     self = sys.modules[__name__]
     for name in module.__all__:
         if hasattr(self, name):

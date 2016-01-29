@@ -15,7 +15,7 @@ class TicketAuthViewMixin(object):
     def register(self):
         """ Register new user by POSTing all required data. """
         user, created = self.Model.create_account(
-            self._json_params)
+            self._json_params, request=self.request)
 
         if not created:
             raise JHTTPConflict('Looks like you already have an account.')
@@ -112,7 +112,8 @@ class TokenAuthViewMixin(object):
         User's `Authorization` header value is returned in `WWW-Authenticate`
         header.
         """
-        user, created = self.Model.create_account(self._json_params)
+        user, created = self.Model.create_account(
+            self._json_params, request=self.request)
         if user.api_key is None:
             raise JHTTPBadRequest('Failed to generate ApiKey for user')
 
