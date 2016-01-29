@@ -6,7 +6,7 @@ Nefertari is a REST API framework for Pyramid that uses Elasticsearch for reads 
 Nefertari is fully production ready and actively maintained.
 
 Source code:
-    `<http://github.com/brandicted/nefertari>`_
+    `<http://github.com/ramses-tech/nefertari>`_
 
 
 Table of Content

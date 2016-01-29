@@ -32,8 +32,8 @@ Database Backends
 
 Nefertari implements database engines on top of two different ORMs: `SQLAlchemy <http://www.sqlalchemy.org>`_ and `MongoEngine <http://mongoengine.org/>`_. These two engines wrap the underlying APIs of each ORM and provide a standardized syntax for using either one, making it easy to switch between them with minimal changes. Each Nefertari engine is maintained in its own repository:
 
-* `nefertari-sqla github repository <https://github.com/brandicted/nefertari-sqla>`_
-* `nefertari-mongodb github repository <https://github.com/brandicted/nefertari-mongodb>`_
+* `nefertari-sqla github repository <https://github.com/ramses-tech/nefertari-sqla>`_
+* `nefertari-mongodb github repository <https://github.com/ramses-tech/nefertari-mongodb>`_
 
 Nefertari can either use `Elasticsearch <https://www.elastic.co/products/elasticsearch>`_ (*ESBaseDocument*) or the database engine itself (*BaseDocument*) for reads.
 

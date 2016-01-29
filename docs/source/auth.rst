@@ -93,7 +93,7 @@ Considerations:
 Advanced ACLs
 -------------
 
-For more advanced ACLs, you can look into using `nefertari-guards <https://github.com/brandicted/nefertari-guards>`_ in you project. This package stores ACLs at the object level, making it easier to build multi-tenant applications using a single data store.
+For more advanced ACLs, you can look into using `nefertari-guards <https://github.com/ramses-tech/nefertari-guards>`_ in you project. This package stores ACLs at the object level, making it easier to build multi-tenant applications using a single data store.
 
 
 CORS
