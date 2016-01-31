@@ -33,7 +33,7 @@ extensions = [
     'releases'
 ]
 
-releases_github_path = 'brandicted/nefertari'
+releases_github_path = 'ramses-tech/nefertari'
 releases_debug = True
 
 # Add any paths that contain templates here, relative to this directory.

@@ -18,10 +18,10 @@ Requirements
 
 * Python 2.7, 3.3 or 3.4
 * Elasticsearch for Elasticsearch-powered resources (see :any:`models <models>` and :any:`requests <making_requests>`)
-* Postgres or Mongodb
+* Postgres or Mongodb or Your Data Store™
 
 
 Tutorials
 ---------
 
-- For a more complete example of a Pyramid project using Nefertari, you can take a look at the `Example Project <https://github.com/brandicted/nefertari-example>`_.
+- For a more complete example of a Pyramid project using Nefertari, you can take a look at the `Example Project <https://github.com/ramses-tech/nefertari-example>`_.
