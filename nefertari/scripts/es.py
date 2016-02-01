@@ -53,8 +53,8 @@ class ESCommand(object):
             type=int)
         parser.add_argument(
             '--force',
-            help=('Recreate ES mappings and reindex all documents of provided '
-                  'models. By default, only documents that are missing from '
+            help=('Reindex all documents of provided models. By '
+                  'default, only documents that are missing from '
                   'index are indexed.'),
             action='store_true',
             default=False)
@@ -105,9 +105,6 @@ class ESCommand(object):
             documents = to_dicts(query_set)
 
             if self.options.force:
-                self.log.info('Recreating `{}` ES mapping'.format(model_name))
-                es.delete_mapping()
-                es.put_mapping(body=model.get_es_mapping())
                 self.log.info('Indexing all `{}` documents'.format(
                     model_name))
                 es.index(documents)

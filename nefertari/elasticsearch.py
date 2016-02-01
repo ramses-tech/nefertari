@@ -241,12 +241,6 @@ class ES(object):
             raise Exception(ex.json['extra']['data'])
         cls._mappings_setup = True
 
-    def delete_mapping(self):
-        self.api.indices.delete_mapping(
-            index=self.index_name,
-            doc_type=self.doc_type,
-        )
-
     def put_mapping(self, body, **kwargs):
         self.api.indices.put_mapping(
             doc_type=self.doc_type,
