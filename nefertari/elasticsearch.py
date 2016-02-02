@@ -303,12 +303,6 @@ class ES(object):
 
         documents_actions = self.prep_bulk_documents(action, documents)
 
-        if action == 'index':
-            for doc in documents_actions:
-                doc_data = doc.get('_source', {})
-                if 'timestamp' in doc_data:
-                    doc['_timestamp'] = doc_data['timestamp']
-
         if documents_actions:
             operation = partial(_bulk_body, request=request)
             self.process_chunks(

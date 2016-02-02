@@ -284,10 +284,10 @@ class TestES(object):
             es._bulk_body, request=None)
         mock_proc.assert_called_once_with(
             documents=[{
-                '_id': 'story1', '_op_type': 'index', '_timestamp': 1,
+                '_id': 'story1', '_op_type': 'index',
                 '_source': {'timestamp': 1, '_type': 'Story', 'id': 'story1'}
             }, {
-                '_id': 'story2', '_op_type': 'index', '_timestamp': 2,
+                '_id': 'story2', '_op_type': 'index',
                 '_source': {'timestamp': 2, '_type': 'Story', 'id': 'story2'}
             }],
             operation=mock_part(),
