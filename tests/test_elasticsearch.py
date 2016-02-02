@@ -624,7 +624,6 @@ class TestES(object):
         assert resp == {'foo': 1}
         mock_build.assert_called_once_with({'_limit': 0, 'param1': 6})
         mock_search.assert_called_once_with(
-            search_type='count',
             body={'aggregations': {'zoo': 5}, 'query': 'query1'},
         )
 

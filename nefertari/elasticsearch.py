@@ -491,13 +491,9 @@ class ES(object):
             :_raise_on_empty: Boolean indicating whether to raise exception
                 when IndexNotFoundException exception happens. Optional,
                 defaults to False.
-            :_search_type: Type of search to use. Optional, defaults to
-                'count'. You might want to provide this argument explicitly
-                when performing nested aggregations on buckets.
         """
         _aggregations_params = params.pop('_aggregations_params', None)
         _raise_on_empty = params.pop('_raise_on_empty', False)
-        _search_type = params.pop('_search_type', 'count')
 
         if not _aggregations_params:
             raise Exception('Missing _aggregations_params')
@@ -509,7 +505,6 @@ class ES(object):
         search_params.pop('from_', None)
         search_params.pop('sort', None)
 
-        search_params['search_type'] = _search_type
         search_params['body']['aggregations'] = _aggregations_params
 
         log.debug('Performing aggregation: {}'.format(_aggregations_params))
