@@ -215,6 +215,14 @@ class ES(object):
             cls.api.indices.create(index_name)
 
     @classmethod
+    def delete_index(cls, index_name=None):
+        index_name = index_name or cls.settings.index_name
+        try:
+            cls.api.indices.delete([index_name])
+        except (IndexNotFoundException, JHTTPNotFound):
+            return
+
+    @classmethod
     def setup_mappings(cls, force=False):
         """ Setup ES mappings for all existing models.
 
