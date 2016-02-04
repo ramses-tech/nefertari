@@ -39,11 +39,6 @@ class ESCommand(object):
             '--quiet', help='Quiet mode', action='store_true',
             default=False)
         parser.add_argument(
-            '--models',
-            help=('Comma-separated list of model names to index '
-                  '(required)'),
-            required=True)
-        parser.add_argument(
             '--params', help='Url-encoded params for each model')
         parser.add_argument('--index', help='Index name', default=None)
         parser.add_argument(
@@ -51,11 +46,15 @@ class ESCommand(object):
             help=('Index chunk size. If chunk size not provided '
                   '`elasticsearch.chunk_size` setting is used'),
             type=int)
-        parser.add_argument(
-            '--force',
-            help=('Reindex all documents of provided models. By '
-                  'default, only documents that are missing from '
-                  'index are indexed.'),
+
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+            '--models',
+            help=('Comma-separated list of model names to index '
+                  '(required)'))
+        group.add_argument(
+            '--recreate',
+            help='Recreate index and reindex all documents',
             action='store_true',
             default=False)
 
@@ -84,10 +83,8 @@ class ESCommand(object):
 
         self.settings = dictset(registry.settings)
 
-    def run(self):
-        ES.setup(self.settings)
+    def index_models(self):
         model_names = split_strip(self.options.models)
-
         for model_name in model_names:
             self.log.info('Processing model `{}`'.format(model_name))
             model = engine.get_document_cls(model_name)
@@ -103,14 +100,16 @@ class ESCommand(object):
                     chunk_size=chunk_size)
             query_set = model.get_collection(**params)
             documents = to_dicts(query_set)
+            self.log.info('Indexing missing `{}` documents'.format(
+                model_name))
+            es.index_missing_documents(documents)
 
-            if self.options.force:
-                self.log.info('Indexing all `{}` documents'.format(
-                    model_name))
-                es.index(documents)
-            else:
-                self.log.info('Indexing missing `{}` documents'.format(
-                    model_name))
-                es.index_missing_documents(documents)
+    def recreate_index(self):
+        pass
 
-        return 0
+    def run(self):
+        ES.setup(self.settings)
+        if self.options.recreate:
+            self.recreate_index()
+        else:
+            self.index_models()
