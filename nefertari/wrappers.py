@@ -317,7 +317,6 @@ class add_object_url(object):
             location = self.request.route_url(
                 resource.uid, **route_kwargs)
         obj.setdefault('_self', location)
-        log.info('Added `_self` attr: {}'.format(location))
 
     def __call__(self, **kwargs):
         result = kwargs['result']
@@ -357,43 +356,6 @@ class add_confirmation_url(object):
             count=engine.BaseDocument.count(result),
             confirmation_url=self.request.url+'%s__confirmation&_m=%s' % (
                 q_or_a, self.request.method))
-
-
-class add_etag(object):
-    """ Add ETAG header to response.
-
-    Etag is generated md5-encoding '_version' + '_pk' of each object
-    in a sequence of objects returned.
-
-    This wrapper should be applied before `apply_privacy` if later is
-    used or before any wrapper that may remove `_version` and `_pk` keys
-    from output.
-    """
-    def __init__(self, request):
-        self.request = request
-
-    def __call__(self, **kwargs):
-        result = kwargs['result']
-
-        etag_src = ''
-
-        def etag(data):
-            return str(data.get('_version', '')) + str(data.get('_pk', ''))
-
-        try:
-            etag_src += etag(result)
-
-            for each in result['data']:
-                etag_src += etag(each)
-
-        except (TypeError, KeyError):
-            pass
-
-        finally:
-            if etag_src:
-                etag = md5(six.b(etag_src)).hexdigest()
-                self.request.response.etag = etag
-            return result
 
 
 class set_total(object):

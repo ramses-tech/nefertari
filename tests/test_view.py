@@ -411,7 +411,7 @@ class TestBaseView(object):
             context={}, request=request, _query_params={'foo': 'bar'})
         view._auth_enabled = True
         view.setup_default_wrappers()
-        assert len(view._after_calls['index']) == 5
+        assert len(view._after_calls['index']) == 4
         assert len(view._after_calls['show']) == 4
         assert len(view._after_calls['create']) == 4
         assert len(view._after_calls['update']) == 4
@@ -426,7 +426,7 @@ class TestBaseView(object):
             context={}, request=request, _query_params={'foo': 'bar'})
         view._auth_enabled = False
         view.setup_default_wrappers()
-        assert len(view._after_calls['index']) == 4
+        assert len(view._after_calls['index']) == 3
         assert len(view._after_calls['show']) == 3
         assert not wrap.apply_privacy.called
 
@@ -455,7 +455,7 @@ class TestBaseView(object):
         resource = MagicMock(actions=['index'])
         view = MyView(resource, request)
 
-        assert len(view._after_calls['index']) == 4
+        assert len(view._after_calls['index']) == 3
         assert len(view._after_calls['show']) == 3
 
         assert view.index._before_calls == [before_call]
