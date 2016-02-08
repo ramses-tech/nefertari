@@ -7,7 +7,7 @@ README = open(os.path.join(here, 'README.md')).read()
 VERSION = open(os.path.join(here, 'VERSION')).read()
 
 install_requires = [
-    'pyramid',
+    'pyramid==1.6.1',
     'tempita',
     'requests',
     'simplejson',

@@ -112,13 +112,15 @@ class TestJSONHTTPExceptionsModule(object):
         jsonex.STATUS_MAP.pop(12345, None)
 
     def test_status_map(self):
-        assert list(sorted(jsonex.STATUS_MAP.keys())) == [
+        codes = [
             200, 201, 202, 203, 204, 205, 206,
             300, 301, 302, 303, 304, 305, 307,
             400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410,
             411, 412, 413, 414, 415, 416, 417, 422, 423, 424,
             500, 501, 502, 503, 504, 505, 507
         ]
+        for code in codes:
+            assert code in jsonex.STATUS_MAP
         for code_exc in jsonex.STATUS_MAP.values():
             assert hasattr(jsonex, code_exc.__name__)
 
