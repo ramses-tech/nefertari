@@ -1,0 +1,104 @@
+#%RAML 0.8
+---
+title: Items API
+documentation:
+    - title: Items REST API
+      content: |
+        Welcome to the Items API.
+baseUri: http://{host}:{port}
+version: v1
+mediaType: application/json
+protocols: [HTTP]
+
+/items:
+    displayName: Collection of items
+    get:
+        description: Get all item
+        responses:
+            200:
+                description: Returns a list of items
+    post:
+        description: Create a new item
+        body:
+            application/json:
+                schema: !include items.json
+                example: |
+                    {
+                        "id": 1,
+                        "name": "Banana",
+                        "description": "Tasty"
+                    }
+        responses:
+            201:
+                description: Created item
+                body:
+                    application/json:
+                        schema: !include items.json
+    delete:
+        description: Delete multiple items
+        responses:
+            200:
+                description: Deleted multiple items
+    patch:
+        description: Update multiple items
+        body:
+            application/json:
+                example: { "name": "Car" }
+        responses:
+            200:
+                description: Updated multiple items
+    put:
+        description: Update multiple items
+        body:
+            application/json:
+                example: { "name": "Plane" }
+        responses:
+            200:
+                description: Updated multiple items
+
+    /{id}:
+        uriParameters:
+            id:
+                displayName: Item id
+                type: integer
+                minimum: 1
+                example: 1
+        displayName: Collection-item
+        get:
+            description: Get a particular item
+            responses:
+                200:
+                    body:
+                        application/json:
+                            schema: !include items.json
+
+        delete:
+            description: Delete a particular item
+            responses:
+                200:
+                    description: Deleted item
+        patch:
+            description: Update a particular item
+            body:
+                application/json:
+                    example: { "name": "Tree" }
+            responses:
+                200:
+                    body:
+                        application/json:
+                            schema: !include items.json
+        put:
+            description: Replace a particular item
+            body:
+                application/json:
+                    example: |
+                        {
+                            "id": 1,
+                            "name": "Horse",
+                            "description": "Not tasty"
+                        }
+            responses:
+                200:
+                    body:
+                        application/json:
+                            schema: !include items.json
