@@ -4,6 +4,9 @@ Changelog
 * :release:`0.7.0 <????-??-??>`
 * :bug:`121 major` Fixed issue with nested resources referencing a parent in their schema
 * :bug:`128` Build ES params when body provided
+* :support:`130` Added support for Elasticsearch 2.x
+* :support:`-` Added support for Pyramid 1.6.x
+* :support:`-` Scaffold defaults to Pyramid 1.6.1
 
 * :release:`0.6.1 <2015-11-18>`
 * :bug:`-` Added 'event.instance' to 'event' object to access newly created object (if object is returned by view method)
