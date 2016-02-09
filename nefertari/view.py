@@ -245,17 +245,12 @@ class BaseView(OptionsViewMixin):
         Wrappers are applied when view method does not return instance
         of Response. In this case nefertari renderers call wrappers and
         handle response generation.
-
-        Note: It's important for `add_etag` wrapper be applied before
-        `apply_privacy` as later may remove response data that
-        is used to generate etag
         """
         # Index
         self._after_calls['index'] = [
             wrappers.wrap_in_dict(self.request),
             wrappers.add_meta(self.request),
             wrappers.add_object_url(self.request),
-            wrappers.add_etag(self.request),
         ]
 
         # Show

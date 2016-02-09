@@ -39,11 +39,6 @@ class ESCommand(object):
             '--quiet', help='Quiet mode', action='store_true',
             default=False)
         parser.add_argument(
-            '--models',
-            help=('Comma-separated list of model names to index '
-                  '(required)'),
-            required=True)
-        parser.add_argument(
             '--params', help='Url-encoded params for each model')
         parser.add_argument('--index', help='Index name', default=None)
         parser.add_argument(
@@ -51,11 +46,14 @@ class ESCommand(object):
             help=('Index chunk size. If chunk size not provided '
                   '`elasticsearch.chunk_size` setting is used'),
             type=int)
-        parser.add_argument(
-            '--force',
-            help=('Recreate ES mappings and reindex all documents of provided '
-                  'models. By default, only documents that are missing from '
-                  'index are indexed.'),
+
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+            '--models',
+            help=('Comma-separated list of model names to index'))
+        group.add_argument(
+            '--recreate',
+            help='Recreate index and reindex all documents',
             action='store_true',
             default=False)
 
@@ -84,36 +82,42 @@ class ESCommand(object):
 
         self.settings = dictset(registry.settings)
 
-    def run(self):
-        ES.setup(self.settings)
-        model_names = split_strip(self.options.models)
+    def index_models(self, model_names):
+        self.log.info('Indexing models documents')
+        params = self.options.params or ''
+        params = dict([
+            [k, v[0]] for k, v in urllib.parse.parse_qs(params).items()
+        ])
+        params.setdefault('_limit', params.get('_limit', 10000))
+        chunk_size = self.options.chunk or params['_limit']
 
         for model_name in model_names:
             self.log.info('Processing model `{}`'.format(model_name))
             model = engine.get_document_cls(model_name)
-
-            params = self.options.params or ''
-            params = dict([
-                [k, v[0]] for k, v in urllib.parse.parse_qs(params).items()
-            ])
-            params.setdefault('_limit', params.get('_limit', 10000))
-            chunk_size = self.options.chunk or params['_limit']
-
             es = ES(source=model_name, index_name=self.options.index,
                     chunk_size=chunk_size)
             query_set = model.get_collection(**params)
             documents = to_dicts(query_set)
+            self.log.info('Indexing missing `{}` documents'.format(
+                model_name))
+            es.index_missing_documents(documents)
 
-            if self.options.force:
-                self.log.info('Recreating `{}` ES mapping'.format(model_name))
-                es.delete_mapping()
-                es.put_mapping(body=model.get_es_mapping())
-                self.log.info('Indexing all `{}` documents'.format(
-                    model_name))
-                es.index(documents)
-            else:
-                self.log.info('Indexing missing `{}` documents'.format(
-                    model_name))
-                es.index_missing_documents(documents)
+    def recreate_index(self):
+        self.log.info('Deleting index')
+        ES.delete_index()
+        self.log.info('Creating index')
+        ES.create_index()
+        self.log.info('Creating mappings')
+        ES.setup_mappings()
 
-        return 0
+    def run(self):
+        ES.setup(self.settings)
+        if self.options.recreate:
+            self.recreate_index()
+            models = engine.get_document_classes()
+            model_names = [
+                name for name, model in models.items()
+                if getattr(model, '_index_enabled', False)]
+        else:
+            model_names = split_strip(self.options.models)
+        self.index_models(model_names)

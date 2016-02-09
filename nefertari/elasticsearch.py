@@ -215,6 +215,14 @@ class ES(object):
             cls.api.indices.create(index_name)
 
     @classmethod
+    def delete_index(cls, index_name=None):
+        index_name = index_name or cls.settings.index_name
+        try:
+            cls.api.indices.delete([index_name])
+        except (IndexNotFoundException, JHTTPNotFound):
+            return
+
+    @classmethod
     def setup_mappings(cls, force=False):
         """ Setup ES mappings for all existing models.
 
@@ -240,12 +248,6 @@ class ES(object):
         except JHTTPBadRequest as ex:
             raise Exception(ex.json['extra']['data'])
         cls._mappings_setup = True
-
-    def delete_mapping(self):
-        self.api.indices.delete_mapping(
-            index=self.index_name,
-            doc_type=self.doc_type,
-        )
 
     def put_mapping(self, body, **kwargs):
         self.api.indices.put_mapping(
@@ -308,12 +310,6 @@ class ES(object):
             return
 
         documents_actions = self.prep_bulk_documents(action, documents)
-
-        if action == 'index':
-            for doc in documents_actions:
-                doc_data = doc.get('_source', {})
-                if 'timestamp' in doc_data:
-                    doc['_timestamp'] = doc_data['timestamp']
 
         if documents_actions:
             operation = partial(_bulk_body, request=request)
@@ -503,13 +499,9 @@ class ES(object):
             :_raise_on_empty: Boolean indicating whether to raise exception
                 when IndexNotFoundException exception happens. Optional,
                 defaults to False.
-            :_search_type: Type of search to use. Optional, defaults to
-                'count'. You might want to provide this argument explicitly
-                when performing nested aggregations on buckets.
         """
         _aggregations_params = params.pop('_aggregations_params', None)
         _raise_on_empty = params.pop('_raise_on_empty', False)
-        _search_type = params.pop('_search_type', 'count')
 
         if not _aggregations_params:
             raise Exception('Missing _aggregations_params')
@@ -521,7 +513,6 @@ class ES(object):
         search_params.pop('from_', None)
         search_params.pop('sort', None)
 
-        search_params['search_type'] = _search_type
         search_params['body']['aggregations'] = _aggregations_params
 
         log.debug('Performing aggregation: {}'.format(_aggregations_params))
