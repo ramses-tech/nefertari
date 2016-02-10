@@ -2,10 +2,10 @@
     "type": "object",
     "title": "Item schema",
     "$schema": "http://json-schema.org/draft-04/schema",
-    "required": ["id", "name"],
+    "required": ["name"],
     "properties": {
         "id": {
-            "type": ["integer", "null"],
+            "type": ["string", "null"],
             "_db_settings": {
                 "type": "id_field",
                 "required": true,

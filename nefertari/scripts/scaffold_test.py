@@ -13,6 +13,8 @@ import pytest
 
 # SQLA engine code when creating an app from scaffold
 SQLA_ENGINE_CODE = '1'
+MONGO_ENGINE_CODE = '2'
+ENGINE = MONGO_ENGINE_CODE
 
 
 class ScaffoldTestCommand(object):
@@ -45,7 +47,7 @@ class ScaffoldTestCommand(object):
             popen = Popen(
                 ['bin/pcreate', '-s', scaff_name, proj_name],
                 stdin=PIPE, stdout=PIPE)
-            popen.communicate(SQLA_ENGINE_CODE)
+            popen.communicate(ENGINE)
             os.chdir(proj_name)
             check_call([py_bin, 'setup.py', 'install'])
 

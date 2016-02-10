@@ -5,8 +5,8 @@ documentation:
     - title: Items REST API
       content: |
         Welcome to the Items API.
-baseUri: http://{host}:{port}
-version: v1
+baseUri: http://{host}:{port}/{version}
+version: api
 mediaType: application/json
 protocols: [HTTP]
 
@@ -24,7 +24,7 @@ protocols: [HTTP]
                 schema: !include items.json
                 example: |
                     {
-                        "id": 1,
+                        "id": "507f191e810c19729de860ea",
                         "name": "Banana",
                         "description": "Tasty"
                     }
@@ -60,9 +60,8 @@ protocols: [HTTP]
         uriParameters:
             id:
                 displayName: Item id
-                type: integer
-                minimum: 1
-                example: 1
+                type: string
+                example: 507f191e810c19729de860ea
         displayName: Collection-item
         get:
             description: Get a particular item
@@ -93,7 +92,7 @@ protocols: [HTTP]
                 application/json:
                     example: |
                         {
-                            "id": 1,
+                            "id": "507f191e810c19729de860ea",
                             "name": "Horse",
                             "description": "Not tasty"
                         }
