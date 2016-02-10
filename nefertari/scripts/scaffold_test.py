@@ -5,11 +5,14 @@ https://github.com/Pylons/pyramid/blob/master/pyramid/scaffolds/tests.py
 import sys
 import os
 import shutil
-import subprocess
 import tempfile
+from subprocess import check_call, Popen, PIPE
 from argparse import ArgumentParser
 
 import pytest
+
+# SQLA engine code when creating an app from scaffold
+SQLA_ENGINE_CODE = '1'
 
 
 class ScaffoldTestCommand(object):
@@ -35,19 +38,21 @@ class ScaffoldTestCommand(object):
             # Install library in created env
             here = os.path.abspath(os.path.dirname(__file__))
             os.chdir(os.path.dirname(os.path.dirname(here)))
-            subprocess.check_call([py_bin, 'setup.py', 'develop'])
+            check_call([py_bin, 'setup.py', 'develop'])
             os.chdir(self.directory)
 
             # Create app from scaffold and install it
-            subprocess.check_call(
-                ['bin/pcreate', '-s', scaff_name, proj_name])
+            popen = Popen(
+                ['bin/pcreate', '-s', scaff_name, proj_name],
+                stdin=PIPE, stdout=PIPE)
+            popen.communicate(SQLA_ENGINE_CODE)
             os.chdir(proj_name)
-            subprocess.check_call([py_bin, 'setup.py', 'install'])
+            check_call([py_bin, 'setup.py', 'install'])
 
             # Install test requirements
             test_reqs = os.path.join('tests', 'requirements.txt')
             if os.path.exists(test_reqs):
-                subprocess.check_call(['pip', 'install', '-r', test_reqs])
+                check_call(['pip', 'install', '-r', test_reqs])
 
             # Run actual scaffold tests
             pytest.main()
