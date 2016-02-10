@@ -50,9 +50,10 @@ class ScaffoldTestCommand(object):
             check_call([py_bin, 'setup.py', 'install'])
 
             # Install test requirements
-            test_reqs = os.path.join('tests', 'requirements.txt')
+            test_reqs = os.path.join(scaff_name, 'tests', 'requirements.txt')
             if os.path.exists(test_reqs):
-                check_call(['pip', 'install', '-r', test_reqs])
+                pip = os.path.join(self.directory, 'bin', 'pip')
+                check_call([pip, 'install', '-r', test_reqs])
 
             # Run actual scaffold tests
             pytest.main()
