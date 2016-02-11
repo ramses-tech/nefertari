@@ -77,3 +77,7 @@ class ScaffoldTestCommand(object):
 
 def main(*args, **kwargs):
     ScaffoldTestCommand().run()
+
+
+if __name__ == '__main__':
+    main()
