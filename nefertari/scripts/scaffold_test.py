@@ -57,11 +57,11 @@ class ScaffoldTestCommand(object):
                 check_call([pip, 'install', '-r', test_reqs])
 
             # Run actual scaffold tests
-            check_call([
-                os.path.join(self.directory, 'bin', 'py.test'),
-                scaff_name,
-            ])
-            # pytest.main()
+            # check_call([
+            #     os.path.join(self.directory, 'bin', 'py.test'),
+            #     scaff_name,
+            # ])
+            pytest.main()
         finally:
             shutil.rmtree(self.directory)
             os.chdir(self.old_cwd)

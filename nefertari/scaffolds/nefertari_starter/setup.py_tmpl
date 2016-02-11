@@ -1,12 +1,6 @@
 from setuptools import setup, find_packages
 
-requires = [
-    'nefertari',
-    'cryptacular==1.4.1',
-    'Paste==2.0.2',
-    'pyramid==1.6.1',
-    'waitress==0.8.9',
-]
+requires = []
 
 setup(
     name='{{package}}',
