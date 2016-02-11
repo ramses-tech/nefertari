@@ -29,7 +29,6 @@ class ScaffoldTestCommand(object):
                                       unzip_setuptools=True)
 
     def run_tests(self, scaff_name):  # pragma: no cover
-        # TODO: How to pass engine number to scaffold creation?
         proj_name = scaff_name.title()
         try:
             self.old_cwd = os.getcwd()
@@ -58,7 +57,11 @@ class ScaffoldTestCommand(object):
                 check_call([pip, 'install', '-r', test_reqs])
 
             # Run actual scaffold tests
-            pytest.main()
+            check_call([
+                os.path.join(self.directory, 'bin', 'py.test'),
+                scaff_name,
+            ])
+            # pytest.main()
         finally:
             shutil.rmtree(self.directory)
             os.chdir(self.old_cwd)

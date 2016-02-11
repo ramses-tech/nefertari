@@ -2,7 +2,6 @@ import os
 import ra
 import webtest
 
-
 appdir = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..'))
 ramlfile = os.path.abspath(
