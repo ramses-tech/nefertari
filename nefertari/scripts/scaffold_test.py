@@ -15,6 +15,7 @@ class ScaffoldTestCommand(object):
     SQLA_ENGINE_CODE = '1'
     MONGO_ENGINE_CODE = '2'
     ENGINE = MONGO_ENGINE_CODE
+    file = __file__
 
     def make_venv(self, directory):  # pragma: no cover
         import virtualenv
@@ -37,7 +38,7 @@ class ScaffoldTestCommand(object):
                 self.directory, 'bin') + ':' + orig_path
 
             # Install library in created env
-            here = os.path.abspath(os.path.dirname(__file__))
+            here = os.path.abspath(os.path.dirname(self.file))
             os.chdir(os.path.dirname(os.path.dirname(here)))
             check_call(['python', 'setup.py', 'develop'])
             os.chdir(self.directory)
