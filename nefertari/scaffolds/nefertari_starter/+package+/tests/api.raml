@@ -12,6 +12,16 @@ protocols: [HTTP]
 
 /items:
     displayName: Collection of items
+    head:
+        description: Head request
+        responses:
+            200:
+                description: Return headers
+    options:
+        description: Options request
+        responses:
+            200:
+                description: Return available HTTP methods
     get:
         description: Get all item
         responses:
@@ -63,6 +73,16 @@ protocols: [HTTP]
                 type: string
                 example: 507f191e810c19729de860ea
         displayName: Collection-item
+        head:
+            description: Head request
+            responses:
+                200:
+                    description: Return headers
+        options:
+            description: Options request
+            responses:
+                200:
+                    description: Return available HTTP methods
         get:
             description: Get a particular item
             responses:
