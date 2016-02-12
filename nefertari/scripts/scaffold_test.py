@@ -9,8 +9,6 @@ import tempfile
 from subprocess import check_call, Popen, PIPE
 from argparse import ArgumentParser
 
-import pytest
-
 # SQLA engine code when creating an app from scaffold
 SQLA_ENGINE_CODE = '1'
 MONGO_ENGINE_CODE = '2'
