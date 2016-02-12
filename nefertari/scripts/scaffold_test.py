@@ -9,13 +9,13 @@ import tempfile
 from subprocess import check_call, Popen, PIPE
 from argparse import ArgumentParser
 
-# SQLA engine code when creating an app from scaffold
-SQLA_ENGINE_CODE = '1'
-MONGO_ENGINE_CODE = '2'
-ENGINE = MONGO_ENGINE_CODE
-
 
 class ScaffoldTestCommand(object):
+    # Engine codes when creating an app from scaffold
+    SQLA_ENGINE_CODE = '1'
+    MONGO_ENGINE_CODE = '2'
+    ENGINE = MONGO_ENGINE_CODE
+
     def make_venv(self, directory):  # pragma: no cover
         import virtualenv
         from virtualenv import Logger
@@ -46,7 +46,7 @@ class ScaffoldTestCommand(object):
             popen = Popen(
                 ['bin/pcreate', '-s', scaff_name, proj_name],
                 stdin=PIPE, stdout=PIPE)
-            popen.communicate(ENGINE)
+            popen.communicate(self.ENGINE)
             os.chdir(proj_name)
             check_call(['python', 'setup.py', 'install'])
 
