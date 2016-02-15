@@ -46,7 +46,8 @@ class ScaffoldTestCommand(object):
             # Create app from scaffold and install it
             popen = Popen(
                 ['bin/pcreate', '-s', scaff_name, proj_name],
-                stdin=PIPE, stdout=PIPE)
+                stdin=PIPE, stdout=PIPE,
+                universal_newlines=True)
             popen.communicate(self.ENGINE)
             os.chdir(proj_name)
             check_call(['python', 'setup.py', 'install'])
