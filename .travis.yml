@@ -14,9 +14,8 @@ before_install:
   - sudo service elasticsearch stop
   - sleep 10
   - curl -O https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.7.5.deb && sudo dpkg -i --force-confnew --force-confdef elasticsearch-1.7.5.deb
-  - sudo service elasticsearch restart
+  - sudo service elasticsearch start
   - sleep 10
-  - curl http://localhost:9200/
 before_script:
   - sleep 30
   - curl -XDELETE 'http://localhost:9200/nefertari_starter/'

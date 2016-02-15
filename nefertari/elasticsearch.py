@@ -54,7 +54,6 @@ class ESHttpConnection(elasticsearch.Urllib3HttpConnection):
                 raise IndexNotFoundException()
             if status_code == 'N/A':
                 status_code = 400
-            print '>>>>>>>>>>>>>>', status_code, e.error, e
             raise exception_response(
                 status_code,
                 explanation=six.b(e.error),
