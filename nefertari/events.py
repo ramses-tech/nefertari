@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from nefertari.utils import FieldData, DataProxy
 
 
@@ -39,6 +37,8 @@ class RequestEvent(object):
         self.instance = instance
         self.response = response
 
+
+class BeforeEvent(RequestEvent):
     def set_field_value(self, field_name, value):
         """ Set value of field named `field_name`.
 
@@ -66,111 +66,117 @@ class RequestEvent(object):
         self.fields.update(fields)
 
 
+class AfterEvent(RequestEvent):
+    def set_field_value(self, field_name, value):
+        # TODO: Edit response here
+        pass
+
+
 # 'Before' events
 
-class BeforeIndex(RequestEvent):
+class BeforeIndex(BeforeEvent):
     pass
 
 
-class BeforeShow(RequestEvent):
+class BeforeShow(BeforeEvent):
     pass
 
 
-class BeforeCreate(RequestEvent):
+class BeforeCreate(BeforeEvent):
     pass
 
 
-class BeforeUpdate(RequestEvent):
+class BeforeUpdate(BeforeEvent):
     pass
 
 
-class BeforeReplace(RequestEvent):
+class BeforeReplace(BeforeEvent):
     pass
 
 
-class BeforeDelete(RequestEvent):
+class BeforeDelete(BeforeEvent):
     pass
 
 
-class BeforeUpdateMany(RequestEvent):
+class BeforeUpdateMany(BeforeEvent):
     pass
 
 
-class BeforeDeleteMany(RequestEvent):
+class BeforeDeleteMany(BeforeEvent):
     pass
 
 
-class BeforeItemOptions(RequestEvent):
+class BeforeItemOptions(BeforeEvent):
     pass
 
 
-class BeforeCollectionOptions(RequestEvent):
+class BeforeCollectionOptions(BeforeEvent):
     pass
 
 
-class BeforeLogin(RequestEvent):
+class BeforeLogin(BeforeEvent):
     pass
 
 
-class BeforeLogout(RequestEvent):
+class BeforeLogout(BeforeEvent):
     pass
 
 
-class BeforeRegister(RequestEvent):
+class BeforeRegister(BeforeEvent):
     pass
 
 
 # 'After' events
 
-class AfterIndex(RequestEvent):
+class AfterIndex(AfterEvent):
     pass
 
 
-class AfterShow(RequestEvent):
+class AfterShow(AfterEvent):
     pass
 
 
-class AfterCreate(RequestEvent):
+class AfterCreate(AfterEvent):
     pass
 
 
-class AfterUpdate(RequestEvent):
+class AfterUpdate(AfterEvent):
     pass
 
 
-class AfterReplace(RequestEvent):
+class AfterReplace(AfterEvent):
     pass
 
 
-class AfterDelete(RequestEvent):
+class AfterDelete(AfterEvent):
     pass
 
 
-class AfterUpdateMany(RequestEvent):
+class AfterUpdateMany(AfterEvent):
     pass
 
 
-class AfterDeleteMany(RequestEvent):
+class AfterDeleteMany(AfterEvent):
     pass
 
 
-class AfterItemOptions(RequestEvent):
+class AfterItemOptions(AfterEvent):
     pass
 
 
-class AfterCollectionOptions(RequestEvent):
+class AfterCollectionOptions(AfterEvent):
     pass
 
 
-class AfterLogin(RequestEvent):
+class AfterLogin(AfterEvent):
     pass
 
 
-class AfterLogout(RequestEvent):
+class AfterLogout(AfterEvent):
     pass
 
 
-class AfterRegister(RequestEvent):
+class AfterRegister(AfterEvent):
     pass
 
 
@@ -270,20 +276,10 @@ class FieldIsChanged(object):
         return False
 
 
-@contextmanager
-def trigger_events(view_obj):
-    """ Trigger before and after CRUD events.
-
-    :param view_obj: Instance of nefertari.view.BaseView subclass created
-        by nefertari.view.ViewMapper.
-    """
+def _get_event_kwargs(view_obj):
     request = view_obj.request
 
     view_method = getattr(view_obj, request.action)
-    event_action = (
-        getattr(view_method, '_event_action', None) or
-        request.action)
-
     do_trigger = not (
         getattr(view_method, '_silent', False) or
         getattr(view_obj, '_silent', False))
@@ -299,16 +295,45 @@ def trigger_events(view_obj):
         ctx = view_obj.context
         if hasattr(ctx, 'pk_field') or isinstance(ctx, DataProxy):
             event_kwargs['instance'] = ctx
+        return event_kwargs
 
-        before_event = BEFORE_EVENTS[event_action]
-        request.registry.notify(before_event(**event_kwargs))
 
-    yield
+def _get_event_cls(view_obj, events_map):
+    request = view_obj.request
+    view_method = getattr(view_obj, request.action)
+    event_action = (
+        getattr(view_method, '_event_action', None) or
+        request.action)
+    return events_map[event_action]
 
-    if do_trigger:
-        event_kwargs['response'] = view_obj._response
-        after_event = AFTER_EVENTS[event_action]
-        request.registry.notify(after_event(**event_kwargs))
+
+def _trigger_events(view_obj, events_map, additional_kw=None):
+    if additional_kw is None:
+        additional_kw = {}
+
+    event_kwargs = _get_event_kwargs(view_obj)
+    if event_kwargs is None:
+        return
+
+    event_kwargs.update(additional_kw)
+    event_cls = _get_event_cls(view_obj, events_map)
+    view_obj.request.registry.notify(event_cls(**event_kwargs))
+    return event_cls
+
+
+def trigger_before_events(view_obj):
+    """ Trigger before and after CRUD events.
+
+    :param view_obj: Instance of nefertari.view.BaseView subclass created
+        by nefertari.view.ViewMapper.
+    """
+    return _trigger_events(view_obj, BEFORE_EVENTS)
+
+
+def trigger_after_events(view_obj):
+    return _trigger_events(
+        view_obj, AFTER_EVENTS,
+        {'response': view_obj._response})
 
 
 def subscribe_to_events(config, subscriber, events, model=None):
