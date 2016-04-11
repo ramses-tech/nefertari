@@ -317,8 +317,9 @@ def _trigger_events(view_obj, events_map, additional_kw=None):
 
     event_kwargs.update(additional_kw)
     event_cls = _get_event_cls(view_obj, events_map)
-    view_obj.request.registry.notify(event_cls(**event_kwargs))
-    return event_cls
+    event = event_cls(**event_kwargs)
+    view_obj.request.registry.notify(event)
+    return event
 
 
 def trigger_before_events(view_obj):
