@@ -37,6 +37,13 @@ class TestEvents(object):
             {'foo': 2}, event.model)
         assert event.fields == {'q': 1}
 
+    def test_after_event_set_field_value_none_resp(self):
+        view = Mock(_json_params={})
+        event = events.AfterEvent(
+            model=None, view=view)
+        event.set_field_value('foo', 3)
+        assert event.response is None
+
     def test_after_event_set_field_value_single_item(self):
         view = Mock(_json_params={})
         event = events.AfterEvent(

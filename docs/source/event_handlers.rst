@@ -7,11 +7,11 @@ Nefertari event handler module includes a set of events, maps of events, event h
 Events
 ------
 
-``nefertari.events`` defines a set of event classes inherited from ``nefertari.events.RequestEvent``.
+``nefertari.events`` defines a set of event classes inherited from ``nefertari.events.RequestEvent``, ``nefertari.events.BeforeEvent`` and ``nefertari.events.AfterEvent``.
 
 There are two types of nefertari events:
-    * "Before" events, which are run after view class is instantiated, but before view method is run, and before request is processed
-    * "After" events, which are run after view method has been called
+    * "Before" events, which are run after view class is instantiated, but before view method is run, and before request is processed. Can be used to edit request.
+    * "After" events, which are run after view method has been called. Can be used to edit response.
 
 Check the API section for a full list of attributes/params events have.
 
@@ -51,8 +51,9 @@ It is recommended to use ``before`` events to:
 And ``after`` events to:
     * Change DB objects which are not affected by request
     * Perform notifications/logging
+    * Edit a response using ``event.set_field_value`` method
 
-Note: if a field changed via ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
+Note: if a request field changed via ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
 
 
 Predicates
@@ -150,6 +151,26 @@ Or, if we wanted to limit the models for which this handler should be called, we
         model=User)
 
 This way, ``log_request`` event handler will only be called when collection POST request comes at an endpoint which handles the ``User`` model.
+
+In case response needs to be edited, ``after`` events with ``event.set_field_value`` must be used. Calling this event method will set/change response item's field, if response contains single item. Otherwise field will be set/changed for all the objects in response. To edit response meta, access ``event.response`` directly. ``event.response`` is view method response serialized into ``dict``.
+
+E.g. if we want to hide user passwords from response on collection and item GET:
+
+.. code-block:: python
+
+    from nefertari import events
+    from .models import User
+
+    def hide_user_passwords(event):
+        # Hide 'password' field
+        event.set_field_value('password', 'VERY_SECRET')
+        # Set response meta(root level) field
+        event.response['secured'] = True
+
+    config.subscribe_to_events(
+        hide_user_passwords,
+        [events.AfterIndex, events.AfterShow],
+        model=User)
 
 
 API

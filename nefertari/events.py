@@ -20,10 +20,10 @@ class RequestEvent(object):
         requests  only(item GET, PATCH, PUT, DELETE). Should be used
         to read data only. Changes to the instance may result in database
         data inconsistency.
-    :param response: Return value of view method. E.g. if view method
-        returns "1", value of event.response will be "1". Is None in all
-        "before" events. Note that is not necessarily a valid Pyramid
-        Response instance but the exact value returned by view method.
+    :param response: Return value of view method serialized into dict.
+        E.g. if view method returns "1", value of event.response will
+        be "1". Is None in all "before" events. Note that is not a Pyramid
+        Response instance but the value returned by view method.
         May be useful to access newly created object on "create" action
         if it is returned by view method.
     """
@@ -39,8 +39,12 @@ class RequestEvent(object):
 
 
 class BeforeEvent(RequestEvent):
+    """ Base class for events fired before a request is processed.
+
+    Allows editing of request data.
+    """
     def set_field_value(self, field_name, value):
-        """ Set value of field named `field_name`.
+        """ Set value of request field named `field_name`.
 
         Use this method to apply changes to object which is affected
         by request. Values are set on `view._json_params` dict.
@@ -51,10 +55,8 @@ class BeforeEvent(RequestEvent):
         method call(connected to events after handler that performs
         method call).
 
-        :param field_name: Name of field value of which should be set.
-            Optional if `self.field` is set; in this case `self.field.name`
-            is used. If `self.field` is None and `field_name` is not
-            provided, KeyError is raised.
+        :param field_name: Name of request field value of which should
+            be set.
         :param value: Value to be set.
         """
         self.view._json_params[field_name] = value
@@ -67,7 +69,26 @@ class BeforeEvent(RequestEvent):
 
 
 class AfterEvent(RequestEvent):
+    """ Base class for events fired after a request is processed.
+
+    Allows editing of response data.
+    """
     def set_field_value(self, field_name, value):
+        """ Set value of response field named `field_name`.
+
+        If response contains single item, its field is set.
+        If response contains multiple items, all the items in response
+        are edited.
+        To edit response meta(e.g. 'count') edit response directly at
+        `event.response`.
+
+        :param field_name: Name of response field value of which should
+            be set.
+        :param value: Value to be set.
+        """
+        if self.response is None:
+            return
+
         if 'data' in self.response:
             items = self.response['data']
         else:
@@ -282,6 +303,12 @@ class FieldIsChanged(object):
 
 
 def _get_event_kwargs(view_obj):
+    """ Helper function to get event kwargs.
+
+    :param view_obj: Instance of View that processes the request.
+    :returns dict: Containing event kwargs or None if events shouldn't
+        be fired.
+    """
     request = view_obj.request
 
     view_method = getattr(view_obj, request.action)
@@ -304,6 +331,13 @@ def _get_event_kwargs(view_obj):
 
 
 def _get_event_cls(view_obj, events_map):
+    """ Helper function to get event class.
+
+    :param view_obj: Instance of View that processes the request.
+    :param events_map: Map of events from which event class should be
+        picked.
+    :returns: Found event class.
+    """
     request = view_obj.request
     view_method = getattr(view_obj, request.action)
     event_action = (
@@ -313,6 +347,13 @@ def _get_event_cls(view_obj, events_map):
 
 
 def _trigger_events(view_obj, events_map, additional_kw=None):
+    """ Common logic to trigger before/after events.
+
+    :param view_obj: Instance of View that processes the request.
+    :param events_map: Map of events from which event class should be
+        picked.
+    :returns: Instance if triggered event.
+    """
     if additional_kw is None:
         additional_kw = {}
 
@@ -328,15 +369,22 @@ def _trigger_events(view_obj, events_map, additional_kw=None):
 
 
 def trigger_before_events(view_obj):
-    """ Trigger before and after CRUD events.
+    """ Trigger `before` CRUD events.
 
     :param view_obj: Instance of nefertari.view.BaseView subclass created
         by nefertari.view.ViewMapper.
+    :returns: Instance if triggered event.
     """
     return _trigger_events(view_obj, BEFORE_EVENTS)
 
 
 def trigger_after_events(view_obj):
+    """ Trigger `after` CRUD events.
+
+    :param view_obj: Instance of nefertari.view.BaseView subclass created
+        by nefertari.view.ViewMapper.
+    :returns: Instance if triggered event.
+    """
     return _trigger_events(
         view_obj, AFTER_EVENTS,
         {'response': view_obj._response})
