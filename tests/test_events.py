@@ -37,6 +37,28 @@ class TestEvents(object):
             {'foo': 2}, event.model)
         assert event.fields == {'q': 1}
 
+    def test_after_event_set_field_value_single_item(self):
+        view = Mock(_json_params={})
+        event = events.AfterEvent(
+            model=None, view=view,
+            response={'foo': 1, 'bar': 2})
+        event.set_field_value('foo', 3)
+        assert event.response == {'foo': 3, 'bar': 2}
+
+    def test_after_event_set_field_value_collection(self):
+        view = Mock(_json_params={})
+        event = events.AfterEvent(
+            model=None, view=view,
+            response={'data': [
+                {'foo': 1, 'bar': 4},
+                {'foo': 1, 'bar': 5},
+            ]}
+        )
+        event.set_field_value('foo', 3)
+        assert len(event.response['data']) == 2
+        assert {'foo': 3, 'bar': 4} in event.response['data']
+        assert {'foo': 3, 'bar': 5} in event.response['data']
+
 
 class TestHelperFunctions(object):
     def test_get_event_kwargs_no_trigger(self):

@@ -68,8 +68,13 @@ class BeforeEvent(RequestEvent):
 
 class AfterEvent(RequestEvent):
     def set_field_value(self, field_name, value):
-        # TODO: Edit response here
-        pass
+        if 'data' in self.response:
+            items = self.response['data']
+        else:
+            items = [self.response]
+
+        for item in items:
+            item[field_name] = value
 
 
 # 'Before' events
