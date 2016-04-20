@@ -164,8 +164,6 @@ E.g. if we want to hide user passwords from response on collection and item GET:
     def hide_user_passwords(event):
         # Hide 'password' field
         event.set_field_value('password', 'VERY_SECRET')
-        # Set response meta(root level) field
-        event.response['secured'] = True
 
     config.subscribe_to_events(
         hide_user_passwords,
