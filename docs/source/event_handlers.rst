@@ -10,8 +10,8 @@ Events
 ``nefertari.events`` defines a set of event classes inherited from ``nefertari.events.RequestEvent``, ``nefertari.events.BeforeEvent`` and ``nefertari.events.AfterEvent``.
 
 There are two types of nefertari events:
-    * "Before" events, which are run after view class is instantiated, but before view method is run, and before request is processed. Can be used to edit request.
-    * "After" events, which are run after view method has been called. Can be used to edit response.
+    * "Before" events, which are run after view class is instantiated, but before view method is run, and before request is processed. Can be used to edit the request.
+    * "After" events, which are run after view method has been called. Can be used to edit the response.
 
 Check the API section for a full list of attributes/params events have.
 
