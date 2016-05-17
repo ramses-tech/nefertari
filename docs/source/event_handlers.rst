@@ -53,7 +53,7 @@ And ``after`` events to:
     * Perform notifications/logging
     * Edit a response using ``event.set_field_value`` method
 
-Note: if a field changed via ``event.set_field_value`` is not affected by the request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
+Note: if a field changed via ``event.set_field_value`` is not affected by the request, it will be added to ``event.fields`` which will make any field processors attached to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
 
 
 Predicates
