@@ -53,7 +53,7 @@ And ``after`` events to:
     * Perform notifications/logging
     * Edit a response using ``event.set_field_value`` method
 
-Note: if a request field changed via ``event.set_field_value`` is not affected by request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
+Note: if a field changed via ``event.set_field_value`` is not affected by the request, it will be added to ``event.fields`` which will make any field processors which are connected to this field to be triggered, if they are run after this method call (connected to events after handler that performs method call).
 
 
 Predicates
@@ -98,7 +98,7 @@ Utilities
             ...
 
 **nefertari.events.trigger_instead**
-    Decorator which allows view method to trigged another event instead of default one. In the example above collection GET requests (``UsersView.index``) will trigger event which corresponds to item PATCH (``update``).
+    Decorator which allows view method to trigger another event instead of the default one. In the example above collection GET requests (``UsersView.index``) will trigger the event which corresponds to item PATCH (``update``).
 
 .. code-block:: python
 
@@ -152,7 +152,7 @@ Or, if we wanted to limit the models for which this handler should be called, we
 
 This way, ``log_request`` event handler will only be called when collection POST request comes at an endpoint which handles the ``User`` model.
 
-In case response needs to be edited, ``after`` events with ``event.set_field_value`` must be used. Calling this event method will set/change response item's field, if response contains single item. Otherwise field will be set/changed for all the objects in response. To edit response meta, access ``event.response`` directly. ``event.response`` is view method response serialized into ``dict``.
+Whenever the response has to be edited, ``after`` events with ``event.set_field_value`` must be used. If the response contains a single item, calling this method will change this single item's field. Otherwise field will be changed for all the objects in the response. To edit the response meta, you can access ``event.response`` directly. ``event.response`` is a view method response serialized into ``dict``.
 
 E.g. if we want to hide user passwords from response on collection and item GET:
 
