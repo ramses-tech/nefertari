@@ -64,8 +64,9 @@ class TestRenderers(unittest.TestCase):
                          enc.default(self.now))
         # self.assertRaises(TypeError, enc.default, {})
 
-    def test_JsonRendererFactory(self):
-
+    @mock.patch('nefertari.renderers.JsonRendererFactory._trigger_events')
+    def test_JsonRendererFactory(self, mock_trigger):
+        mock_trigger.side_effect = lambda x, y: x
         request = mock.MagicMock()
         request.response.default_content_type = 'text/html'
         request.response.content_type = 'text/html'
@@ -81,9 +82,34 @@ class TestRenderers(unittest.TestCase):
 
         result = json.loads(factory(
             self._get_dummy_result(),
-            {'request': request, 'view': view}))
+            {'request': request, 'view': view, 'context': 1}))
         self.assertDictContainsSubset(self._get_dummy_expected(), result)
         self.assertEqual('application/json', request.response.content_type)
+        mock_trigger.assert_called_once_with(
+            self._get_dummy_result(),
+            {'request': request, 'context': 1, 'view': view})
+
+    @mock.patch('nefertari.renderers.trigger_after_events')
+    def test_JsonRendererFactory_trigger_events(self, mock_trigger):
+        request = mock.MagicMock()
+        request.response.default_content_type = 'text/html'
+        request.response.content_type = 'text/html'
+        request.url = 'http://'
+        view = mock.Mock()
+        view._json_encoder = None
+
+        factory = renderers.JsonRendererFactory({
+            'name': 'json',
+            'package': None,
+            'registry': None
+        })
+
+        result = factory._trigger_events(
+            self._get_dummy_result(),
+            {'request': request, 'view': view, 'context': 1})
+        view.assert_called_once_with(1, request)
+        mock_trigger.assert_called_once_with(view())
+        assert result == mock_trigger().response
 
     @mock.patch('nefertari.renderers.wrappers')
     def test_JsonRendererFactory_run_after_calls(self, mock_wrap):

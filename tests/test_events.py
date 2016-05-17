@@ -13,9 +13,9 @@ class TestEvents(object):
         assert obj.field == 4
         assert obj.instance == 5
 
-    def test_set_field_value_field_present(self):
+    def test_before_event_set_field_value_field_present(self):
         view = Mock(_json_params={})
-        event = events.RequestEvent(
+        event = events.BeforeEvent(
             view=view, model=None, field=None,
             fields={})
         event.fields['foo'] = Mock()
@@ -24,10 +24,10 @@ class TestEvents(object):
         assert event.fields['foo'].new_value == 2
 
     @patch('nefertari.events.FieldData')
-    def test_set_field_value_field_not_present(self, mock_field):
+    def test_before_event_set_field_value_field_not_present(self, mock_field):
         mock_field.from_dict.return_value = {'q': 1}
         view = Mock(_json_params={})
-        event = events.RequestEvent(
+        event = events.BeforeEvent(
             view=view, model=None, field=None,
             fields={})
         assert 'foo' not in event.fields
@@ -37,127 +37,108 @@ class TestEvents(object):
             {'foo': 2}, event.model)
         assert event.fields == {'q': 1}
 
-    @patch('nefertari.utils.FieldData.from_dict')
-    def test_trigger_events(self, mock_from):
-        mock_after = Mock()
-        mock_before = Mock()
-        mock_from.return_value = {'foo': 1}
-        ctx = Mock()
-        view = Mock(
-            request=Mock(action='index'),
-            _json_params={'bar': 1},
-            context=ctx,
-            _silent=False)
-        view.index._silent = False
-        view.index._event_action = None
+    def test_after_event_set_field_value_none_resp(self):
+        view = Mock(_json_params={})
+        event = events.AfterEvent(
+            model=None, view=view)
+        event.set_field_value('foo', 3)
+        assert event.response is None
 
-        with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
-            with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
-                with events.trigger_events(view):
-                    pass
+    def test_after_event_set_field_value_single_item(self):
+        view = Mock(_json_params={})
+        event = events.AfterEvent(
+            model=None, view=view,
+            response={'foo': 1, 'bar': 2})
+        event.set_field_value('foo', 3)
+        assert event.response == {'foo': 3, 'bar': 2}
 
-        mock_after.assert_called_once_with(
-            fields={'foo': 1}, model=view.Model, instance=ctx,
-            view=view, response=view._response)
-        mock_before.assert_called_once_with(
-            fields={'foo': 1}, model=view.Model, instance=ctx,
-            view=view)
-        view.request.registry.notify.assert_has_calls([
-            call(mock_before()),
-            call(mock_after()),
-        ])
-        mock_from.assert_called_once_with({'bar': 1}, view.Model)
-
-    @patch('nefertari.utils.FieldData.from_dict')
-    def test_trigger_events_silent_view(self, mock_from):
-        class A(object):
-            pass
-
-        mock_after = Mock()
-        mock_before = Mock()
-        ctx = A()
-        view = Mock(
-            Model=A,
-            request=Mock(action='index'),
-            _json_params={'bar': 1},
-            context=ctx,
-            _silent=True)
-        view.index._silent = False
-        view.index._event_action = None
-
-        with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
-            with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
-                with events.trigger_events(view):
-                    pass
-
-        assert not mock_after.called
-        assert not mock_before.called
-        assert not view.request.registry.notify.called
-        assert not mock_from.called
-
-    @patch('nefertari.utils.FieldData.from_dict')
-    def test_trigger_events_silent_view_method(self, mock_from):
-        class A(object):
-            pass
-
-        mock_after = Mock()
-        mock_before = Mock()
-        ctx = A()
-        view = Mock(
-            Model=A,
-            request=Mock(action='index'),
-            _json_params={'bar': 1},
-            context=ctx,
-            _silent=False)
-        view.index._silent = True
-        view.index._event_action = None
-
-        with patch.dict(events.BEFORE_EVENTS, {'index': mock_before}):
-            with patch.dict(events.AFTER_EVENTS, {'index': mock_after}):
-                with events.trigger_events(view):
-                    pass
-
-        assert not mock_after.called
-        assert not mock_before.called
-        assert not view.request.registry.notify.called
-        assert not mock_from.called
-
-    @patch('nefertari.utils.FieldData.from_dict')
-    def test_trigger_events_different_action(self, mock_from):
-        class A(object):
-            pass
-
-        mock_from.return_value = {'foo': 1}
-        mock_after = Mock()
-        mock_before = Mock()
-        ctx = A()
-        view = Mock(
-            Model=A,
-            request=Mock(action='index'),
-            _json_params={'bar': 1},
-            context=ctx,
-            _silent=False)
-        view.index._silent = None
-        view.index._event_action = 'delete'
-
-        with patch.dict(events.BEFORE_EVENTS, {'delete': mock_before}):
-            with patch.dict(events.AFTER_EVENTS, {'delete': mock_after}):
-                with events.trigger_events(view):
-                    pass
-
-        mock_after.assert_called_once_with(
-            fields={'foo': 1}, model=view.Model, view=view,
-            response=view._response)
-        mock_before.assert_called_once_with(
-            fields={'foo': 1}, model=view.Model, view=view)
-        view.request.registry.notify.assert_has_calls([
-            call(mock_before()),
-            call(mock_after()),
-        ])
-        mock_from.assert_called_once_with({'bar': 1}, view.Model)
+    def test_after_event_set_field_value_collection(self):
+        view = Mock(_json_params={})
+        event = events.AfterEvent(
+            model=None, view=view,
+            response={'data': [
+                {'foo': 1, 'bar': 4},
+                {'foo': 1, 'bar': 5},
+            ]}
+        )
+        event.set_field_value('foo', 3)
+        assert len(event.response['data']) == 2
+        assert {'foo': 3, 'bar': 4} in event.response['data']
+        assert {'foo': 3, 'bar': 5} in event.response['data']
 
 
 class TestHelperFunctions(object):
+    def test_get_event_kwargs_no_trigger(self):
+        view = Mock(index=Mock(_silent=True), _silent=True)
+        view.request = Mock(action='index')
+        assert events._get_event_kwargs(view) is None
+
+    @patch('nefertari.events.FieldData')
+    def test_get_event_kwargs(self, mock_fd):
+        view = Mock(index=Mock(_silent=False), _silent=False)
+        view.request = Mock(action='index')
+        kwargs = events._get_event_kwargs(view)
+        mock_fd.from_dict.assert_called_once_with(
+            view._json_params, view.Model)
+        assert kwargs == {
+            'fields': mock_fd.from_dict(),
+            'instance': view.context,
+            'model': view.Model,
+            'view': view
+        }
+
+    def test_get_event_cls_event_action(self):
+        index = Mock(_event_action='index')
+        request = Mock(action='index')
+        view = Mock(request=request, index=index)
+        evt = events._get_event_cls(view, events.BEFORE_EVENTS)
+        assert evt is events.BeforeIndex
+
+    def test_get_event_cls(self):
+        index = Mock(_event_action=None)
+        request = Mock(action='index')
+        view = Mock(request=request, index=index)
+        evt = events._get_event_cls(view, events.AFTER_EVENTS)
+        assert evt is events.AfterIndex
+
+    @patch('nefertari.events._get_event_cls')
+    @patch('nefertari.events._get_event_kwargs')
+    def test_trigger_events_no_kw(self, mock_kw, mock_cls):
+        mock_cls.return_value = events.AfterIndex
+        view = Mock()
+        mock_kw.return_value = None
+        events._trigger_events(view, events.AFTER_EVENTS)
+        assert not mock_cls.called
+        mock_kw.assert_called_once_with(view)
+
+    @patch('nefertari.events._get_event_cls')
+    @patch('nefertari.events._get_event_kwargs')
+    def test_trigger_events(self, mock_kw, mock_cls):
+        view = Mock()
+        mock_kw.return_value = {'foo': 1}
+        res = events._trigger_events(view, events.AFTER_EVENTS, {'bar': 2})
+        mock_kw.assert_called_once_with(view)
+        mock_cls.assert_called_once_with(view, events.AFTER_EVENTS)
+        evt = mock_cls()
+        evt.assert_called_once_with(foo=1, bar=2)
+        view.request.registry.notify.assert_called_once_with(evt())
+        assert res == evt()
+
+    @patch('nefertari.events._trigger_events')
+    def test_trigger_before_events(self, mock_trig):
+        view = Mock()
+        res = events.trigger_before_events(view)
+        mock_trig.assert_called_once_with(view, events.BEFORE_EVENTS)
+        assert res == mock_trig()
+
+    @patch('nefertari.events._trigger_events')
+    def test_trigger_after_events(self, mock_trig):
+        view = Mock()
+        res = events.trigger_after_events(view)
+        mock_trig.assert_called_once_with(
+            view, events.AFTER_EVENTS, {'response': view._response})
+        assert res == mock_trig()
+
     def test_subscribe_to_events(self):
         config = Mock()
         events.subscribe_to_events(

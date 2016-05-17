@@ -5,6 +5,7 @@ from datetime import date, datetime
 from nefertari import wrappers
 from nefertari.utils import get_json_encoder
 from nefertari.json_httpexceptions import JHTTPOk, JHTTPCreated
+from nefertari.events import trigger_after_events
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +60,14 @@ class JsonRendererFactory(object):
         self._set_content_type(system)
         # run after_calls on the value before jsonifying
         value = self.run_after_calls(value, system)
+        value = self._trigger_events(value, system)
         return self._render_response(value, system)
+
+    def _trigger_events(self, value, system):
+        view_obj = system['view'](system['context'], system['request'])
+        view_obj._response = value
+        evt = trigger_after_events(view_obj)
+        return evt.response
 
     def run_after_calls(self, value, system):
         request = system.get('request')

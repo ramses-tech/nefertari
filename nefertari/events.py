@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from nefertari.utils import FieldData, DataProxy
 
 
@@ -22,10 +20,10 @@ class RequestEvent(object):
         requests  only(item GET, PATCH, PUT, DELETE). Should be used
         to read data only. Changes to the instance may result in database
         data inconsistency.
-    :param response: Return value of view method. E.g. if view method
-        returns "1", value of event.response will be "1". Is None in all
-        "before" events. Note that is not necessarily a valid Pyramid
-        Response instance but the exact value returned by view method.
+    :param response: Return value of view method serialized into dict.
+        E.g. if view method returns "1", value of event.response will
+        be "1". Is None in all "before" events. Note that is not a Pyramid
+        Response instance but the value returned by view method.
         May be useful to access newly created object on "create" action
         if it is returned by view method.
     """
@@ -39,8 +37,14 @@ class RequestEvent(object):
         self.instance = instance
         self.response = response
 
+
+class BeforeEvent(RequestEvent):
+    """ Base class for events fired before a request is processed.
+
+    Allows editing of request data.
+    """
     def set_field_value(self, field_name, value):
-        """ Set value of field named `field_name`.
+        """ Set value of request field named `field_name`.
 
         Use this method to apply changes to object which is affected
         by request. Values are set on `view._json_params` dict.
@@ -51,10 +55,8 @@ class RequestEvent(object):
         method call(connected to events after handler that performs
         method call).
 
-        :param field_name: Name of field value of which should be set.
-            Optional if `self.field` is set; in this case `self.field.name`
-            is used. If `self.field` is None and `field_name` is not
-            provided, KeyError is raised.
+        :param field_name: Name of request field value of which should
+            be set.
         :param value: Value to be set.
         """
         self.view._json_params[field_name] = value
@@ -66,111 +68,141 @@ class RequestEvent(object):
         self.fields.update(fields)
 
 
+class AfterEvent(RequestEvent):
+    """ Base class for events fired after a request is processed.
+
+    Allows editing of response data.
+    """
+    def set_field_value(self, field_name, value):
+        """ Set value of response field named `field_name`.
+
+        If response contains single item, its field is set.
+        If response contains multiple items, all the items in response
+        are edited.
+        To edit response meta(e.g. 'count') edit response directly at
+        `event.response`.
+
+        :param field_name: Name of response field value of which should
+            be set.
+        :param value: Value to be set.
+        """
+        if self.response is None:
+            return
+
+        if 'data' in self.response:
+            items = self.response['data']
+        else:
+            items = [self.response]
+
+        for item in items:
+            item[field_name] = value
+
+
 # 'Before' events
 
-class BeforeIndex(RequestEvent):
+class BeforeIndex(BeforeEvent):
     pass
 
 
-class BeforeShow(RequestEvent):
+class BeforeShow(BeforeEvent):
     pass
 
 
-class BeforeCreate(RequestEvent):
+class BeforeCreate(BeforeEvent):
     pass
 
 
-class BeforeUpdate(RequestEvent):
+class BeforeUpdate(BeforeEvent):
     pass
 
 
-class BeforeReplace(RequestEvent):
+class BeforeReplace(BeforeEvent):
     pass
 
 
-class BeforeDelete(RequestEvent):
+class BeforeDelete(BeforeEvent):
     pass
 
 
-class BeforeUpdateMany(RequestEvent):
+class BeforeUpdateMany(BeforeEvent):
     pass
 
 
-class BeforeDeleteMany(RequestEvent):
+class BeforeDeleteMany(BeforeEvent):
     pass
 
 
-class BeforeItemOptions(RequestEvent):
+class BeforeItemOptions(BeforeEvent):
     pass
 
 
-class BeforeCollectionOptions(RequestEvent):
+class BeforeCollectionOptions(BeforeEvent):
     pass
 
 
-class BeforeLogin(RequestEvent):
+class BeforeLogin(BeforeEvent):
     pass
 
 
-class BeforeLogout(RequestEvent):
+class BeforeLogout(BeforeEvent):
     pass
 
 
-class BeforeRegister(RequestEvent):
+class BeforeRegister(BeforeEvent):
     pass
 
 
 # 'After' events
 
-class AfterIndex(RequestEvent):
+class AfterIndex(AfterEvent):
     pass
 
 
-class AfterShow(RequestEvent):
+class AfterShow(AfterEvent):
     pass
 
 
-class AfterCreate(RequestEvent):
+class AfterCreate(AfterEvent):
     pass
 
 
-class AfterUpdate(RequestEvent):
+class AfterUpdate(AfterEvent):
     pass
 
 
-class AfterReplace(RequestEvent):
+class AfterReplace(AfterEvent):
     pass
 
 
-class AfterDelete(RequestEvent):
+class AfterDelete(AfterEvent):
     pass
 
 
-class AfterUpdateMany(RequestEvent):
+class AfterUpdateMany(AfterEvent):
     pass
 
 
-class AfterDeleteMany(RequestEvent):
+class AfterDeleteMany(AfterEvent):
     pass
 
 
-class AfterItemOptions(RequestEvent):
+class AfterItemOptions(AfterEvent):
     pass
 
 
-class AfterCollectionOptions(RequestEvent):
+class AfterCollectionOptions(AfterEvent):
     pass
 
 
-class AfterLogin(RequestEvent):
+class AfterLogin(AfterEvent):
     pass
 
 
-class AfterLogout(RequestEvent):
+class AfterLogout(AfterEvent):
     pass
 
 
-class AfterRegister(RequestEvent):
+class AfterRegister(AfterEvent):
     pass
 
 
@@ -270,20 +302,16 @@ class FieldIsChanged(object):
         return False
 
 
-@contextmanager
-def trigger_events(view_obj):
-    """ Trigger before and after CRUD events.
+def _get_event_kwargs(view_obj):
+    """ Helper function to get event kwargs.
 
-    :param view_obj: Instance of nefertari.view.BaseView subclass created
-        by nefertari.view.ViewMapper.
+    :param view_obj: Instance of View that processes the request.
+    :returns dict: Containing event kwargs or None if events shouldn't
+        be fired.
     """
     request = view_obj.request
 
     view_method = getattr(view_obj, request.action)
-    event_action = (
-        getattr(view_method, '_event_action', None) or
-        request.action)
-
     do_trigger = not (
         getattr(view_method, '_silent', False) or
         getattr(view_obj, '_silent', False))
@@ -299,16 +327,67 @@ def trigger_events(view_obj):
         ctx = view_obj.context
         if hasattr(ctx, 'pk_field') or isinstance(ctx, DataProxy):
             event_kwargs['instance'] = ctx
+        return event_kwargs
 
-        before_event = BEFORE_EVENTS[event_action]
-        request.registry.notify(before_event(**event_kwargs))
 
-    yield
+def _get_event_cls(view_obj, events_map):
+    """ Helper function to get event class.
 
-    if do_trigger:
-        event_kwargs['response'] = view_obj._response
-        after_event = AFTER_EVENTS[event_action]
-        request.registry.notify(after_event(**event_kwargs))
+    :param view_obj: Instance of View that processes the request.
+    :param events_map: Map of events from which event class should be
+        picked.
+    :returns: Found event class.
+    """
+    request = view_obj.request
+    view_method = getattr(view_obj, request.action)
+    event_action = (
+        getattr(view_method, '_event_action', None) or
+        request.action)
+    return events_map[event_action]
+
+
+def _trigger_events(view_obj, events_map, additional_kw=None):
+    """ Common logic to trigger before/after events.
+
+    :param view_obj: Instance of View that processes the request.
+    :param events_map: Map of events from which event class should be
+        picked.
+    :returns: Instance if triggered event.
+    """
+    if additional_kw is None:
+        additional_kw = {}
+
+    event_kwargs = _get_event_kwargs(view_obj)
+    if event_kwargs is None:
+        return
+
+    event_kwargs.update(additional_kw)
+    event_cls = _get_event_cls(view_obj, events_map)
+    event = event_cls(**event_kwargs)
+    view_obj.request.registry.notify(event)
+    return event
+
+
+def trigger_before_events(view_obj):
+    """ Trigger `before` CRUD events.
+
+    :param view_obj: Instance of nefertari.view.BaseView subclass created
+        by nefertari.view.ViewMapper.
+    :returns: Instance if triggered event.
+    """
+    return _trigger_events(view_obj, BEFORE_EVENTS)
+
+
+def trigger_after_events(view_obj):
+    """ Trigger `after` CRUD events.
+
+    :param view_obj: Instance of nefertari.view.BaseView subclass created
+        by nefertari.view.ViewMapper.
+    :returns: Instance if triggered event.
+    """
+    return _trigger_events(
+        view_obj, AFTER_EVENTS,
+        {'response': view_obj._response})
 
 
 def subscribe_to_events(config, subscriber, events, model=None):

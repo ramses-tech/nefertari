@@ -201,8 +201,10 @@ class TestResourceRecognition(Test):
     def test_get_collection(self):
         self.assertEqual(self.app.get('/messages').body, six.b('index'))
 
-    def test_get_collection_json(self):
+    @mock.patch('nefertari.renderers.JsonRendererFactory._trigger_events')
+    def test_get_collection_json(self, mock_trigger):
         from nefertari.resource import add_resource_routes
+        mock_trigger.side_effect = lambda x, y: x
         add_resource_routes(
             self.config,
             DummyCrudRenderedView,
@@ -212,8 +214,10 @@ class TestResourceRecognition(Test):
         )
         self.assertEqual(self.app.get('/messages').body, six.b('"index"'))
 
-    def test_get_collection_nefertari_json(self):
+    @mock.patch('nefertari.renderers.JsonRendererFactory._trigger_events')
+    def test_get_collection_nefertari_json(self, mock_trigger):
         from nefertari.resource import add_resource_routes
+        mock_trigger.side_effect = lambda x, y: x
         add_resource_routes(
             self.config,
             DummyCrudRenderedView,
@@ -308,7 +312,7 @@ class TestResource(Test):
             get_default_view_path(m)
         )
 
-    @mock.patch('nefertari.view.trigger_events')
+    @mock.patch('nefertari.view.trigger_before_events')
     def test_singular_resource(self, *a):
         View = get_test_view_class()
         config = _create_config()
@@ -362,7 +366,7 @@ class TestResource(Test):
         self.assertEqual(
             six.b('show'), app.get('/grandpas/1/wife/children/1').body)
 
-    @mock.patch('nefertari.view.trigger_events')
+    @mock.patch('nefertari.view.trigger_before_events')
     def test_renderer_override(self, *args):
         # resource.renderer and view._default_renderer are only used
         # when accept header is missing.
@@ -414,7 +418,7 @@ class TestResource(Test):
         self.assertEqual(six.b('index'), app.get('/3things',
                          headers={'ACCEPT': 'text/blablabla'}).body)
 
-    @mock.patch('nefertari.view.trigger_events')
+    @mock.patch('nefertari.view.trigger_before_events')
     def test_nonBaseView_default_renderer(self, *a):
         config = _create_config()
         r = config.get_root_resource()
@@ -425,7 +429,7 @@ class TestResource(Test):
 
         self.assertEqual(six.b('index'), app.get('/ythings').body)
 
-    @mock.patch('nefertari.view.trigger_events')
+    @mock.patch('nefertari.view.trigger_before_events')
     def test_nested_resources(self, *a):
         config = _create_config()
         root = config.get_root_resource()

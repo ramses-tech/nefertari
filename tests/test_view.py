@@ -18,8 +18,8 @@ class DummyBaseView(BaseView):
 
 class TestViewMapper(object):
 
-    @patch('nefertari.view.trigger_events')
-    def test_trigger_events_called(self, mock_manager):
+    @patch('nefertari.view.trigger_before_events')
+    def test_trigger_before_events_called(self, mock_trigger):
         from nefertari.view import ViewMapper
 
         class MyView(object):
@@ -41,7 +41,7 @@ class TestViewMapper(object):
 
         wrapper = ViewMapper(**{'attr': 'index'})(MyView)
         wrapper(resource, request)
-        assert mock_manager.called
+        assert mock_trigger.called
 
     def test_viewmapper(self):
         from nefertari.view import ViewMapper
