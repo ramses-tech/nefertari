@@ -5,6 +5,7 @@ env:
   - TOXENV=py33
   - TOXENV=py34
   - TOXENV=py35
+python: 3.5
 install:
   - pip install tox
 script: tox
@@ -12,6 +13,5 @@ services:
   - elasticsearch
   - mongodb
 before_script:
-  - sleep 10
   - travis_retry curl -XDELETE 'http://localhost:9200/nefertari_starter/'
   - mongo nefertari_starter --eval 'db.dropDatabase();'
