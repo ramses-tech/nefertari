@@ -7,7 +7,7 @@ Changelog
 * :support:`130` Added support for Elasticsearch 2.x
 * :support:`-` Added support for Pyramid 1.6.x
 * :support:`-` Scaffold defaults to Pyramid 1.6.1
-* :feature:`-` Added the ability to edit responses within 'after' event handlers
+* :feature:`-` Added ability to edit responses within 'after' event handlers
 
 * :release:`0.6.1 <2015-11-18>`
 * :bug:`-` Added 'event.instance' to 'event' object to access newly created object (if object is returned by view method)
