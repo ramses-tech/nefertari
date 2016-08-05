@@ -5,11 +5,12 @@ Create your project in a virtualenv directory (see the `virtualenv documentation
 
 .. code-block:: shell
 
-    $ virtualenv my_project
-    $ source my_project/bin/activate
-    $ pip install nefertari
-    $ pcreate -s nefertari_starter my_project
+    $ mkdir my_project
     $ cd my_project
+    $ virtualenv venv
+    $ source venv/bin/activate
+    $ pip install nefertari
+    $ pcreate -s nefertari_starter .
     $ pserve local.ini
 
 
