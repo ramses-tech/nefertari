@@ -52,8 +52,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Nefertari'
-copyright = u'2015, Brandicted'
-author = u'Brandicted'
+copyright = u'Ramses Tech'
+author = u'Ramses Tech, Inc.'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -240,7 +240,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Nefertari.tex', u'Nefertari Documentation',
-     u'Brandicted', 'manual'),
+     u'Ramses Tech', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
