@@ -34,7 +34,7 @@ setup(
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     ],
-    author='Ramses',
+    author='Ramses Tech',
     author_email='hello@ramses.tech',
     url='https://github.com/ramses-tech/nefertari',
     keywords='web wsgi bfg pylons pyramid rest api elasticsearch',
